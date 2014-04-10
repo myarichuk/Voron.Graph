@@ -1,0 +1,28 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2013
+VisualStudioVersion = 12.0.21005.1
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Voron.Graph", "Voron.Graph\Voron.Graph.csproj", "{28FDB332-BCE9-496D-BD6D-C910DB4F1C1C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Voron.Graph.Tests", "Voron.Graph.Tests\Voron.Graph.Tests.csproj", "{FADF6EC2-656F-4801-82A4-1CEC423E0C2F}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{28FDB332-BCE9-496D-BD6D-C910DB4F1C1C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{28FDB332-BCE9-496D-BD6D-C910DB4F1C1C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{28FDB332-BCE9-496D-BD6D-C910DB4F1C1C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{28FDB332-BCE9-496D-BD6D-C910DB4F1C1C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FADF6EC2-656F-4801-82A4-1CEC423E0C2F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FADF6EC2-656F-4801-82A4-1CEC423E0C2F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FADF6EC2-656F-4801-82A4-1CEC423E0C2F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FADF6EC2-656F-4801-82A4-1CEC423E0C2F}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
