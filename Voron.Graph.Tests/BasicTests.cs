@@ -149,13 +149,18 @@ namespace Voron.Graph.Tests
                 session.PutEdge("n2", "n1");
                 session.PutEdge("n2", "n3");
 
+                //looping edge also ok!
+                //adding multiple loops will overwrite each other
+                //TODO: add support for multiple edges that have the same keyFrom and keyTo
+                session.PutEdge("n2", "n2"); 
+
                 session.SaveChanges();
             }
 
             using (var session = graph.OpenSession())
             {
                 var adjacentNodes = session.GetAdjacent("n2");
-                adjacentNodes.Should().Contain("n1", "n3");
+                adjacentNodes.Should().Contain("n1", "n3", "n2");
             }
         }
     }
