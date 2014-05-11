@@ -1,6 +1,9 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using Voron.Impl;
+using System.Linq;
+using System.Text;
 
 namespace Voron.Graph
 {
@@ -10,16 +13,14 @@ namespace Voron.Graph
         private readonly SnapshotReader _snapshot;
         private readonly string _nodeTreeName;
         private readonly string _edgeTreeName;
-        private readonly string _nodesWithEdgesTreeName;
         private readonly Action<WriteBatch> _writerFunc;
         private readonly string _disconnectedNodesTreeName;
 
-        internal Session(SnapshotReader snapshot, string nodeTreeName, string edgeTreeName, string nodesWithEdgesTreeName, string disconnectedNodesTreeName, Action<WriteBatch> writerFunc)
+        internal Session(SnapshotReader snapshot, string nodeTreeName, string edgeTreeName, string disconnectedNodesTreeName, Action<WriteBatch> writerFunc)
         {
             _snapshot = snapshot;
             _nodeTreeName = nodeTreeName;
             _edgeTreeName = edgeTreeName;
-            _nodesWithEdgesTreeName = nodesWithEdgesTreeName;
             _disconnectedNodesTreeName = disconnectedNodesTreeName;
             _writerFunc = writerFunc;
             _writeBatch = new WriteBatch();
@@ -33,11 +34,6 @@ namespace Voron.Graph
         internal string EdgeTreeName
         {
             get { return _edgeTreeName; }
-        }
-
-        internal string NodesWithEdgesTreeName
-        {
-            get { return _nodesWithEdgesTreeName; }
         }
 
         internal string DisconnectedNodesTreeName
@@ -63,14 +59,12 @@ namespace Voron.Graph
             _writeBatch.Add(nodeKey, Stream.Null,_disconnectedNodesTreeName);
         }
 
-        public void PutEdge(string nodeKeyFrom, string nodeKeyTo)
+        public void PutEdge(string nodeKeyFrom, string nodeKeyTo, Stream value = null)
         {
             if (String.IsNullOrWhiteSpace(nodeKeyFrom)) throw new ArgumentNullException("nodeKeyFrom");
             if (String.IsNullOrWhiteSpace(nodeKeyTo)) throw new ArgumentNullException("nodeKeyTo");
 
-            _writeBatch.MultiAdd(nodeKeyFrom, nodeKeyTo, _edgeTreeName);
-            _writeBatch.Add(nodeKeyFrom, Stream.Null, _nodesWithEdgesTreeName);
-            _writeBatch.Add(nodeKeyTo, Stream.Null, _nodesWithEdgesTreeName);
+            _writeBatch.Add(Util.CreateEdgeTreeKey(nodeKeyFrom, nodeKeyTo), value ?? Stream.Null, _edgeTreeName);
 
             _writeBatch.Delete(nodeKeyFrom, _disconnectedNodesTreeName);
             _writeBatch.Delete(nodeKeyTo, _disconnectedNodesTreeName);
@@ -83,8 +77,6 @@ namespace Voron.Graph
             _writeBatch.Delete(nodeKey, _nodeTreeName);
 
             ushort? version;
-            if(_snapshot.Contains(_nodesWithEdgesTreeName,nodeKey,out version,_writeBatch))
-                _writeBatch.Delete(nodeKey, _nodesWithEdgesTreeName);
 
             if(_snapshot.Contains(_disconnectedNodesTreeName,nodeKey,out version,_writeBatch))
                 _writeBatch.Delete(nodeKey, _disconnectedNodesTreeName);
@@ -95,16 +87,18 @@ namespace Voron.Graph
             if (String.IsNullOrWhiteSpace(nodeKeyFrom)) throw new ArgumentNullException("nodeKeyFrom");
             if (String.IsNullOrWhiteSpace(nodeKeyTo)) throw new ArgumentNullException("nodeKeyTo");
 
-            _writeBatch.MultiDelete(nodeKeyFrom, nodeKeyTo, _edgeTreeName);
-            if (IsMultiTreeEmpty(nodeKeyFrom, _edgeTreeName))
-            {
-                _writeBatch.Delete(nodeKeyFrom, _nodesWithEdgesTreeName);
+            _writeBatch.Delete(Util.CreateEdgeTreeKey(nodeKeyFrom, nodeKeyTo), _edgeTreeName);
+            if (IsIsolated(nodeKeyFrom))
                 _writeBatch.Add(nodeKeyFrom,Stream.Null,_disconnectedNodesTreeName);
-            }
+        }
 
-            ushort? version;
-            if(_snapshot.Contains(_nodesWithEdgesTreeName,nodeKeyFrom,out version,_writeBatch))
-                _writeBatch.Delete(nodeKeyFrom, _nodesWithEdgesTreeName);
+        public bool IsIsolated(string nodeKey)
+        {
+            using(var iterator = _snapshot.Iterate(_edgeTreeName))
+            {
+                iterator.RequiredPrefix = nodeKey;
+                return iterator.Seek(Slice.BeforeAllKeys);
+            }
         }
 
         public Stream Get(string nodeKey)
@@ -113,6 +107,22 @@ namespace Voron.Graph
 
             var readResult = _snapshot.Read(_nodeTreeName, nodeKey, _writeBatch);
             return readResult.Reader.AsStream();
+        }
+
+        public IEnumerable<string> GetAdjacent(string nodeKey)
+        {
+            using (var iterator = _snapshot.Iterate(_edgeTreeName))
+            {
+                iterator.RequiredPrefix = nodeKey;
+                if (!iterator.Seek(Slice.BeforeAllKeys))
+                    yield break;
+
+                do
+                {
+                    var key = Util.ParseEdgeTreeKey(iterator.CurrentKey.ToString());
+                    yield return key.NodeKeyTo;
+                } while (iterator.MoveNext());
+            }
         }
 
         public void SaveChanges()
@@ -126,12 +136,9 @@ namespace Voron.Graph
         {
             if (_snapshot != null)
                 _snapshot.Dispose();
-        }
+        }     
 
-        private bool IsMultiTreeEmpty(string multiTreeKey, string treeName)
-        {
-            using (var iterator = _snapshot.MultiRead(treeName,multiTreeKey))
-                return iterator.Seek(Slice.BeforeAllKeys);
-        }
+
+
     }
 }

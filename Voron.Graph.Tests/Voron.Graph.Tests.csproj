@@ -45,7 +45,7 @@
     <Reference Include="System.Xml" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="Voron">
-      <HintPath>..\..\..\..\..\..\..\Work\Raven.Voron\Voron\bin\Debug\Voron.dll</HintPath>
+      <HintPath>..\..\Raven.Voron\Voron\bin\Release\Voron.dll</HintPath>
     </Reference>
   </ItemGroup>
   <Choose>
@@ -62,8 +62,8 @@
   </Choose>
   <ItemGroup>
     <Compile Include="BaseGraphTest.cs" />
+    <Compile Include="BasicTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="BFSTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Voron.Graph\Voron.Graph.csproj">

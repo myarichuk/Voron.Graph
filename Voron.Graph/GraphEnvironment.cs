@@ -14,7 +14,6 @@ namespace Voron.Graph
         private readonly StorageEnvironment _storageEnvironment;
         private readonly string _nodeTreeName;
         private readonly string _edgeTreeName;
-        private readonly string _nodesWithEdgesTreeName;
         private readonly string _disconnectedNodesTreeName;
 
         public GraphEnvironment(string graphName, StorageEnvironment storageEnvironment)
@@ -23,7 +22,6 @@ namespace Voron.Graph
             if (storageEnvironment == null) throw new ArgumentNullException("storageEnvironment");
             _nodeTreeName = graphName + Constants.NodeTreeNameSuffix;
             _edgeTreeName = graphName + Constants.EdgeTreeNameSuffix;
-            _nodesWithEdgesTreeName = graphName + Constants.NodesWithEdgesTreeNameSuffix;
             _disconnectedNodesTreeName = graphName + Constants.DisconnectedNodesTreeName;
             _storageEnvironment = storageEnvironment;
 
@@ -35,7 +33,6 @@ namespace Voron.Graph
             return new Session(_storageEnvironment.CreateSnapshot(),
                 _nodeTreeName,
                 _edgeTreeName,
-                _nodesWithEdgesTreeName,
                 _disconnectedNodesTreeName,
                 wb => _storageEnvironment.Writer.Write(wb));
         }
@@ -46,7 +43,6 @@ namespace Voron.Graph
             {
                 _storageEnvironment.CreateTree(tx, _nodeTreeName);
                 _storageEnvironment.CreateTree(tx, _edgeTreeName);
-                _storageEnvironment.CreateTree(tx, _nodesWithEdgesTreeName);
                 _storageEnvironment.CreateTree(tx, _disconnectedNodesTreeName);
                 tx.Commit();
             }
@@ -58,7 +54,6 @@ namespace Voron.Graph
                     _storageEnvironment.CreateSnapshot(), 
                     _nodeTreeName, 
                     _edgeTreeName,
-                    _nodesWithEdgesTreeName, 
                     _disconnectedNodesTreeName, wb => { }))
             {
                 return new BreadthFirstSearch(session).FindOne(predicate);

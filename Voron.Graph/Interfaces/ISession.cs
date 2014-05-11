@@ -10,7 +10,7 @@ namespace Voron.Graph
     public interface ISession : IDisposable
     {
         void PutNode(string nodeKey, Stream value);
-        void PutEdge(string nodeKeyFrom, string nodeKeyTo);
+        void PutEdge(string nodeKeyFrom, string nodeKeyTo, Stream value = null);
 
         void DeleteNode(string nodeKey);
 
@@ -19,5 +19,9 @@ namespace Voron.Graph
         Stream Get(string nodeKey);
 
         void SaveChanges();
+
+        IEnumerable<string> GetAdjacent(string nodeKey);
+
+        bool IsIsolated(string nodeKey);
     }
 }
