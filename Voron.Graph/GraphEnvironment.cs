@@ -4,7 +4,6 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Voron.Graph.Detectives;
 using Voron.Impl;
 
 namespace Voron.Graph
@@ -50,14 +49,7 @@ namespace Voron.Graph
 
         public Stream FindOne(Func<string,Stream,bool> predicate)
         {
-            using (var session = new Session(
-                    _storageEnvironment.CreateSnapshot(), 
-                    _nodeTreeName, 
-                    _edgeTreeName,
-                    _disconnectedNodesTreeName, wb => { }))
-            {
-                return new BreadthFirstSearch(session).FindOne(predicate);
-            }
+            throw new NotImplementedException();
         }
     }
 }
