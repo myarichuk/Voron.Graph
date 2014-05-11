@@ -4,17 +4,20 @@ using System.IO;
 using Voron.Impl;
 using System.Linq;
 using System.Text;
+using System.Collections.Concurrent;
+using System.Diagnostics;
 
 namespace Voron.Graph
 {
     public class Session : ISession
     {
         private WriteBatch _writeBatch;
-        private readonly SnapshotReader _snapshot;
+        private SnapshotReader _snapshot;
         private readonly string _nodeTreeName;
         private readonly string _edgeTreeName;
         private readonly Action<WriteBatch> _writerFunc;
         private readonly string _disconnectedNodesTreeName;
+        private ConcurrentDictionary<string,IDisposable> _objectsToDispose;
 
         internal Session(SnapshotReader snapshot, string nodeTreeName, string edgeTreeName, string disconnectedNodesTreeName, Action<WriteBatch> writerFunc)
         {
@@ -24,7 +27,8 @@ namespace Voron.Graph
             _disconnectedNodesTreeName = disconnectedNodesTreeName;
             _writerFunc = writerFunc;
             _writeBatch = new WriteBatch();
-        }
+            _objectsToDispose = new ConcurrentDictionary<string, IDisposable>();
+        }        
 
         internal string NodeTreeName
         {
@@ -49,6 +53,64 @@ namespace Voron.Graph
         internal SnapshotReader Snapshot
         {
             get { return _snapshot; }
+        }
+
+        public IEnumerable<Node> Nodes
+        {
+            get
+            {
+                using(var iterator = _snapshot.Iterate(_nodeTreeName))
+                {
+                    if (!iterator.Seek(Slice.BeforeAllKeys))
+                        yield break;
+
+                    do
+                    {
+                        var data = iterator.CreateReaderForCurrent().AsStream();
+                        data.Position = 0;
+                        var currentKey = iterator.CurrentKey.ToString();
+                        var node = new Node(currentKey, data);
+
+                        _objectsToDispose.AddOrUpdate(currentKey, node, (key, existingDisposable) =>
+                            {
+                                if (existingDisposable != null)
+                                    existingDisposable.Dispose();
+                                return node;
+                            });
+
+                        yield return node;
+                    } while (iterator.MoveNext());
+                }
+            }
+        }
+
+        public IEnumerable<Edge> Edges
+        {
+            get
+            {
+                using(var iterator = _snapshot.Iterate(_edgeTreeName))
+                {
+                    if (!iterator.Seek(Slice.BeforeAllKeys))
+                        yield break;
+
+                    do
+                    {
+                        var data = iterator.CreateReaderForCurrent().AsStream();
+                        data.Position = 0;
+                        var currentKeyAsString = iterator.CurrentKey.ToString();
+                        var key = Util.ParseEdgeTreeKey(currentKeyAsString);
+                        var edge = new Edge(key.NodeKeyFrom, key.NodeKeyTo, data);
+                        _objectsToDispose.AddOrUpdate(currentKeyAsString, edge, (disposableKey, existingDisposable) =>
+                        {
+                            if (existingDisposable != null)
+                                existingDisposable.Dispose();
+                            return edge;
+                        });
+
+                        yield return edge;
+                    } while (iterator.MoveNext());
+                }
+            }
         }
 
         public void PutNode(string nodeKey, Stream value)
@@ -101,11 +163,21 @@ namespace Voron.Graph
             }
         }
 
-        public Stream Get(string nodeKey)
+        public Stream GetNode(string nodeKey)
         {
             if(String.IsNullOrWhiteSpace(nodeKey)) throw new ArgumentNullException("nodeKey");
 
             var readResult = _snapshot.Read(_nodeTreeName, nodeKey, _writeBatch);
+            return readResult.Reader.AsStream();
+        }
+
+        public Stream GetEdge(string nodeKeyFrom, string nodeKeyTo)
+        {
+            if (String.IsNullOrWhiteSpace(nodeKeyFrom)) throw new ArgumentNullException("nodeKeyFrom");
+            if (String.IsNullOrWhiteSpace(nodeKeyTo)) throw new ArgumentNullException("nodeKeyTo");
+
+            var readResult = _snapshot.Read(_edgeTreeName, Util.CreateEdgeTreeKey(nodeKeyFrom, nodeKeyTo));
+
             return readResult.Reader.AsStream();
         }
 
@@ -134,11 +206,38 @@ namespace Voron.Graph
 
         public void Dispose()
         {
+            Dispose(true);
+        }
+
+        private void Dispose(bool isDisposing)
+        {
+            if (_objectsToDispose != null)
+            {
+                foreach (var disposable in _objectsToDispose.Values)
+                    if (disposable != null)
+                        disposable.Dispose();
+                _objectsToDispose = null;
+            }
+
             if (_snapshot != null)
+            {
                 _snapshot.Dispose();
+                _snapshot = null;
+            }
+
+            if(isDisposing)
+                GC.SuppressFinalize(this);
         }     
 
+        ~Session()
+        {
+            if(_snapshot != null || _objectsToDispose != null)
+            {
+                Trace.WriteLine("Disposal for Session object was not called, disposing from finalizer. Stack Trace: " + new StackTrace());
+            }
 
+            Dispose(false);
+        }
 
     }
 }

@@ -16,12 +16,17 @@ namespace Voron.Graph
 
         void DeleteEdge(string nodeKeyFrom, string nodeKeyTo);
 
-        Stream Get(string nodeKey);
+        Stream GetNode(string nodeKey);
+        Stream GetEdge(string nodeKeyFrom, string nodeKeyTo);
 
         void SaveChanges();
 
         IEnumerable<string> GetAdjacent(string nodeKey);
 
         bool IsIsolated(string nodeKey);
+
+        IEnumerable<Node> Nodes { get; }
+
+        IEnumerable<Edge> Edges { get; }
     }
 }

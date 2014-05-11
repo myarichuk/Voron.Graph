@@ -46,10 +46,5 @@ namespace Voron.Graph
                 tx.Commit();
             }
         }
-
-        public Stream FindOne(Func<string,Stream,bool> predicate)
-        {
-            throw new NotImplementedException();
-        }
     }
 }
