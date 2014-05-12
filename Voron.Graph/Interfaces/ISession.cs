@@ -24,9 +24,8 @@ namespace Voron.Graph
         IEnumerable<string> GetAdjacent(string nodeKey);
 
         bool IsIsolated(string nodeKey);
-
-        IEnumerable<Node> Nodes { get; }
-
-        IEnumerable<Edge> Edges { get; }
+        
+        Iterator<Edge> IterateEdges();
+        Iterator<Node> IterateNodes();
     }
 }

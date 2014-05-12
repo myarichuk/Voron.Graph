@@ -9,7 +9,7 @@ namespace Voron.Graph.Tests
     public class BasicTests : BaseGraphTest
     {
         [TestMethod]
-        public void Adding_nodes_should_work()
+        public void Put_nodes_should_work()
         {
             var graph = new GraphEnvironment("TestGraph", Env);
             using (var session = graph.OpenSession())
@@ -29,7 +29,7 @@ namespace Voron.Graph.Tests
         }
 
         [TestMethod]
-        public void Add_edge_between_nodes_in_the_same_session_should_work()
+        public void Put_edge_between_nodes_in_the_same_session_should_work()
         {
             var graph = new GraphEnvironment("TestGraph", Env);
             using (var session = graph.OpenSession())
@@ -55,24 +55,32 @@ namespace Voron.Graph.Tests
         public void Can_iterate_on_nodes()
         {
             var graph = new GraphEnvironment("TestGraph", Env);
+            var nodeData = new Dictionary<string, string>
+            {
+                {"n1", "test1"},
+                {"n2", "test2"},
+                {"n3", "test3"},
+                {"n4", "test4"},
+            };
             using (var session = graph.OpenSession())
             {
-                session.PutNode("n1", StreamFrom("test1"));
-                session.PutNode("n2", StreamFrom("test2"));
-                session.PutNode("n3", StreamFrom("test3"));
+                foreach (var data in nodeData)
+                    session.PutNode(data.Key, StreamFrom(data.Value));
 
                 session.SaveChanges();
             }
 
             using (var session = graph.OpenSession())
             {
-                var nodes = session.Nodes.ToList();
+               using(var iterator = session.IterateNodes())
+               {
+                   Assert.IsTrue(iterator.TrySeekToBegin());
 
-                nodes.Should().NotBeEmpty();
-                Assert.IsTrue(nodes.Any(x => x.Key.Equals("n1") && StringFrom(x.Data).Equals("test1")));
-                Assert.IsTrue(nodes.Any(x => x.Key.Equals("n2") && StringFrom(x.Data).Equals("test2")));
-                Assert.IsTrue(nodes.Any(x => x.Key.Equals("n3") && StringFrom(x.Data).Equals("test3")));
-
+                   do
+                   {
+                       nodeData.Should().Contain(new KeyValuePair<string, string>(iterator.Current.Key, StringFrom(iterator.Current.Data)));
+                   } while (iterator.MoveNext());
+               }
             }
         }
 
@@ -80,28 +88,38 @@ namespace Voron.Graph.Tests
         public void Can_iterate_on_edges()
         {
             var graph = new GraphEnvironment("TestGraph", Env);
+            List<KeyValuePair<string, string>> edgePairs;
             using (var session = graph.OpenSession())
             {
                 session.PutNode("n1", StreamFrom("test1"));
                 session.PutNode("n2", StreamFrom("test2"));
                 session.PutNode("n3", StreamFrom("test3"));
 
-                session.PutEdge("n2", "n1");
-                session.PutEdge("n2", "n3");
-                session.PutEdge("n1", "n3");
+                edgePairs = new List<KeyValuePair<string, string>>
+                {
+                   new KeyValuePair<string,string>("n2","n1"),
+                   new KeyValuePair<string,string>("n2","n3"),
+                   new KeyValuePair<string,string>("n1","n3"),
+                   new KeyValuePair<string,string>("n3","n3"),
+                };
+
+                foreach (var pair in edgePairs)
+                    session.PutEdge(pair.Key, pair.Value);
 
                 session.SaveChanges();
             }
 
             using (var session = graph.OpenSession())
             {
-                var edges = session.Edges.ToList();
+                using(var edgeIterator = session.IterateEdges())
+                {
+                    Assert.IsTrue(edgeIterator.TrySeekToBegin());
 
-                edges.Should().NotBeEmpty();
-                Assert.IsTrue(edges.Any(x => x.KeyFrom.Equals("n2") && x.KeyTo.Equals("n3")));
-                Assert.IsTrue(edges.Any(x => x.KeyFrom.Equals("n1") && x.KeyTo.Equals("n3")));
-                Assert.IsTrue(edges.Any(x => x.KeyFrom.Equals("n2") && x.KeyTo.Equals("n1")));
-
+                    do
+                    {
+                        edgePairs.Should().Contain(new KeyValuePair<string, string>(edgeIterator.Current.KeyFrom, edgeIterator.Current.KeyTo));
+                    } while (edgeIterator.MoveNext());
+                }
             }
         }
 
@@ -132,7 +150,7 @@ namespace Voron.Graph.Tests
 
 
         [TestMethod]
-        public void Add_edge_between_nodes_in_different_session_should_work()
+        public void Put_edge_between_nodes_in_different_session_should_work()
         {
             var graph = new GraphEnvironment("TestGraph", Env);
             using (var session = graph.OpenSession())

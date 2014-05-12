@@ -84,33 +84,29 @@ namespace Voron.Graph
             }
         }
 
-        public IEnumerable<Edge> Edges
+        public Iterator<Node> IterateNodes()
         {
-            get
-            {
-                using(var iterator = _snapshot.Iterate(_edgeTreeName))
+            var iterator = _snapshot.Iterate(_nodeTreeName, _writeBatch);
+
+            return new Iterator<Node>(iterator,
+                (key, value) =>
                 {
-                    if (!iterator.Seek(Slice.BeforeAllKeys))
-                        yield break;
+                    value.Position = 0;
+                    return new Node(key.ToString(), value);
+                });
+        }
 
-                    do
-                    {
-                        var data = iterator.CreateReaderForCurrent().AsStream();
-                        data.Position = 0;
-                        var currentKeyAsString = iterator.CurrentKey.ToString();
-                        var key = Util.ParseEdgeTreeKey(currentKeyAsString);
-                        var edge = new Edge(key.NodeKeyFrom, key.NodeKeyTo, data);
-                        _objectsToDispose.AddOrUpdate(currentKeyAsString, edge, (disposableKey, existingDisposable) =>
-                        {
-                            if (existingDisposable != null)
-                                existingDisposable.Dispose();
-                            return edge;
-                        });
+        public Iterator<Edge> IterateEdges()
+        {
+            var iterator = _snapshot.Iterate(_edgeTreeName, _writeBatch);
 
-                        yield return edge;
-                    } while (iterator.MoveNext());
-                }
-            }
+            return new Iterator<Edge>(iterator,
+                (key, value) =>
+                {
+                    value.Position = 0;
+                    var currentKey = Util.ParseEdgeTreeKey(key.ToString());
+                    return new Edge(currentKey.NodeKeyFrom, currentKey.NodeKeyTo, value);
+                });
         }
 
         public void PutNode(string nodeKey, Stream value)
@@ -232,9 +228,7 @@ namespace Voron.Graph
         ~Session()
         {
             if(_snapshot != null || _objectsToDispose != null)
-            {
                 Trace.WriteLine("Disposal for Session object was not called, disposing from finalizer. Stack Trace: " + new StackTrace());
-            }
 
             Dispose(false);
         }
