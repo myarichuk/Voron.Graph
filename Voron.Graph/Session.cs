@@ -53,36 +53,7 @@ namespace Voron.Graph
         internal SnapshotReader Snapshot
         {
             get { return _snapshot; }
-        }
-
-        public IEnumerable<Node> Nodes
-        {
-            get
-            {
-                using(var iterator = _snapshot.Iterate(_nodeTreeName))
-                {
-                    if (!iterator.Seek(Slice.BeforeAllKeys))
-                        yield break;
-
-                    do
-                    {
-                        var data = iterator.CreateReaderForCurrent().AsStream();
-                        data.Position = 0;
-                        var currentKey = iterator.CurrentKey.ToString();
-                        var node = new Node(currentKey, data);
-
-                        _objectsToDispose.AddOrUpdate(currentKey, node, (key, existingDisposable) =>
-                            {
-                                if (existingDisposable != null)
-                                    existingDisposable.Dispose();
-                                return node;
-                            });
-
-                        yield return node;
-                    } while (iterator.MoveNext());
-                }
-            }
-        }
+        }      
 
         public Iterator<Node> IterateNodes()
         {
