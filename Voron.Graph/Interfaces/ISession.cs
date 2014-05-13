@@ -9,21 +9,20 @@ namespace Voron.Graph
 {
     public interface ISession : IDisposable
     {
-        void PutNode(string nodeKey, Stream value);
-        void PutEdge(string nodeKeyFrom, string nodeKeyTo, Stream value = null);
+        Node CreateNode(Stream value);
+        Edge CreateEdge(Node nodeFrom,Node nodeTo, Stream value = null);
 
-        void DeleteNode(string nodeKey);
+        void Delete(Node node);
+        void Delete(Edge edge);
 
-        void DeleteEdge(string nodeKeyFrom, string nodeKeyTo);
-
-        Stream GetNode(string nodeKey);
-        Stream GetEdge(string nodeKeyFrom, string nodeKeyTo);
+        Stream GetValueOf(Node node);
+        Stream GetValueOf(Edge edge);
 
         void SaveChanges();
 
-        IEnumerable<string> GetAdjacent(string nodeKey);
+        IEnumerable<Node> GetAdjacentOf(Node node);
 
-        bool IsIsolated(string nodeKey);
+        bool IsIsolated(Node node);
         
         Iterator<Edge> IterateEdges();
         Iterator<Node> IterateNodes();

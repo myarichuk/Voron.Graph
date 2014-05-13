@@ -6,6 +6,8 @@ using System.Linq;
 using System.Text;
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using Voron.Util.Conversion;
+using System.Runtime.InteropServices;
 
 namespace Voron.Graph
 {
@@ -17,9 +19,14 @@ namespace Voron.Graph
         private readonly string _edgeTreeName;
         private readonly Action<WriteBatch> _writerFunc;
         private readonly string _disconnectedNodesTreeName;
-        private ConcurrentDictionary<string,IDisposable> _objectsToDispose;
+        private ConcurrentDictionary<long, IDisposable> _objectsToDispose;
+        private readonly Func<Tuple<long, long>> _requestIdRangeFunc;
 
-        internal Session(SnapshotReader snapshot, string nodeTreeName, string edgeTreeName, string disconnectedNodesTreeName, Action<WriteBatch> writerFunc)
+        private long _currentId;
+        private long _maxId;
+        private readonly object _syncObject = new object();
+
+        internal Session(SnapshotReader snapshot, string nodeTreeName, string edgeTreeName, string disconnectedNodesTreeName, Action<WriteBatch> writerFunc, Func<Tuple<long, long>> requestIdRangeFunc)
         {
             _snapshot = snapshot;
             _nodeTreeName = nodeTreeName;
@@ -27,8 +34,28 @@ namespace Voron.Graph
             _disconnectedNodesTreeName = disconnectedNodesTreeName;
             _writerFunc = writerFunc;
             _writeBatch = new WriteBatch();
-            _objectsToDispose = new ConcurrentDictionary<string, IDisposable>();
+            _objectsToDispose = new ConcurrentDictionary<long, IDisposable>();
+            _requestIdRangeFunc = requestIdRangeFunc;
         }        
+
+        //TODO: refactor all GetNextId related stuff
+        //this is a hack and needs to be refactored
+        private void RequestIdRange()
+        {
+            var idRange = _requestIdRangeFunc();
+            _currentId = idRange.Item1;
+            _maxId = idRange.Item2;
+
+            Debug.Assert(_maxId > _currentId);
+        }
+
+        private long GetNextId()
+        {
+            if (_currentId + 1 >= _maxId)
+                RequestIdRange();
+
+            return ++_currentId;
+        }
 
         internal string NodeTreeName
         {
@@ -63,7 +90,7 @@ namespace Voron.Graph
                 (key, value) =>
                 {
                     value.Position = 0;
-                    return new Node(key.ToString(), value);
+                    return new Node(key.ToInt64(), value);
                 });
         }
 
@@ -75,94 +102,13 @@ namespace Voron.Graph
                 (key, value) =>
                 {
                     value.Position = 0;
-                    var currentKey = Util.ParseEdgeTreeKey(key.ToString());
+
+                    var currentKey = key.ToEdgeTreeKey();
                     return new Edge(currentKey.NodeKeyFrom, currentKey.NodeKeyTo, value);
                 });
         }
 
-        public void PutNode(string nodeKey, Stream value)
-        {
-            if (String.IsNullOrWhiteSpace(nodeKey)) throw new ArgumentNullException("nodeKey");
-
-            _writeBatch.Add(nodeKey, value, _nodeTreeName);
-            _writeBatch.Add(nodeKey, Stream.Null,_disconnectedNodesTreeName);
-        }
-
-        public void PutEdge(string nodeKeyFrom, string nodeKeyTo, Stream value = null)
-        {
-            if (String.IsNullOrWhiteSpace(nodeKeyFrom)) throw new ArgumentNullException("nodeKeyFrom");
-            if (String.IsNullOrWhiteSpace(nodeKeyTo)) throw new ArgumentNullException("nodeKeyTo");
-
-            _writeBatch.Add(Util.CreateEdgeTreeKey(nodeKeyFrom, nodeKeyTo), value ?? Stream.Null, _edgeTreeName);
-
-            _writeBatch.Delete(nodeKeyFrom, _disconnectedNodesTreeName);
-            _writeBatch.Delete(nodeKeyTo, _disconnectedNodesTreeName);
-        }
-
-        public void DeleteNode(string nodeKey)
-        {
-            if (String.IsNullOrWhiteSpace(nodeKey)) throw new ArgumentNullException("nodeKey");
-
-            _writeBatch.Delete(nodeKey, _nodeTreeName);
-
-            ushort? version;
-
-            if(_snapshot.Contains(_disconnectedNodesTreeName,nodeKey,out version,_writeBatch))
-                _writeBatch.Delete(nodeKey, _disconnectedNodesTreeName);
-        }
-
-        public void DeleteEdge(string nodeKeyFrom, string nodeKeyTo)
-        {
-            if (String.IsNullOrWhiteSpace(nodeKeyFrom)) throw new ArgumentNullException("nodeKeyFrom");
-            if (String.IsNullOrWhiteSpace(nodeKeyTo)) throw new ArgumentNullException("nodeKeyTo");
-
-            _writeBatch.Delete(Util.CreateEdgeTreeKey(nodeKeyFrom, nodeKeyTo), _edgeTreeName);
-            if (IsIsolated(nodeKeyFrom))
-                _writeBatch.Add(nodeKeyFrom,Stream.Null,_disconnectedNodesTreeName);
-        }
-
-        public bool IsIsolated(string nodeKey)
-        {
-            using(var iterator = _snapshot.Iterate(_edgeTreeName))
-            {
-                iterator.RequiredPrefix = nodeKey;
-                return iterator.Seek(Slice.BeforeAllKeys);
-            }
-        }
-
-        public Stream GetNode(string nodeKey)
-        {
-            if(String.IsNullOrWhiteSpace(nodeKey)) throw new ArgumentNullException("nodeKey");
-
-            var readResult = _snapshot.Read(_nodeTreeName, nodeKey, _writeBatch);
-            return readResult.Reader.AsStream();
-        }
-
-        public Stream GetEdge(string nodeKeyFrom, string nodeKeyTo)
-        {
-            if (String.IsNullOrWhiteSpace(nodeKeyFrom)) throw new ArgumentNullException("nodeKeyFrom");
-            if (String.IsNullOrWhiteSpace(nodeKeyTo)) throw new ArgumentNullException("nodeKeyTo");
-
-            var readResult = _snapshot.Read(_edgeTreeName, Util.CreateEdgeTreeKey(nodeKeyFrom, nodeKeyTo));
-
-            return readResult.Reader.AsStream();
-        }
-
-        public IEnumerable<string> GetAdjacent(string nodeKey)
-        {
-            using (var iterator = _snapshot.Iterate(_edgeTreeName))
-            {
-                iterator.RequiredPrefix = nodeKey;
-                if (!iterator.Seek(Slice.BeforeAllKeys))
-                    yield break;
-
-                do
-                {
-                    var key = Util.ParseEdgeTreeKey(iterator.CurrentKey.ToString());
-                    yield return key.NodeKeyTo;
-                } while (iterator.MoveNext());
-            }
-        }
+    
 
         public void SaveChanges()
         {
@@ -177,15 +123,7 @@ namespace Voron.Graph
         }
 
         private void Dispose(bool isDisposing)
-        {
-            if (_objectsToDispose != null)
-            {
-                foreach (var disposable in _objectsToDispose.Values)
-                    if (disposable != null)
-                        disposable.Dispose();
-                _objectsToDispose = null;
-            }
-
+        {           
             if (_snapshot != null)
             {
                 _snapshot.Dispose();
@@ -198,11 +136,60 @@ namespace Voron.Graph
 
         ~Session()
         {
-            if(_snapshot != null || _objectsToDispose != null)
+#if DEBUG
+            if(_snapshot != null)
                 Trace.WriteLine("Disposal for Session object was not called, disposing from finalizer. Stack Trace: " + new StackTrace());
-
+#endif
             Dispose(false);
         }
 
+
+        public Node CreateNode(Stream value)
+        {
+            if (value == null) throw new ArgumentNullException("value");
+
+            var key = GetNextId();
+            var nodeKey = key.ToSlice();
+
+            _writeBatch.Add(nodeKey, value, _nodeTreeName);
+            _writeBatch.Add(nodeKey, Stream.Null, _disconnectedNodesTreeName);
+
+            return new Node(key, value);
+        }
+
+        public Edge CreateEdge(Node nodeFrom, Node nodeTo, Stream value = null)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void Delete(Node node)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void Delete(Edge edge)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Stream GetValueOf(Node node)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Stream GetValueOf(Edge edge)
+        {
+            throw new NotImplementedException();
+        }
+
+        public IEnumerable<Node> GetAdjacentOf(Node node)
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool IsIsolated(Node node)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

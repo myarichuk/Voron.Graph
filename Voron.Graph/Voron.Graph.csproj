@@ -20,6 +20,7 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -44,10 +45,13 @@
   <ItemGroup>
     <Compile Include="Constants.cs" />
     <Compile Include="GraphEnvironment.cs" />
+    <Compile Include="Header.cs" />
+    <Compile Include="HeaderAccessor.cs" />
     <Compile Include="Interfaces\IUpdateVisitor.cs" />
     <Compile Include="Interfaces\ISession.cs" />
     <Compile Include="Interfaces\IVisitor.cs" />
     <Compile Include="Iterator.cs" />
+    <Compile Include="NativeMethods.cs" />
     <Compile Include="Primitives\Edge.cs" />
     <Compile Include="Primitives\Node.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

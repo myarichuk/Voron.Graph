@@ -9,11 +9,11 @@ namespace Voron.Graph
 {
     public class Node : IDisposable
     {
-        public string Key { get; set; }
+        public long Key { get; set; }
 
         public Stream Data { get; private set; }
 
-        public Node(string key, Stream data, bool makeDataCopy = true)
+        public Node(long key, Stream data, bool makeDataCopy = true)
         {
             Key = key;
             if(makeDataCopy == true)
@@ -26,7 +26,7 @@ namespace Voron.Graph
                 Data = data;
         }
 
-        public Node(string key, byte[] data)
+        public Node(long key, byte[] data)
         {
             Key = key;
             Data = (data != null) ? new MemoryStream(data) : Stream.Null;

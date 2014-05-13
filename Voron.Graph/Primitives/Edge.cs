@@ -9,16 +9,19 @@ namespace Voron.Graph
 {
     public class Edge : IDisposable
     {
-        public string KeyFrom { get; set; }
 
-        public string KeyTo { get; set; }
+        public EdgeTreeKey Key { get; private set; }
 
         public Stream Data { get; private set; }
 
-        public Edge(string keyFrom, string keyTo, Stream data = null, bool makeDataCopy = true)
+        public Edge(long nodeKeyFrom, long nodeKeyTo, Stream data = null, bool makeDataCopy = true)
         {
-            KeyFrom = keyFrom;
-            KeyTo = keyTo;
+            Key = new EdgeTreeKey
+            {
+                NodeKeyFrom = nodeKeyFrom,
+                NodeKeyTo = nodeKeyTo
+            };
+            
             if (data == null)
                 Data = Stream.Null;
             else if (makeDataCopy)
@@ -31,12 +34,9 @@ namespace Voron.Graph
                 Data = data;
         }
 
-        public Edge(string keyFrom, string keyTo, byte[] data)
+        public Edge(long keyFrom, long keyTo, byte[] data)
+            : this(keyFrom,keyTo,(data != null) ? new MemoryStream(data) : Stream.Null, false)
         {
-            KeyFrom = keyFrom;
-            KeyTo = keyTo;
-
-            Data = (data != null) ? new MemoryStream(data) : Stream.Null;
         }
 
         public void Dispose()
@@ -46,7 +46,11 @@ namespace Voron.Graph
                 Data.Dispose();
                 Data = null;
             }
-                
+        }
+
+        ~Edge()
+        {
+            Dispose();
         }
     }
 }
