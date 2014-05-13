@@ -21,6 +21,9 @@ namespace Voron.Graph
 
     internal unsafe static class Util
     {
+        private static ushort EdgeTreeKeySize = (ushort)Marshal.SizeOf(typeof(EdgeTreeKey));
+        private static int SizeOfLong = Marshal.SizeOf(typeof(long));
+
         internal static Slice ToSlice(this long key)
         {
             var buffer = new byte[Marshal.SizeOf(key)]; //TODO: refactor this with BufferPool implementation
@@ -35,17 +38,30 @@ namespace Voron.Graph
             return new Slice(buffer);
         }
 
-        internal static byte* ToPtr(this EdgeTreeKey edgeKey)
+        internal static Slice ToSlice(this EdgeTreeKey edgeKey)
         {
-            return (byte*)&edgeKey;
+            var keyData = new byte[EdgeTreeKeySize];
+
+            BigEndianBitConverter.Big.CopyBytes(edgeKey.NodeKeyFrom, keyData, 0);
+            BigEndianBitConverter.Big.CopyBytes(edgeKey.NodeKeyTo, keyData, SizeOfLong);
+            BigEndianBitConverter.Big.CopyBytes(edgeKey.EdgeWeight, keyData, SizeOfLong * 2);
+
+            return new Slice(keyData);
         }
+
 
         internal static EdgeTreeKey ToEdgeTreeKey(this Slice edgeKey)
         {
-            var keyData = new byte[Marshal.SizeOf(typeof(EdgeTreeKey))];
+            var keyData = new byte[EdgeTreeKeySize];
             edgeKey.CopyTo(keyData);
-            fixed (byte* keyDataPtr = keyData)
-                return *((EdgeTreeKey*)keyDataPtr);
+            var edgeTreeKey = new EdgeTreeKey
+            {
+                NodeKeyFrom = BigEndianBitConverter.Big.ToInt64(keyData, 0),
+                NodeKeyTo = BigEndianBitConverter.Big.ToInt64(keyData, SizeOfLong),
+                EdgeWeight = BigEndianBitConverter.Big.ToInt64(keyData, SizeOfLong * 2)
+            };
+            
+            return edgeTreeKey;
         }    
     }
 }

@@ -159,7 +159,18 @@ namespace Voron.Graph
 
         public Edge CreateEdge(Node nodeFrom, Node nodeTo, Stream value = null)
         {
-            throw new NotImplementedException();
+            if (nodeFrom == null) throw new ArgumentNullException("nodeFrom");
+            if (nodeTo == null) throw new ArgumentNullException("nodeTo");
+
+            var edge = new Edge(nodeFrom.Key, nodeTo.Key, value);
+            var test = edge.Key.ToSlice();
+            var rtest = test.ToEdgeTreeKey();
+            _writeBatch.Add(edge.Key.ToSlice(), value ?? Stream.Null, _edgeTreeName);
+
+            _writeBatch.Delete(nodeFrom.Key.ToSlice(), _disconnectedNodesTreeName);
+            _writeBatch.Delete(nodeTo.Key.ToSlice(), _disconnectedNodesTreeName);
+            
+            return edge;
         }
 
         public void Delete(Node node)
