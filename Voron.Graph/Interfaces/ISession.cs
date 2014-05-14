@@ -10,13 +10,13 @@ namespace Voron.Graph
     public interface ISession : IDisposable
     {
         Node CreateNode(Stream value);
-        Edge CreateEdge(Node nodeFrom,Node nodeTo, Stream value = null);
+        Edge CreateEdgeBetween(Node nodeFrom,Node nodeTo, Stream value = null);
 
         void Delete(Node node);
         void Delete(Edge edge);
 
-        Stream GetValueOf(Node node);
-        Stream GetValueOf(Edge edge);
+        Node NodeByKey(long nodeKey);
+        IEnumerable<Edge> GetEdgesBetween(Node nodeFrom, Node nodeTo);
 
         void SaveChanges();
 

@@ -143,12 +143,13 @@ namespace Voron.Graph
             Dispose(false);
         }
 
-
+        //in order to update, use existing key
         public Node CreateNode(Stream value)
         {
             if (value == null) throw new ArgumentNullException("value");
 
             var key = GetNextId();
+
             var nodeKey = key.ToSlice();
 
             _writeBatch.Add(nodeKey, value, _nodeTreeName);
@@ -157,14 +158,12 @@ namespace Voron.Graph
             return new Node(key, value);
         }
 
-        public Edge CreateEdge(Node nodeFrom, Node nodeTo, Stream value = null)
+        public Edge CreateEdgeBetween(Node nodeFrom, Node nodeTo, Stream value = null)
         {
             if (nodeFrom == null) throw new ArgumentNullException("nodeFrom");
             if (nodeTo == null) throw new ArgumentNullException("nodeTo");
 
             var edge = new Edge(nodeFrom.Key, nodeTo.Key, value);
-            var test = edge.Key.ToSlice();
-            var rtest = test.ToEdgeTreeKey();
             _writeBatch.Add(edge.Key.ToSlice(), value ?? Stream.Null, _edgeTreeName);
 
             _writeBatch.Delete(nodeFrom.Key.ToSlice(), _disconnectedNodesTreeName);
@@ -175,32 +174,78 @@ namespace Voron.Graph
 
         public void Delete(Node node)
         {
-            throw new NotImplementedException();
+            var nodeKey = node.Key.ToSlice();
+            _writeBatch.Delete(nodeKey, _nodeTreeName);
+            _writeBatch.Delete(nodeKey, _disconnectedNodesTreeName); //just in case, doesn't have to be here
         }
 
         public void Delete(Edge edge)
         {
-            throw new NotImplementedException();
-        }
-
-        public Stream GetValueOf(Node node)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Stream GetValueOf(Edge edge)
-        {
-            throw new NotImplementedException();
+            var edgeKey = edge.Key.ToSlice();
+            _writeBatch.Delete(edgeKey, _edgeTreeName);
         }
 
         public IEnumerable<Node> GetAdjacentOf(Node node)
         {
-            throw new NotImplementedException();
+            var alreadyRetrievedKeys = new HashSet<long>();
+            using (var edgeIterator = _snapshot.Iterate(_edgeTreeName, _writeBatch))
+            {
+                edgeIterator.RequiredPrefix = node.Key.ToSlice();
+                if (!edgeIterator.Seek(Slice.BeforeAllKeys))
+                    yield break;
+
+                do
+                {
+                    var edgeKey = edgeIterator.CurrentKey.ToEdgeTreeKey();
+                    if(!alreadyRetrievedKeys.Contains(edgeKey.NodeKeyTo))
+                    {
+                        alreadyRetrievedKeys.Add(edgeKey.NodeKeyTo);
+                        yield return NodeByKey(edgeKey.NodeKeyTo);
+                    }
+
+                } while (edgeIterator.MoveNext());
+            }
         }
 
         public bool IsIsolated(Node node)
         {
-            throw new NotImplementedException();
+            using (var edgeIterator = _snapshot.Iterate(_edgeTreeName, _writeBatch))
+            {
+                edgeIterator.RequiredPrefix = node.Key.ToSlice();
+                return edgeIterator.Seek(Slice.BeforeAllKeys);
+            }
         }
+
+
+        public Node NodeByKey(long nodeKey)
+        {
+            var readResult = _snapshot.Read(_nodeTreeName, nodeKey.ToSlice(),_writeBatch);
+            return new Node(nodeKey, readResult.Reader.AsStream());
+        }
+
+        
+        public IEnumerable<Edge> GetEdgesBetween(Node nodeFrom, Node nodeTo)
+        {                    
+            using(var edgeIterator = _snapshot.Iterate(_edgeTreeName,_writeBatch))
+            {
+                edgeIterator.RequiredPrefix = Util.EdgeKeyPrefix(nodeFrom, nodeTo);
+
+                if (!edgeIterator.Seek(Slice.BeforeAllKeys))
+                    yield break;
+
+                do
+                {
+                    var edgeTreeKey = edgeIterator.CurrentKey.ToEdgeTreeKey();
+                    var valueReader = edgeIterator.CreateReaderForCurrent();
+                    Stream value = Stream.Null;
+                    if(valueReader != null)
+                        value = valueReader.AsStream();
+
+                    yield return new Edge(edgeTreeKey, value);
+                }while(edgeIterator.MoveNext());
+            }
+        }
+
+       
     }
 }

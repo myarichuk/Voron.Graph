@@ -14,12 +14,18 @@ namespace Voron.Graph
 
         public Stream Data { get; private set; }
 
-        public Edge(long nodeKeyFrom, long nodeKeyTo, Stream data = null, bool makeDataCopy = true)
+        public Edge(EdgeTreeKey key, Stream data = null, bool makeDataCopy = true)
+            : this(key.NodeKeyFrom,key.NodeKeyTo,data,key.Type,makeDataCopy)
+        {
+        }
+
+        public Edge(long nodeKeyFrom, long nodeKeyTo, Stream data = null, ushort type = 0, bool makeDataCopy = true)
         {
             Key = new EdgeTreeKey
             {
                 NodeKeyFrom = nodeKeyFrom,
-                NodeKeyTo = nodeKeyTo
+                NodeKeyTo = nodeKeyTo,
+                Type = type
             };
             
             if (data == null)
@@ -34,8 +40,8 @@ namespace Voron.Graph
                 Data = data;
         }
 
-        public Edge(long keyFrom, long keyTo, byte[] data)
-            : this(keyFrom,keyTo,(data != null) ? new MemoryStream(data) : Stream.Null, false)
+        public Edge(long keyFrom, long keyTo, byte[] data, ushort type = 0)
+            : this(keyFrom,keyTo,(data != null) ? new MemoryStream(data) : Stream.Null, type, false)
         {
         }
 

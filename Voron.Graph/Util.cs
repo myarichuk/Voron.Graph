@@ -9,20 +9,22 @@ using Voron.Util.Conversion;
 
 namespace Voron.Graph
 {
-    [StructLayout(LayoutKind.Sequential)]
-    public struct EdgeTreeKey
-    {
-        public long NodeKeyFrom { get; set; }
 
-        public long NodeKeyTo { get; set; }
-
-        public long EdgeWeight { get; set; }
-    }
 
     internal unsafe static class Util
     {
         private static ushort EdgeTreeKeySize = (ushort)Marshal.SizeOf(typeof(EdgeTreeKey));
+        private static int SizeOfUShort = Marshal.SizeOf(typeof(ushort));
         private static int SizeOfLong = Marshal.SizeOf(typeof(long));
+
+        internal static Slice EdgeKeyPrefix(Node nodeFrom, Node nodeTo)
+        {
+            var sizeofLong = sizeof(long);
+            var prefixBytes = new byte[sizeofLong * 2]; //TODO : this should be taken from Buffer Pool
+            BigEndianBitConverter.Big.CopyBytes(nodeFrom.Key, prefixBytes, 0);
+            BigEndianBitConverter.Big.CopyBytes(nodeTo.Key, prefixBytes, sizeofLong);
+            return new Slice(prefixBytes);
+        }
 
         internal static Slice ToSlice(this long key)
         {
@@ -44,7 +46,7 @@ namespace Voron.Graph
 
             BigEndianBitConverter.Big.CopyBytes(edgeKey.NodeKeyFrom, keyData, 0);
             BigEndianBitConverter.Big.CopyBytes(edgeKey.NodeKeyTo, keyData, SizeOfLong);
-            BigEndianBitConverter.Big.CopyBytes(edgeKey.EdgeWeight, keyData, SizeOfLong * 2);
+            BigEndianBitConverter.Big.CopyBytes(edgeKey.Type, keyData, SizeOfLong + SizeOfUShort);
 
             return new Slice(keyData);
         }
@@ -58,7 +60,7 @@ namespace Voron.Graph
             {
                 NodeKeyFrom = BigEndianBitConverter.Big.ToInt64(keyData, 0),
                 NodeKeyTo = BigEndianBitConverter.Big.ToInt64(keyData, SizeOfLong),
-                EdgeWeight = BigEndianBitConverter.Big.ToInt64(keyData, SizeOfLong * 2)
+                Type = BigEndianBitConverter.Big.ToUInt16(keyData, SizeOfLong + SizeOfUShort)
             };
             
             return edgeTreeKey;
