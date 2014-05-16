@@ -2,7 +2,9 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace Voron.Graph.Tests
 {
@@ -140,6 +142,107 @@ namespace Voron.Graph.Tests
                         Assert.IsTrue(edges.Any(x => x.Item1.Key == edgeKey.NodeKeyFrom && x.Item2.Key == edgeKey.NodeKeyTo));
                     } while (edgeIterator.MoveNext());
                 }
+            }
+        }
+
+        [TestMethod]
+        public void Can_Avoid_Duplicate_Nodes_InParallel_Adds()
+        {
+            var graph = new GraphEnvironment("TestGraph",Env);
+            List<Task> allTasks = new List<Task>();
+            
+            for(var i=0; i<100; ++i){
+                Task addTask = new Task(() =>
+                {
+                    using (var session = graph.OpenSession())
+                    {
+                        var newNode = session.CreateNode(StreamFrom("newNode" + i.ToString()));
+                        session.SaveChanges();
+                    }
+                });
+
+                allTasks.Add(addTask);
+                addTask.Start();
+            }
+
+            
+            Task.WhenAll(allTasks).ContinueWith (_ =>{
+                var dic = new Dictionary<long, string>();
+
+                using (var session = graph.OpenSession()) 
+                using (var nodeIterator = session.IterateNodes())
+                {
+                    Assert.IsTrue(nodeIterator.TrySeekToBegin());
+
+                    do
+                    {                        
+                        dic.Add(nodeIterator.Current.Key, new StreamReader(nodeIterator.Current.Data).ReadToEnd());
+                        
+                    } while (nodeIterator.MoveNext());
+                }
+                
+
+                
+            });
+
+            
+        }
+              
+        [TestMethod]
+        public void Can_Iterate_On_Nearest_Nodes()
+        {
+            var graph = new GraphEnvironment("TestGraph",Env);
+            long centerNodeKey = 0;
+
+            using (var session = graph.OpenSession())
+            {
+                var centerNode = session.CreateNode(StreamFrom("centerNode"));
+                centerNodeKey = centerNode.Key;
+
+
+                for (var i = 0; i < 5; i++)
+                {                    
+                    var curChild = session.CreateNode(StreamFrom("childNode" + i.ToString()));
+                    session.CreateEdgeBetween(centerNode, curChild, StreamFrom(i.ToString()));
+
+                    for (var j=0; j<5; j++)
+                    {
+                        var curGrandChild = session.CreateNode(StreamFrom( string.Concat("childNode" , i.ToString() , "child" , i.ToString())));
+                        session.CreateEdgeBetween(curChild, curGrandChild, StreamFrom((i*10 + j).ToString()));
+                    }
+                }
+                session.SaveChanges();
+            }
+
+            using (var session = graph.OpenSession())
+            {
+                var centerNode = session.NodeByKey(centerNodeKey);
+                Dictionary<string, string> nodeValues = new Dictionary<string, string>();
+                var buffer = new byte[100];
+                string curEdgeVal;
+                string curNodeVal;
+
+                foreach (Node curNode in session.GetAdjacentOf(centerNode))
+                {
+                    var curEdge = session.GetEdgesBetween(centerNode, curNode).FirstOrDefault();
+                    if (curNode == null)
+                    {
+                        curEdge = session.GetEdgesBetween(curNode, centerNode).FirstOrDefault();
+                    }
+                    Assert.IsNotNull(curEdge);
+
+                    Assert.AreNotEqual(0, curEdge.Data.Read(buffer,0,100));
+                    curEdgeVal = System.Text.Encoding.UTF8.GetString(buffer);
+
+                    Assert.AreNotEqual(0, curNode.Data.Read(buffer,0,100));
+                    curNodeVal = System.Text.Encoding.UTF8.GetString(buffer,0,100);
+
+                    nodeValues.Add(curNodeVal, curEdgeVal);                                                
+                    
+                }
+
+                Assert.Equals(nodeValues.Count, 5);
+
             }
         }
 
