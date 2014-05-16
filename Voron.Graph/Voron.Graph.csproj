@@ -54,7 +54,6 @@
     <Compile Include="Impl\Header.cs" />
     <Compile Include="Impl\FileHeaderAccessor.cs" />
     <Compile Include="Util\HiLoIdGenerator.cs" />
-    <Compile Include="Util\HiLoRange.cs" />
     <Compile Include="Interfaces\IIdGenerator.cs" />
     <Compile Include="Interfaces\IUpdateVisitor.cs" />
     <Compile Include="Interfaces\ISession.cs" />

@@ -41,7 +41,7 @@ namespace Voron.Graph
                 return header;
             });
 
-            return nextHi++;
+            return nextHi;
         }
     }
 }

@@ -14,10 +14,14 @@ namespace Voron.Graph.Tests
         protected StorageEnvironment Env;
         protected ConcurrentQueue<IDisposable> DisposalQueue;
 
+        protected StorageEnvironmentOptions StorageOptions;
+
+        protected virtual void BeforeTestInitialize() { }
+
         [TestInitialize]
         public void BeforeTest()
         {
-            Env = new StorageEnvironment(StorageEnvironmentOptions.CreateMemoryOnly());
+            Env = new StorageEnvironment(StorageOptions ?? StorageEnvironmentOptions.CreateMemoryOnly());
             DisposalQueue = new ConcurrentQueue<IDisposable>();
         }
 
