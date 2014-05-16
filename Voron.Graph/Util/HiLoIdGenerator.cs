@@ -3,17 +3,18 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Voron.Graph.Impl;
 using Voron.Graph.Interfaces;
 
 namespace Voron.Graph
 {
     public class HiLoIdGenerator : IIdGenerator
     {
-        private readonly HeaderAccessor _headerAccessor;
+        private readonly IHeaderAccessor _headerAccessor;
         private long loValue;
         private long hiValue;
 
-        public HiLoIdGenerator(HeaderAccessor headerAccessor)
+        public HiLoIdGenerator(IHeaderAccessor headerAccessor)
         {
             _headerAccessor = headerAccessor;
             hiValue = GetNextHiAndIncrement();

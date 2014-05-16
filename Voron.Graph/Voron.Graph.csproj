@@ -46,11 +46,13 @@
   <ItemGroup>
     <Compile Include="Constants.cs" />
     <Compile Include="Conventions.cs" />
+    <Compile Include="Impl\IHeaderAccessor.cs" />
+    <Compile Include="Impl\InMemoryHeaderAccessor.cs" />
     <Compile Include="Iterator.cs" />
     <Compile Include="Primitives\EdgeTreeKey.cs" />
     <Compile Include="GraphEnvironment.cs" />
     <Compile Include="Impl\Header.cs" />
-    <Compile Include="Impl\HeaderAccessor.cs" />
+    <Compile Include="Impl\FileHeaderAccessor.cs" />
     <Compile Include="Util\HiLoIdGenerator.cs" />
     <Compile Include="Util\HiLoRange.cs" />
     <Compile Include="Interfaces\IIdGenerator.cs" />

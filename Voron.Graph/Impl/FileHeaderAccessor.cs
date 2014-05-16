@@ -6,10 +6,11 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
+using Voron.Graph.Impl;
 
 namespace Voron.Graph
 {
-    public unsafe class HeaderAccessor : IDisposable
+    public unsafe class FileHeaderAccessor : IHeaderAccessor
     {
         private readonly FileStream _headerFileStream;
         private const string HeaderFilename = "voron.graph.header";
@@ -19,7 +20,7 @@ namespace Voron.Graph
 
         private readonly object _syncObject = new object();
 
-        public HeaderAccessor()
+        public FileHeaderAccessor()
         {
             _headerSize = Marshal.SizeOf(typeof(Header));
             _tempBuffer = new byte[_headerSize];
@@ -81,7 +82,7 @@ namespace Voron.Graph
             }
         }
 
-        ~HeaderAccessor()
+        ~FileHeaderAccessor()
         {
             if(!isDisposed)
                 Dispose();

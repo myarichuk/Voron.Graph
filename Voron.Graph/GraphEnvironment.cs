@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Voron.Graph.Impl;
 using Voron.Impl;
 
 namespace Voron.Graph
@@ -14,7 +15,7 @@ namespace Voron.Graph
         private readonly string _nodeTreeName;
         private readonly string _edgeTreeName;
         private readonly string _disconnectedNodesTreeName;
-        private readonly HeaderAccessor _headerAccessor;
+        private readonly IHeaderAccessor _headerAccessor;
 
 
         public GraphEnvironment(string graphName, StorageEnvironment storageEnvironment)
@@ -25,7 +26,13 @@ namespace Voron.Graph
             _edgeTreeName = graphName + Constants.EdgeTreeNameSuffix;
             _disconnectedNodesTreeName = graphName + Constants.DisconnectedNodesTreeName;
             _storageEnvironment = storageEnvironment;
-            _headerAccessor = new HeaderAccessor();
+            _headerAccessor = (storageEnvironment.Options is StorageEnvironmentOptions.DirectoryStorageEnvironmentOptions) ?
+                (IHeaderAccessor) new FileHeaderAccessor() : 
+                (IHeaderAccessor) new InMemoryHeaderAccessor(() => new Header
+                {
+                    Version = Constants.Version,
+                    NextHi = 0
+                });
 
             CreateConventions();
             CreateSchema();
