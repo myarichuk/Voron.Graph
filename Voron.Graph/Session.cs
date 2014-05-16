@@ -21,9 +21,8 @@ namespace Voron.Graph
         private readonly string _disconnectedNodesTreeName;
         private ConcurrentDictionary<long, IDisposable> _objectsToDispose;
         private readonly Conventions _conventions;
-        private long _currentId;
-        private long _maxId;
         private readonly object _syncObject = new object();
+        private readonly ConcurrentBag<IDisposable> _disposalList;
 
         internal Session(SnapshotReader snapshot, string nodeTreeName, string edgeTreeName, string disconnectedNodesTreeName, Action<WriteBatch> writerFunc,Conventions conventions)
         {
@@ -35,6 +34,7 @@ namespace Voron.Graph
             _writerFunc = writerFunc;
             _writeBatch = new WriteBatch();
             _objectsToDispose = new ConcurrentDictionary<long, IDisposable>();
+            _disposalList = new ConcurrentBag<IDisposable>();
         }              
 
         public Iterator<Node> IterateNodes()
@@ -44,8 +44,14 @@ namespace Voron.Graph
             return new Iterator<Node>(iterator,
                 (key, value) =>
                 {
-                    value.Position = 0;
-                    return new Node(key.ToInt64(), value);
+                    using (value)
+                    {
+                        value.Position = 0;
+                        var node = new Node(key.ToInt64(), value, makeValueCopy: true);
+
+                        _disposalList.Add(node);
+                        return node;
+                    }
                 });
         }
 
@@ -56,10 +62,16 @@ namespace Voron.Graph
             return new Iterator<Edge>(iterator,
                 (key, value) =>
                 {
-                    value.Position = 0;
+                    using (value)
+                    {
+                        value.Position = 0;
 
-                    var currentKey = key.ToEdgeTreeKey();
-                    return new Edge(currentKey.NodeKeyFrom, currentKey.NodeKeyTo, value);
+                        var currentKey = key.ToEdgeTreeKey();
+                        var edge = new Edge(currentKey.NodeKeyFrom, currentKey.NodeKeyTo, value, makeValueCopy: true);
+                        
+                        _disposalList.Add(edge);
+                        return edge;
+                    }
                 });
         }
 
@@ -84,6 +96,9 @@ namespace Voron.Graph
                 _snapshot.Dispose();
                 _snapshot = null;
             }
+
+            foreach (var disposable in _disposalList)
+                disposable.Dispose();
 
             if(isDisposing)
                 GC.SuppressFinalize(this);

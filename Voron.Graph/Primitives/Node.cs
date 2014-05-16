@@ -13,10 +13,10 @@ namespace Voron.Graph
 
         public Stream Data { get; private set; }
 
-        public Node(long key, Stream data, bool makeDataCopy = true)
+        public Node(long key, Stream data, bool makeValueCopy = true)
         {
             Key = key;
-            if(makeDataCopy == true)
+            if(makeValueCopy == true)
             {
                 Data = new MemoryStream();
                 data.CopyTo(Data);

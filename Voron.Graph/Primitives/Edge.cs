@@ -19,7 +19,7 @@ namespace Voron.Graph
         {
         }
 
-        public Edge(long nodeKeyFrom, long nodeKeyTo, Stream data = null, ushort type = 0, bool makeDataCopy = true)
+        public Edge(long nodeKeyFrom, long nodeKeyTo, Stream data = null, ushort type = 0, bool makeValueCopy = true)
         {
             Key = new EdgeTreeKey
             {
@@ -30,7 +30,7 @@ namespace Voron.Graph
             
             if (data == null)
                 Data = Stream.Null;
-            else if (makeDataCopy)
+            else if (makeValueCopy)
             {
                 Data = new BufferedStream(new MemoryStream());
                 data.CopyTo(Data);
