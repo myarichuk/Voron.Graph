@@ -12,5 +12,7 @@ namespace Voron.Graph
         public const string NodesWithEdgesTreeNameSuffix = "_NodeWithEdgesTree";
         public const string NodeTreeNameSuffix = "_NodeTree";
         public const string DisconnectedNodesTreeName = "_DisconnectedNodes";
+
+        public const int HiLoRangeCapacity = 100;
     }
 }

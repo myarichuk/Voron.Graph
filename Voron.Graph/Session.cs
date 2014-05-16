@@ -20,42 +20,22 @@ namespace Voron.Graph
         private readonly Action<WriteBatch> _writerFunc;
         private readonly string _disconnectedNodesTreeName;
         private ConcurrentDictionary<long, IDisposable> _objectsToDispose;
-        private readonly Func<Tuple<long, long>> _requestIdRangeFunc;
-
+        private readonly Conventions _conventions;
         private long _currentId;
         private long _maxId;
         private readonly object _syncObject = new object();
 
-        internal Session(SnapshotReader snapshot, string nodeTreeName, string edgeTreeName, string disconnectedNodesTreeName, Action<WriteBatch> writerFunc, Func<Tuple<long, long>> requestIdRangeFunc)
+        internal Session(SnapshotReader snapshot, string nodeTreeName, string edgeTreeName, string disconnectedNodesTreeName, Action<WriteBatch> writerFunc,Conventions conventions)
         {
             _snapshot = snapshot;
+            _conventions = conventions;
             _nodeTreeName = nodeTreeName;
             _edgeTreeName = edgeTreeName;
             _disconnectedNodesTreeName = disconnectedNodesTreeName;
             _writerFunc = writerFunc;
             _writeBatch = new WriteBatch();
             _objectsToDispose = new ConcurrentDictionary<long, IDisposable>();
-            _requestIdRangeFunc = requestIdRangeFunc;
-        }        
-
-        //TODO: refactor all GetNextId related stuff
-        //this is a hack and needs to be refactored
-        private void RequestIdRange()
-        {
-            var idRange = _requestIdRangeFunc();
-            _currentId = idRange.Item1;
-            _maxId = idRange.Item2;
-
-            Debug.Assert(_maxId > _currentId);
-        }
-
-        private long GetNextId()
-        {
-            if (_currentId + 1 >= _maxId)
-                RequestIdRange();
-
-            return ++_currentId;
-        }       
+        }              
 
         public Iterator<Node> IterateNodes()
         {
@@ -123,7 +103,7 @@ namespace Voron.Graph
         {
             if (value == null) throw new ArgumentNullException("value");
 
-            var key = GetNextId();
+            var key = _conventions.IdGenerator.NextId();
 
             var nodeKey = key.ToSlice();
 

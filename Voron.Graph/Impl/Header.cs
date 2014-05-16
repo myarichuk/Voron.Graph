@@ -9,9 +9,9 @@ namespace Voron.Graph
 {
     [StructLayout(LayoutKind.Sequential)]
     public struct Header
-    {
+    {        
         public ushort Version;
 
-        public long NextGeneratedKey;
+        public long NextHi;
     }
 }

@@ -16,7 +16,6 @@ namespace Voron.Graph
         private readonly string _disconnectedNodesTreeName;
         private readonly HeaderAccessor _headerAccessor;
 
-        private const int HiloBatchSize = 100;
 
         public GraphEnvironment(string graphName, StorageEnvironment storageEnvironment)
         {
@@ -27,8 +26,20 @@ namespace Voron.Graph
             _disconnectedNodesTreeName = graphName + Constants.DisconnectedNodesTreeName;
             _storageEnvironment = storageEnvironment;
             _headerAccessor = new HeaderAccessor();
+
+            CreateConventions();
             CreateSchema();
         }
+
+        private void CreateConventions()
+        {
+            Conventions = new Conventions
+            {
+                IdGenerator = new HiLoIdGenerator(_headerAccessor)
+            };
+        }
+
+        public Conventions Conventions { get; private set; }
 
         public ISession OpenSession()
         {
@@ -37,17 +48,7 @@ namespace Voron.Graph
                 _edgeTreeName,
                 _disconnectedNodesTreeName,
                 wb => _storageEnvironment.Writer.Write(wb),
-                () =>
-                {
-                    var header = _headerAccessor.Get();
-                    header.NextGeneratedKey += HiloBatchSize;
-
-                    var range = Tuple.Create(header.NextGeneratedKey, header.NextGeneratedKey + HiloBatchSize);
-
-                    header.NextGeneratedKey += HiloBatchSize;
-
-                    return range;
-                });
+                Conventions);
         }
 
         private void CreateSchema()

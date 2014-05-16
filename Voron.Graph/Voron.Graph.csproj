@@ -45,14 +45,18 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Constants.cs" />
-    <Compile Include="EdgeTreeKey.cs" />
+    <Compile Include="Conventions.cs" />
+    <Compile Include="Iterator.cs" />
+    <Compile Include="Primitives\EdgeTreeKey.cs" />
     <Compile Include="GraphEnvironment.cs" />
-    <Compile Include="Header.cs" />
-    <Compile Include="HeaderAccessor.cs" />
+    <Compile Include="Impl\Header.cs" />
+    <Compile Include="Impl\HeaderAccessor.cs" />
+    <Compile Include="Util\HiLoIdGenerator.cs" />
+    <Compile Include="Util\HiLoRange.cs" />
+    <Compile Include="Interfaces\IIdGenerator.cs" />
     <Compile Include="Interfaces\IUpdateVisitor.cs" />
     <Compile Include="Interfaces\ISession.cs" />
     <Compile Include="Interfaces\IVisitor.cs" />
-    <Compile Include="Iterator.cs" />
     <Compile Include="NativeMethods.cs" />
     <Compile Include="Primitives\Edge.cs" />
     <Compile Include="Primitives\Node.cs" />
