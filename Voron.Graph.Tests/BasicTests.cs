@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Voron.Graph;
 
 namespace Voron.Graph.Tests
 {
@@ -37,7 +38,7 @@ namespace Voron.Graph.Tests
 
             using (var session = graph.OpenSession())
             {
-                var adjacentNodes = session.GetAdjacentOf(node3);
+                var adjacentNodes = session.GetAdjacentOf(node3).ToList();
                 adjacentNodes.Select(x => x.Key).Should().Contain(new[] { node1.Key, node2.Key });
             }
         }

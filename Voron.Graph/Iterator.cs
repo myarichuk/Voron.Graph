@@ -38,6 +38,11 @@ namespace Voron.Graph
             return _iterator.Seek(Slice.BeforeAllKeys);
         }
 
+        public bool TrySeekTo(Slice key)
+        {
+            return _iterator.Seek(key);
+        }
+
         public bool MoveNext()
         {
             return _iterator.MoveNext();

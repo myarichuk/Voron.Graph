@@ -13,7 +13,7 @@ namespace Voron.Graph
 
     internal unsafe static class Util
     {
-        private static ushort EdgeTreeKeySize = (ushort)Marshal.SizeOf(typeof(EdgeTreeKey));
+        private static int EdgeTreeKeySize = Marshal.SizeOf(typeof(EdgeTreeKey));
         private static int SizeOfUShort = Marshal.SizeOf(typeof(ushort));
         private static int SizeOfLong = Marshal.SizeOf(typeof(long));
 
@@ -28,7 +28,7 @@ namespace Voron.Graph
 
         internal static Slice ToSlice(this long key)
         {
-            var buffer = new byte[Marshal.SizeOf(key)]; //TODO: refactor this with BufferPool implementation
+            var buffer = new byte[Marshal.SizeOf(typeof(long))]; //TODO: refactor this with BufferPool implementation
             BigEndianBitConverter.Big.CopyBytes(key, buffer, 0);
             return new Slice(buffer);
         }
