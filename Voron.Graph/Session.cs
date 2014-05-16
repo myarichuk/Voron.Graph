@@ -55,32 +55,7 @@ namespace Voron.Graph
                 RequestIdRange();
 
             return ++_currentId;
-        }
-
-        internal string NodeTreeName
-        {
-            get { return _nodeTreeName; }
-        }
-
-        internal string EdgeTreeName
-        {
-            get { return _edgeTreeName; }
-        }
-
-        internal string DisconnectedNodesTreeName
-        {
-            get { return _disconnectedNodesTreeName; }
-        }
-
-        internal WriteBatch WriteBatch
-        {
-            get { return _writeBatch; }
-        }
-
-        internal SnapshotReader Snapshot
-        {
-            get { return _snapshot; }
-        }      
+        }       
 
         public Iterator<Node> IterateNodes()
         {
