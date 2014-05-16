@@ -38,8 +38,9 @@
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Data" />
     <Reference Include="System.Xml" />
-    <Reference Include="Voron">
-      <HintPath>..\..\Raven.Voron\Voron\bin\Release\Voron.dll</HintPath>
+    <Reference Include="Voron, Version=1.0.0.0, Culture=neutral, PublicKeyToken=37f41c7f99471593, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\Raven.Voron\Voron\bin\Debug\Voron.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>

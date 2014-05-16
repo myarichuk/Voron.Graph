@@ -185,11 +185,11 @@ namespace Voron.Graph
             _writeBatch.Delete(edgeKey, _edgeTreeName);
         }
 
-        public IEnumerable<Node> GetAdjacentOf(Node node)
+        public IEnumerable<Node> GetAdjacentOf(Node node, Func<ushort,bool> edgeTypePredicate = null)
         {
             var alreadyRetrievedKeys = new HashSet<long>();
             using (var edgeIterator = _snapshot.Iterate(_edgeTreeName, _writeBatch))
-            {
+            {                
                 edgeIterator.RequiredPrefix = node.Key.ToSlice();
                 if (!edgeIterator.Seek(Slice.BeforeAllKeys))
                     yield break;
@@ -197,8 +197,11 @@ namespace Voron.Graph
                 do
                 {
                     var edgeKey = edgeIterator.CurrentKey.ToEdgeTreeKey();
+                    if (edgeTypePredicate != null && edgeTypePredicate(edgeKey.Type) == false)
+                        continue;
+
                     if(!alreadyRetrievedKeys.Contains(edgeKey.NodeKeyTo))
-                    {
+                    {                        
                         alreadyRetrievedKeys.Add(edgeKey.NodeKeyTo);
                         yield return NodeByKey(edgeKey.NodeKeyTo);
                     }
@@ -224,9 +227,9 @@ namespace Voron.Graph
         }
 
         
-        public IEnumerable<Edge> GetEdgesBetween(Node nodeFrom, Node nodeTo)
-        {                    
-            using(var edgeIterator = _snapshot.Iterate(_edgeTreeName,_writeBatch))
+        public IEnumerable<Edge> GetEdgesBetween(Node nodeFrom, Node nodeTo,Func<ushort,bool> typePredicate = null)
+        {
+            using (var edgeIterator = _snapshot.Iterate(_edgeTreeName, _writeBatch))
             {
                 edgeIterator.RequiredPrefix = Util.EdgeKeyPrefix(nodeFrom, nodeTo);
 
@@ -236,13 +239,15 @@ namespace Voron.Graph
                 do
                 {
                     var edgeTreeKey = edgeIterator.CurrentKey.ToEdgeTreeKey();
+                    if (typePredicate != null && !typePredicate(edgeTreeKey.Type))
+                        continue;
                     var valueReader = edgeIterator.CreateReaderForCurrent();
                     Stream value = Stream.Null;
-                    if(valueReader != null)
+                    if (valueReader != null)
                         value = valueReader.AsStream();
 
                     yield return new Edge(edgeTreeKey, value);
-                }while(edgeIterator.MoveNext());
+                } while (edgeIterator.MoveNext());
             }
         }
 
