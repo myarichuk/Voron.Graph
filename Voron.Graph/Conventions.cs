@@ -10,6 +10,6 @@ namespace Voron.Graph
     //this would probably have much more in it than IIdGenerator by the end of the day :)
     public class Conventions
     {
-        public Func<IIdGenerator> IdGeneratorFactory;
+        public IIdGenerator IdGenerator { get; set; }
     }
 }

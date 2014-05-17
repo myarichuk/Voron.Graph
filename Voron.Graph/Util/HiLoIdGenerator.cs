@@ -13,7 +13,6 @@ namespace Voron.Graph
         private readonly IHeaderAccessor _headerAccessor;
         private long loValue;
         private long hiValue;
-        private readonly object _syncObject = new object();
 
         public HiLoIdGenerator(IHeaderAccessor headerAccessor)
         {

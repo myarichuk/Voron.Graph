@@ -26,44 +26,44 @@ namespace Voron.Graph
             _tempBuffer = new byte[_headerSize];
             isDisposed = false;
             var fileExistedBefore = File.Exists(HeaderFilename);
-            _headerFileStream = new FileStream(HeaderFilename, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
+            _headerFileStream = new FileStream(HeaderFilename, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.ReadWrite);
             if (!fileExistedBefore)
                 _headerFileStream.SetLength(_headerSize);
         }
 
         public void Modify(Func<Header,Header> modifyFunc)
         {
-            lock (_syncObject)
-            {
-                var modifiedHeader = modifyFunc(GetHeader());
-                Save(modifiedHeader);
-            }
+            var modifiedHeader = modifyFunc(GetHeader());
+            Save(modifiedHeader);
         }
 
         public T Get<T>(Func<Header,T> fetchFunc)
         {
-            lock (_syncObject)
-            {
-                var header = GetHeader();
-                return fetchFunc(header);
-            }
+            var header = GetHeader();
+            return fetchFunc(header);
         }
 
         private Header GetHeader()
         {
             _headerFileStream.Position = 0;
-            _headerFileStream.Read(_tempBuffer, 0, _headerSize);
-            fixed (byte* ptr = _tempBuffer)
-                return *((Header*)ptr);
+            lock (_syncObject)
+            {
+                _headerFileStream.Read(_tempBuffer, 0, _headerSize);
+                fixed (byte* ptr = _tempBuffer)
+                    return *((Header*)ptr);
+            }
         }
 
         private void Save(Header header)
         {
             _headerFileStream.Position = 0;
             byte* headerPtr = (byte*)&header;
-            fixed (byte* ptr = _tempBuffer)
-                NativeMethods.memcpy(ptr, headerPtr, _headerSize);
-            _headerFileStream.Write(_tempBuffer, 0, _headerSize);
+            lock (_syncObject)
+            {
+                fixed (byte* ptr = _tempBuffer)
+                    NativeMethods.memcpy(ptr, headerPtr, _headerSize);
+                _headerFileStream.Write(_tempBuffer, 0, _headerSize);
+            }
         }
 
         public void Flush()

@@ -20,9 +20,7 @@ namespace Voron.Graph.Impl
         public void Modify(Func<Header, Header> modifyFunc)
         {
             lock (_syncObject)
-            {
                 _header = modifyFunc(_header);
-            }
         }
 
         public T Get<T>(Func<Header, T> fetchFunc)
