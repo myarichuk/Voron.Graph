@@ -64,7 +64,7 @@
   <ItemGroup>
     <Compile Include="BaseGraphTest.cs" />
     <Compile Include="BasicTests.cs" />
-    <Compile Include="IdGenerator.cs" />
+    <Compile Include="IdGeneratorTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

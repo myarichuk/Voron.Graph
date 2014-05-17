@@ -8,6 +8,7 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using Voron.Util.Conversion;
 using System.Runtime.InteropServices;
+using Voron.Graph.Interfaces;
 
 namespace Voron.Graph
 {
@@ -23,6 +24,7 @@ namespace Voron.Graph
         private readonly Conventions _conventions;
         private readonly object _syncObject = new object();
         private readonly ConcurrentBag<IDisposable> _disposalList;
+        private readonly IIdGenerator _idGenerator;
 
         internal Session(SnapshotReader snapshot, string nodeTreeName, string edgeTreeName, string disconnectedNodesTreeName, Action<WriteBatch> writerFunc,Conventions conventions)
         {
@@ -35,6 +37,7 @@ namespace Voron.Graph
             _writeBatch = new WriteBatch();
             _objectsToDispose = new ConcurrentDictionary<long, IDisposable>();
             _disposalList = new ConcurrentBag<IDisposable>();
+            _idGenerator = _conventions.IdGeneratorFactory();
         }              
 
         public Iterator<Node> IterateNodes()
@@ -118,7 +121,7 @@ namespace Voron.Graph
         {
             if (value == null) throw new ArgumentNullException("value");
 
-            var key = _conventions.IdGenerator.NextId();
+            var key = _idGenerator.NextId();
 
             var nodeKey = key.ToSlice();
 

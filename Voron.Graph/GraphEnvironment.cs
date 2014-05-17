@@ -42,7 +42,7 @@ namespace Voron.Graph
         {
             Conventions = new Conventions
             {
-                IdGenerator = new HiLoIdGenerator(_headerAccessor)
+                IdGeneratorFactory = () => new HiLoIdGenerator(_headerAccessor)
             };
         }
 
