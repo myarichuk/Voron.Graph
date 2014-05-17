@@ -193,7 +193,9 @@ namespace Voron.Graph
         public Node NodeByKey(long nodeKey)
         {
             var readResult = _snapshot.Read(_nodeTreeName, nodeKey.ToSlice(),_writeBatch);
-            return new Node(nodeKey, readResult.Reader.AsStream());
+
+            return readResult != null ? new Node(nodeKey, readResult.Reader.AsStream()):null;
+            
         }
 
         
