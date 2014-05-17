@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Voron.Graph.Impl;
 using Voron.Graph.Interfaces;
@@ -11,30 +12,35 @@ namespace Voron.Graph
     public class HiLoIdGenerator : IIdGenerator
     {
         private readonly IHeaderAccessor _headerAccessor;
-        private long loValue;
-        private long hiValue;
+        private long _loValue;
+        private long _hiValue;
+        private readonly object _syncObject = new object();
 
         public HiLoIdGenerator(IHeaderAccessor headerAccessor)
         {
             _headerAccessor = headerAccessor;
-            hiValue = GetNextHiAndIncrement();
-            loValue = 0;
+            _hiValue = GetNextHiAndIncrement();
+            _loValue = 0;
         }
 
         public long NextId()
         {
-            if((loValue + 1) >= Constants.HiLoRangeCapacity)
+            lock (_syncObject)
             {
-                hiValue = GetNextHiAndIncrement();
-                loValue = 0;
-            }
+                if ((_loValue + 1) >= Constants.HiLoRangeCapacity)
+                {
+                    _hiValue = GetNextHiAndIncrement();
+                    _loValue = 0;
+                }
 
-            return ((hiValue - 1) * Constants.HiLoRangeCapacity) + (++loValue);
+                return ((_hiValue - 1) * Constants.HiLoRangeCapacity) + (++_loValue);
+            }
         }
 
         private long GetNextHiAndIncrement()
         {           
-            var nextHi = _headerAccessor.Get(header => header.NextHi) + 1;
+            var nextHi = _headerAccessor.Get(header => header.NextHi);
+            Interlocked.Increment(ref nextHi);
             _headerAccessor.Modify(header =>
             {
                 header.NextHi = nextHi;

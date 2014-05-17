@@ -33,14 +33,20 @@ namespace Voron.Graph
 
         public void Modify(Func<Header,Header> modifyFunc)
         {
-            var modifiedHeader = modifyFunc(GetHeader());
-            Save(modifiedHeader);
+            lock (_syncObject)
+            {
+                var modifiedHeader = modifyFunc(GetHeader());
+                Save(modifiedHeader);
+            }
         }
 
         public T Get<T>(Func<Header,T> fetchFunc)
         {
-            var header = GetHeader();
-            return fetchFunc(header);
+            lock (_syncObject)
+            {
+                var header = GetHeader();
+                return fetchFunc(header);
+            }
         }
 
         private Header GetHeader()

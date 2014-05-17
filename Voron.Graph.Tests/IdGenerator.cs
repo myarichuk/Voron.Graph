@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using FluentAssertions;
 using System.IO;
+using System.Collections.Concurrent;
 
 namespace Voron.Graph.Tests
 {
@@ -41,7 +42,7 @@ namespace Voron.Graph.Tests
         public void Multiple_Hi_value_increases_in_parallel_should_not_break_Id_generation()
         {
             var graph = new GraphEnvironment("TestGraph", Env);
-            var nodes = new List<Node>();
+            var nodes = new ConcurrentBag<Node>();
 
             Parallel.For(0, Constants.HiLoRangeCapacity * 75, i =>
             {
