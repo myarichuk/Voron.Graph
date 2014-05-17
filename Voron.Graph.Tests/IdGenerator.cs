@@ -25,7 +25,7 @@ namespace Voron.Graph.Tests
 
             var nodes = new List<Node>();
 
-            for(int i = 0; i < Constants.HiLoRangeCapacity * 15; i++)
+            for(int i = 0; i < Constants.HiLoRangeCapacity * 5; i++)
             {
                 using(var session = graph.OpenSession())
                 {
@@ -44,7 +44,7 @@ namespace Voron.Graph.Tests
             var graph = new GraphEnvironment("TestGraph", Env);
             var nodes = new ConcurrentBag<Node>();
 
-            Parallel.For(0, Constants.HiLoRangeCapacity * 75, i =>
+            Parallel.For(0, Constants.HiLoRangeCapacity * 5, i =>
             {
                 using (var session = graph.OpenSession())
                 {
