@@ -1,4 +1,6 @@
-﻿using System;
+﻿using Newtonsoft.Json.Bson;
+using Newtonsoft.Json.Linq;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -16,6 +18,33 @@ namespace Voron.Graph
         private static int EdgeTreeKeySize = Marshal.SizeOf(typeof(EdgeTreeKey));
         private static int SizeOfUShort = Marshal.SizeOf(typeof(ushort));
         private static int SizeOfLong = Marshal.SizeOf(typeof(long));
+
+        internal static Stream ToStream(this JObject jsonObject)
+        {
+            if (jsonObject == null)
+                return Stream.Null;
+
+            var stream = new MemoryStream();
+            var writer = new BsonWriter(stream);
+            jsonObject.WriteTo(writer);
+
+            stream.Position = 0;
+            return stream;
+        }
+
+        internal static JObject ToJObject(this Stream stream)
+        {
+            if (stream == null)
+                throw new ArgumentNullException("stream");
+
+            if (!stream.CanRead || !stream.CanSeek)
+                throw new ArgumentException("cannot deserialize unreadable stream"); 
+
+            stream.Seek(0, SeekOrigin.Begin);            
+            
+            var reader = new BsonReader(stream);
+            return JObject.Load(reader);
+        }
 
         internal static Slice EdgeKeyPrefix(Node nodeFrom, Node nodeTo)
         {

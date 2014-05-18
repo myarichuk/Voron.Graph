@@ -8,6 +8,7 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using Voron.Util.Conversion;
 using System.Runtime.InteropServices;
+using Newtonsoft.Json.Linq;
 
 namespace Voron.Graph
 {
@@ -19,10 +20,8 @@ namespace Voron.Graph
         private readonly string _edgeTreeName;
         private readonly Action<WriteBatch> _writerFunc;
         private readonly string _disconnectedNodesTreeName;
-        private ConcurrentDictionary<long, IDisposable> _objectsToDispose;
         private readonly Conventions _conventions;
         private readonly object _syncObject = new object();
-        private readonly ConcurrentBag<IDisposable> _disposalList;
 
         internal Session(SnapshotReader snapshot, string nodeTreeName, string edgeTreeName, string disconnectedNodesTreeName, Action<WriteBatch> writerFunc,Conventions conventions)
         {
@@ -33,8 +32,6 @@ namespace Voron.Graph
             _disconnectedNodesTreeName = disconnectedNodesTreeName;
             _writerFunc = writerFunc;
             _writeBatch = new WriteBatch();
-            _objectsToDispose = new ConcurrentDictionary<long, IDisposable>();
-            _disposalList = new ConcurrentBag<IDisposable>();
         }              
 
         public Iterator<Node> IterateNodes()
@@ -47,9 +44,8 @@ namespace Voron.Graph
                     using (value)
                     {
                         value.Position = 0;
-                        var node = new Node(key.ToInt64(), value, makeValueCopy: true);
+                        var node = new Node(key.ToInt64(), value.ToJObject());
 
-                        _disposalList.Add(node);
                         return node;
                     }
                 });
@@ -64,18 +60,15 @@ namespace Voron.Graph
                 {
                     using (value)
                     {
-                        value.Position = 0;
-
                         var currentKey = key.ToEdgeTreeKey();
-                        var edge = new Edge(currentKey.NodeKeyFrom, currentKey.NodeKeyTo, value, makeValueCopy: true);
+                        var jsonValue = value.Length > 0 ? value.ToJObject() : new JObject();
+
+                        var edge = new Edge(currentKey.NodeKeyFrom, currentKey.NodeKeyTo, jsonValue, currentKey.Type);
                         
-                        _disposalList.Add(edge);
                         return edge;
                     }
                 });
         }
-
-    
 
         public void SaveChanges()
         {
@@ -84,37 +77,17 @@ namespace Voron.Graph
             _writeBatch = new WriteBatch();
         }
 
-        public void Dispose()
+        public Node CreateNode(dynamic value)
         {
-            Dispose(true);
+            var type = value.GetType();
+            if (type.IsPrimitive || type.Name.Contains("String"))
+                return CreateNode(JObject.FromObject(new { Value = value }));
+
+            return CreateNode(JObject.FromObject(value));
         }
+        
 
-        private void Dispose(bool isDisposing)
-        {           
-            if (_snapshot != null)
-            {
-                _snapshot.Dispose();
-                _snapshot = null;
-            }
-
-            foreach (var disposable in _disposalList)
-                disposable.Dispose();
-
-            if(isDisposing)
-                GC.SuppressFinalize(this);
-        }     
-
-        ~Session()
-        {
-#if DEBUG
-            if(_snapshot != null)
-                Trace.WriteLine("Disposal for Session object was not called, disposing from finalizer. Stack Trace: " + new StackTrace());
-#endif
-            Dispose(false);
-        }
-
-        //in order to update, use existing key
-        public Node CreateNode(Stream value)
+        public Node CreateNode(JObject value)
         {
             if (value == null) throw new ArgumentNullException("value");
 
@@ -122,19 +95,28 @@ namespace Voron.Graph
 
             var nodeKey = key.ToSlice();
 
-            _writeBatch.Add(nodeKey, value, _nodeTreeName);
+            _writeBatch.Add(nodeKey, value.ToStream(), _nodeTreeName);
             _writeBatch.Add(nodeKey, Stream.Null, _disconnectedNodesTreeName);
 
             return new Node(key, value);
         }
 
-        public Edge CreateEdgeBetween(Node nodeFrom, Node nodeTo, Stream value = null)
+        public Edge CreateEdgeBetween(Node nodeFrom, Node nodeTo, dynamic value, ushort type = 0)
+        {
+            var valueType = value.GetType();
+            if (valueType.IsPrimitive || valueType.Name.Contains("String"))
+                return CreateEdgeBetween(nodeFrom, nodeTo,JObject.FromObject(new { Value = value }),type);
+
+            return CreateEdgeBetween(nodeFrom, nodeTo, JObject.FromObject(value), type);
+        }
+
+        public Edge CreateEdgeBetween(Node nodeFrom, Node nodeTo, JObject value = null, ushort type = 0)
         {
             if (nodeFrom == null) throw new ArgumentNullException("nodeFrom");
             if (nodeTo == null) throw new ArgumentNullException("nodeTo");
 
             var edge = new Edge(nodeFrom.Key, nodeTo.Key, value);
-            _writeBatch.Add(edge.Key.ToSlice(), value ?? Stream.Null, _edgeTreeName);
+            _writeBatch.Add(edge.Key.ToSlice(), value.ToStream() ?? Stream.Null, _edgeTreeName);
 
             _writeBatch.Delete(nodeFrom.Key.ToSlice(), _disconnectedNodesTreeName);
             _writeBatch.Delete(nodeTo.Key.ToSlice(), _disconnectedNodesTreeName);
@@ -173,7 +155,8 @@ namespace Voron.Graph
                     if(!alreadyRetrievedKeys.Contains(edgeKey.NodeKeyTo))
                     {                        
                         alreadyRetrievedKeys.Add(edgeKey.NodeKeyTo);
-                        yield return NodeByKey(edgeKey.NodeKeyTo);
+                        var adjacentNode = LoadNode(edgeKey.NodeKeyTo);
+                        yield return adjacentNode;
                     }
 
                 } while (edgeIterator.MoveNext());
@@ -190,10 +173,11 @@ namespace Voron.Graph
         }
 
 
-        public Node NodeByKey(long nodeKey)
+        public Node LoadNode(long nodeKey)
         {
             var readResult = _snapshot.Read(_nodeTreeName, nodeKey.ToSlice(),_writeBatch);
-            return new Node(nodeKey, readResult.Reader.AsStream());
+            using (var valueStream = readResult.Reader.AsStream())
+                return new Node(nodeKey, valueStream.ToJObject());
         }
 
         
@@ -202,8 +186,7 @@ namespace Voron.Graph
             using (var edgeIterator = _snapshot.Iterate(_edgeTreeName, _writeBatch))
             {
                 edgeIterator.RequiredPrefix = Util.EdgeKeyPrefix(nodeFrom, nodeTo);
-
-                if (!edgeIterator.Seek(Slice.BeforeAllKeys))
+                if (!edgeIterator.Seek(edgeIterator.RequiredPrefix))
                     yield break;
 
                 do
@@ -211,16 +194,42 @@ namespace Voron.Graph
                     var edgeTreeKey = edgeIterator.CurrentKey.ToEdgeTreeKey();
                     if (typePredicate != null && !typePredicate(edgeTreeKey.Type))
                         continue;
-                    var valueReader = edgeIterator.CreateReaderForCurrent();
-                    Stream value = Stream.Null;
-                    if (valueReader != null)
-                        value = valueReader.AsStream();
 
-                    yield return new Edge(edgeTreeKey, value);
+                    var valueReader = edgeIterator.CreateReaderForCurrent();
+                    using (var valueStream = valueReader.AsStream() ?? Stream.Null)
+                    {
+                        var jsonValue = valueStream.Length > 0 ? valueStream.ToJObject() : new JObject();
+                        yield return new Edge(edgeTreeKey, valueStream.ToJObject());
+                    }
+
                 } while (edgeIterator.MoveNext());
             }
         }
 
-       
+        public void Dispose()
+        {
+            Dispose(true);
+        }
+
+        private void Dispose(bool isDisposing)
+        {
+            if (_snapshot != null)
+            {
+                _snapshot.Dispose();
+                _snapshot = null;
+            }
+
+            if (isDisposing)
+                GC.SuppressFinalize(this);
+        }
+
+        ~Session()
+        {
+#if DEBUG
+            if (_snapshot != null)
+                Trace.WriteLine("Disposal for Session object was not called, disposing from finalizer. Stack Trace: " + new StackTrace());
+#endif
+            Dispose(false);
+        }       
     }
 }

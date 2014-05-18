@@ -29,7 +29,7 @@ namespace Voron.Graph.Tests
             {
                 using(var session = graph.OpenSession())
                 {
-                    nodes.Add(session.CreateNode(Stream.Null));
+                    nodes.Add(session.CreateNode(String.Empty));
                     session.SaveChanges();
                 }
             }
@@ -48,7 +48,7 @@ namespace Voron.Graph.Tests
             {
                 using (var session = graph.OpenSession())
                 {
-                    nodes.Add(session.CreateNode(Stream.Null));
+                    nodes.Add(session.CreateNode(String.Empty));
                     session.SaveChanges();
                 }
             });

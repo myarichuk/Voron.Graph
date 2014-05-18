@@ -31,6 +31,9 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Newtonsoft.Json">
+      <HintPath>..\packages\Newtonsoft.Json.6.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
@@ -53,7 +56,7 @@
     <Compile Include="GraphEnvironment.cs" />
     <Compile Include="Impl\Header.cs" />
     <Compile Include="Impl\FileHeaderAccessor.cs" />
-    <Compile Include="Util\HiLoIdGenerator.cs" />
+    <Compile Include="Misc\HiLoIdGenerator.cs" />
     <Compile Include="Interfaces\IIdGenerator.cs" />
     <Compile Include="Interfaces\IUpdateVisitor.cs" />
     <Compile Include="Interfaces\ISession.cs" />
@@ -65,7 +68,9 @@
     <Compile Include="Session.cs" />
     <Compile Include="Util.cs" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

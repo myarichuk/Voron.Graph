@@ -1,5 +1,6 @@
 ﻿using FluentAssertions;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -22,9 +23,9 @@ namespace Voron.Graph.Tests
 
             using (var session = graph.OpenSession())
             {
-                node1 = session.CreateNode(StreamFrom("test1"));
-                node2 = session.CreateNode(StreamFrom("test2"));
-                node3 = session.CreateNode(StreamFrom("test3"));
+                node1 = session.CreateNode("test1");
+                node2 = session.CreateNode("test2");
+                node3 = session.CreateNode("test3");
 
                 session.CreateEdgeBetween(node3, node1);
                 session.CreateEdgeBetween(node3, node2);
@@ -54,9 +55,9 @@ namespace Voron.Graph.Tests
             Node node1, node2, node3;
             using (var session = graph.OpenSession())
             {
-                node1 = session.CreateNode(StreamFrom("test1"));
-                node2 = session.CreateNode(StreamFrom("test2"));
-                node3 = session.CreateNode(StreamFrom("test3"));
+                node1 = session.CreateNode("test1");
+                node2 = session.CreateNode("test2");
+                node3 = session.CreateNode("test3");
                 session.SaveChanges();
             }
 
@@ -90,7 +91,7 @@ namespace Voron.Graph.Tests
             using (var session = graph.OpenSession())
             {
                 foreach (var value in nodeValues)
-                    session.CreateNode(StreamFrom(value));
+                    session.CreateNode(value);
 
                 session.SaveChanges();
             }
@@ -103,7 +104,7 @@ namespace Voron.Graph.Tests
 
                    do
                    {                       
-                       nodeValues.Should().Contain(StringFrom(iterator.Current.Data));
+                       nodeValues.Should().Contain(iterator.Current.Data.Value<string>("Value"));
                    } while (iterator.MoveNext());
                }
             }
@@ -116,9 +117,9 @@ namespace Voron.Graph.Tests
             Tuple<Node,Node>[] edges;
             using (var session = graph.OpenSession())
             {
-                var node1 = session.CreateNode(StreamFrom("test1"));
-                var node2 = session.CreateNode(StreamFrom("test2"));
-                var node3 = session.CreateNode(StreamFrom("test3"));
+                var node1 = session.CreateNode("test1");
+                var node2 = session.CreateNode("test2");
+                var node3 = session.CreateNode("test3");
 
                 edges = new[]{
                     Tuple.Create(node1,node3),
@@ -156,7 +157,7 @@ namespace Voron.Graph.Tests
             {
                 using (var session = graph.OpenSession())
                 {
-                    var newNode = session.CreateNode(StreamFrom("newNode" + i));
+                    var newNode = session.CreateNode("newNode" + i);
                     session.SaveChanges();
                 }
 
@@ -178,6 +179,7 @@ namespace Voron.Graph.Tests
             
         }
 
+        //TODO: investigate why this test throws Voron's debug assertion
         [TestMethod]
         public void Can_Iterate_On_Nearest_Nodes()
         {
@@ -188,13 +190,13 @@ namespace Voron.Graph.Tests
 
             using (var session = graph.OpenSession())
             {
-                var centerNode = session.NodeByKey(centerNodeKey);
+                var centerNode = session.LoadNode(centerNodeKey);
                 Dictionary<string, string> nodeValues = new Dictionary<string, string>();
                 var buffer = new byte[100];
                 string curEdgeVal;
                 string curNodeVal;
 
-                foreach (Node curNode in session.GetAdjacentOf(centerNode))
+                foreach (var curNode in session.GetAdjacentOf(centerNode))
                 {
                     var curEdge = session.GetEdgesBetween(centerNode, curNode).FirstOrDefault();
                     if (curNode == null)
@@ -203,11 +205,11 @@ namespace Voron.Graph.Tests
                     }
                     Assert.IsNotNull(curEdge);
 
-                    Assert.AreNotEqual(0, curEdge.Data.Read(buffer, 0, 100));
-                    curEdgeVal = System.Text.Encoding.UTF8.GetString(buffer);
+                    Assert.AreNotEqual(0, curEdge.Data.Value<int>("Value"));
+                    curEdgeVal = curEdge.Data.Value<string>("Value");
 
-                    Assert.AreNotEqual(0, curNode.Data.Read(buffer, 0, 100));
-                    curNodeVal = System.Text.Encoding.UTF8.GetString(buffer, 0, 100);
+                    Assert.AreNotEqual(0, curNode.Data.Value<int>("Value"));
+                    curNodeVal = curNode.Data.Value<string>("Value");
 
                     nodeValues.Add(curNodeVal, curEdgeVal);
 
@@ -221,19 +223,19 @@ namespace Voron.Graph.Tests
         {
             using (var session = graph.OpenSession())
             {
-                var centerNode = session.CreateNode(StreamFrom("centerNode"));
+                var centerNode = session.CreateNode("centerNode");
                 centerNodeKey = centerNode.Key;
 
 
                 for (var i = 0; i < 5; i++)
                 {
-                    var curChild = session.CreateNode(StreamFrom("childNode" + i.ToString()));
-                    session.CreateEdgeBetween(centerNode, curChild, StreamFrom(i.ToString()));
+                    var curChild = session.CreateNode("childNode" + i.ToString());
+                    session.CreateEdgeBetween(centerNode, curChild, i.ToString());
 
                     for (var j = 0; j < 5; j++)
                     {
-                        var curGrandChild = session.CreateNode(StreamFrom(string.Concat("childNode", i.ToString(), "child", i.ToString())));
-                        session.CreateEdgeBetween(curChild, curGrandChild, StreamFrom((i * 10 + j).ToString()));
+                        var curGrandChild = session.CreateNode(string.Concat("childNode", i.ToString(), "child", i.ToString()));
+                        session.CreateEdgeBetween(curChild, curGrandChild, (i * 10 + j).ToString());
                     }
                 }
                 session.SaveChanges();

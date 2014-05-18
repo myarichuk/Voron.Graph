@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Newtonsoft.Json.Linq;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -9,13 +10,17 @@ namespace Voron.Graph
 {
     public interface ISession : IDisposable
     {
-        Node CreateNode(Stream value);
-        Edge CreateEdgeBetween(Node nodeFrom,Node nodeTo, Stream value = null);
+        Node CreateNode(JObject value);
+        Node CreateNode(dynamic value);
+
+        Edge CreateEdgeBetween(Node nodeFrom, Node nodeTo, dynamic value, ushort type = 0);
+        Edge CreateEdgeBetween(Node nodeFrom, Node nodeTo, JObject value = null, ushort type = 0);
 
         void Delete(Node node);
         void Delete(Edge edge);
 
-        Node NodeByKey(long nodeKey);
+        Node LoadNode(long nodeKey);
+
         IEnumerable<Edge> GetEdgesBetween(Node nodeFrom, Node nodeTo, Func<ushort, bool> edgeTypePredicate = null);
 
         void SaveChanges();
