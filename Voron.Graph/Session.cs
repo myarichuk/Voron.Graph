@@ -78,12 +78,8 @@ namespace Voron.Graph
         }
 
         public Node CreateNode(dynamic value)
-        {
-            var type = value.GetType();
-            if (type.IsPrimitive || type.Name.Contains("String"))
-                return CreateNode(JObject.FromObject(new { Value = value }));
-
-            return CreateNode(JObject.FromObject(value));
+        {          
+            return CreateNode(Util.ConvertToJObject(value));
         }
         
 
@@ -102,12 +98,8 @@ namespace Voron.Graph
         }
 
         public Edge CreateEdgeBetween(Node nodeFrom, Node nodeTo, dynamic value, ushort type = 0)
-        {
-            var valueType = value.GetType();
-            if (valueType.IsPrimitive || valueType.Name.Contains("String"))
-                return CreateEdgeBetween(nodeFrom, nodeTo,JObject.FromObject(new { Value = value }),type);
-
-            return CreateEdgeBetween(nodeFrom, nodeTo, JObject.FromObject(value), type);
+        {          
+            return CreateEdgeBetween(nodeFrom, nodeTo, Util.ConvertToJObject(value), type);
         }
 
         public Edge CreateEdgeBetween(Node nodeFrom, Node nodeTo, JObject value = null, ushort type = 0)
@@ -176,6 +168,9 @@ namespace Voron.Graph
         public Node LoadNode(long nodeKey)
         {
             var readResult = _snapshot.Read(_nodeTreeName, nodeKey.ToSlice(),_writeBatch);
+            if (readResult == null)
+                return null;
+
             using (var valueStream = readResult.Reader.AsStream())
                 return new Node(nodeKey, valueStream.ToJObject());
         }
@@ -183,10 +178,15 @@ namespace Voron.Graph
         
         public IEnumerable<Edge> GetEdgesBetween(Node nodeFrom, Node nodeTo,Func<ushort,bool> typePredicate = null)
         {
+            if (nodeFrom == null)
+                throw new ArgumentNullException("nodeFrom");
+            if (nodeTo == null)
+                throw new ArgumentNullException("nodeTo");
+
             using (var edgeIterator = _snapshot.Iterate(_edgeTreeName, _writeBatch))
             {
                 edgeIterator.RequiredPrefix = Util.EdgeKeyPrefix(nodeFrom, nodeTo);
-                if (!edgeIterator.Seek(edgeIterator.RequiredPrefix))
+                if (!edgeIterator.Seek(edgeIterator.RequiredPrefix)) 
                     yield break;
 
                 do

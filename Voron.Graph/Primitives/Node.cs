@@ -15,7 +15,7 @@ namespace Voron.Graph
         public JObject Data { get; private set; }
 
         public Node(long key, object data)
-            :this(key, JObject.FromObject(data))
+            :this(key, Util.ConvertToJObject(data))
         {       
         }
 

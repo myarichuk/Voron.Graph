@@ -246,65 +246,64 @@ namespace Voron.Graph.Tests
         }
 
         [TestMethod]
-        public void Get_Node_With_None_Existing_ID() {
+        public void Load_nonexisting_node_should_return_null() {
             var graph = new GraphEnvironment("TestGraph", Env);
 
 
             using (var session = graph.OpenSession())
             {
-                Node illegalNode = session.CreateNode(StreamFrom("onlyNode"));
-                Assert.IsNotNull(illegalNode);
+                var illegalNode = session.CreateNode("onlyNode");
+                illegalNode.Should().NotBeNull();
             }
 
             using (var session = graph.OpenSession()) {
-                Node noneExistingNode = session.NodeByKey(1);
-
-                Assert.IsNull(noneExistingNode);
+                var noneExistingNode = session.LoadNode(1);
+                noneExistingNode.Should().BeNull();
             }
 
         }
 
-
+        //TODO : investigate why this test causes debug assertion
         [TestMethod]
-        public void Get_Edge_Between_None_Existing_Nodes()
+        public void Get_edges_between_two_nonexisting_nodes_should_return_empty_collection()
         {
             var graph = new GraphEnvironment("TestGraph", Env);
 
-
             using (var session = graph.OpenSession())
             {
-                Node node1 = new Node(-1, Encoding.UTF8.GetBytes("node1"));
-                Node node2 = new Node(-2, Encoding.UTF8.GetBytes("node2"));
+                var node1 = new Node(-1,"node1");
+                var node2 = new Node(-2,"node2");
 
-                var noneExistingEdge = session.GetEdgesBetween(node1, node2);
-
-                Assert.IsNull(noneExistingEdge);
+                var edgesList = session.GetEdgesBetween(node1, node2);
+                edgesList.Should().BeEmpty();
             }                        
         }
 
 
+        //TODO : investigate why this test causes debug assertion
         [TestMethod]
-        public void Get_Edge_Between_Existing_And_None_Existing_Nodes()
+        public void Get_edges_between_existing_and_nonexisting_node_should_return_empty_collection()
         {
             var graph = new GraphEnvironment("TestGraph", Env);
             long node1Id = 0;
 
             using (var session = graph.OpenSession())
             {
-                var node1 = session.CreateNode(StreamFrom("node1"));
+                var node1 = session.CreateNode("node1");
 
                 Assert.IsNotNull(node1);
                 node1Id = node1.Key;
+                
+                session.SaveChanges();
             }
 
             using (var session = graph.OpenSession())
             {
-                Node node1 = session.NodeByKey(node1Id);
-                Node node2 = new Node(-2, Encoding.UTF8.GetBytes("node2"));
+                Node node1 = session.LoadNode(node1Id);
+                Node node2 = new Node(-2, "node2");
 
-                var noneExistingEdge = session.GetEdgesBetween(node1, node2);
-
-                Assert.IsNull(noneExistingEdge);
+                var edgesList = session.GetEdgesBetween(node1, node2);
+                edgesList.Should().BeEmpty();
             }
         }
       

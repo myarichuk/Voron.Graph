@@ -32,6 +32,16 @@ namespace Voron.Graph
             return stream;
         }
 
+        internal static JObject ConvertToJObject<T>(T value)
+        {
+            var type = value.GetType();
+            if(type.IsPrimitive || type.Name.Contains("String"))
+                return JObject.FromObject(new { Value = value });
+
+            return JObject.FromObject(value);
+
+        }
+
         internal static JObject ToJObject(this Stream stream)
         {
             if (stream == null)

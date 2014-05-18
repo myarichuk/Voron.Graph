@@ -16,7 +16,7 @@ namespace Voron.Graph
         public JObject Data { get; private set; }
 
         public Edge(EdgeTreeKey key, object data, ushort type = 0)
-            : this(key.NodeKeyFrom, key.NodeKeyTo, JObject.FromObject(data), type)
+            : this(key.NodeKeyFrom, key.NodeKeyTo, Util.ConvertToJObject(data), type)
         {
         }
 
