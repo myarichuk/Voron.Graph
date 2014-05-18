@@ -6,6 +6,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using Voron.Graph;
 
@@ -186,7 +187,7 @@ namespace Voron.Graph.Tests
             var graph = new GraphEnvironment("TestGraph", Env);
             long centerNodeKey = 0;
 
-            centerNodeKey = StoreTestData(graph, centerNodeKey);
+            centerNodeKey = Create2DepthHierarchy(graph);
 
             using (var session = graph.OpenSession())
             {
@@ -219,8 +220,9 @@ namespace Voron.Graph.Tests
             }
         }
 
-        private long StoreTestData(GraphEnvironment graph, long centerNodeKey)
+        private long Create2DepthHierarchy(GraphEnvironment graph)
         {
+            long centerNodeKey = 0;
             using (var session = graph.OpenSession())
             {
                 var centerNode = session.CreateNode("centerNode");
@@ -243,6 +245,68 @@ namespace Voron.Graph.Tests
             return centerNodeKey;
         }
 
+        [TestMethod]
+        public void Get_Node_With_None_Existing_ID() {
+            var graph = new GraphEnvironment("TestGraph", Env);
+
+
+            using (var session = graph.OpenSession())
+            {
+                Node illegalNode = session.CreateNode(StreamFrom("onlyNode"));
+                Assert.IsNotNull(illegalNode);
+            }
+
+            using (var session = graph.OpenSession()) {
+                Node noneExistingNode = session.NodeByKey(1);
+
+                Assert.IsNull(noneExistingNode);
+            }
+
+        }
+
+
+        [TestMethod]
+        public void Get_Edge_Between_None_Existing_Nodes()
+        {
+            var graph = new GraphEnvironment("TestGraph", Env);
+
+
+            using (var session = graph.OpenSession())
+            {
+                Node node1 = new Node(-1, Encoding.UTF8.GetBytes("node1"));
+                Node node2 = new Node(-2, Encoding.UTF8.GetBytes("node2"));
+
+                var noneExistingEdge = session.GetEdgesBetween(node1, node2);
+
+                Assert.IsNull(noneExistingEdge);
+            }                        
+        }
+
+
+        [TestMethod]
+        public void Get_Edge_Between_Existing_And_None_Existing_Nodes()
+        {
+            var graph = new GraphEnvironment("TestGraph", Env);
+            long node1Id = 0;
+
+            using (var session = graph.OpenSession())
+            {
+                var node1 = session.CreateNode(StreamFrom("node1"));
+
+                Assert.IsNotNull(node1);
+                node1Id = node1.Key;
+            }
+
+            using (var session = graph.OpenSession())
+            {
+                Node node1 = session.NodeByKey(node1Id);
+                Node node2 = new Node(-2, Encoding.UTF8.GetBytes("node2"));
+
+                var noneExistingEdge = session.GetEdgesBetween(node1, node2);
+
+                Assert.IsNull(noneExistingEdge);
+            }
+        }
       
     }
 }
