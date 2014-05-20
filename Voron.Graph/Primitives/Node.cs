@@ -14,11 +14,6 @@ namespace Voron.Graph
 
         public JObject Data { get; private set; }
 
-        public Node(long key, object data)
-            :this(key, Util.ConvertToJObject(data))
-        {       
-        }
-
         public Node(long key, JObject data)
         {
             Key = key;
