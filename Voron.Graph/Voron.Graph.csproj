@@ -49,8 +49,8 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="GraphAdminQueries.cs" />
-    <Compile Include="GraphCommands.cs" />
+    <Compile Include="Impl\GraphAdminQueries.cs" />
+    <Compile Include="Impl\GraphCommands.cs" />
     <Compile Include="Constants.cs" />
     <Compile Include="Conventions.cs" />
     <Compile Include="Primitives\EdgeTreeKey.cs" />
@@ -59,7 +59,7 @@
     <Compile Include="Primitives\Edge.cs" />
     <Compile Include="Primitives\Node.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="GraphQueries.cs" />
+    <Compile Include="Impl\GraphQueries.cs" />
     <Compile Include="Transaction.cs" />
     <Compile Include="Util.cs" />
   </ItemGroup>
