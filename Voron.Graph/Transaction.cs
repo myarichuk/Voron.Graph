@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Voron.Trees;
 
 namespace Voron.Graph
 {
@@ -18,12 +19,22 @@ namespace Voron.Graph
 
         internal Voron.Impl.Transaction VoronTransaction { get; private set; }
 
-        internal Transaction(Voron.Impl.Transaction voronTransaction)
+        public Transaction(Voron.Impl.Transaction voronTransaction, string nodeTreeName, string edgesTreeName, string disconnectedNodesTreeName)
         {
             if (voronTransaction == null)
                 throw new ArgumentNullException("voronTransaction");
             VoronTransaction = voronTransaction;
+
+            NodeTree = voronTransaction.ReadTree(nodeTreeName);
+            EdgeTree = voronTransaction.ReadTree(edgesTreeName);
+            DisconnectedNodeTree = voronTransaction.ReadTree(disconnectedNodesTreeName);
         }
+
+        public Tree NodeTree { get; private set; }
+
+        public Tree EdgeTree { get; private set; }
+
+        public Tree DisconnectedNodeTree { get; private set; }
 
         public void Dispose()
         {

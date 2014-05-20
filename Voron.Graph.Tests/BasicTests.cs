@@ -15,33 +15,46 @@ namespace Voron.Graph.Tests
     [TestClass]
     public class BasicTests : BaseGraphTest
     {
+        public System.Threading.CancellationTokenSource CancelTokenSource;
         
+        [TestInitialize]
+        public void InitTest()
+        {
+            CancelTokenSource = new System.Threading.CancellationTokenSource();
+        }
+
+        [TestCleanup]
+        public void CleanupTest()
+        {
+            CancelTokenSource.Dispose();
+        }
+
         [TestMethod]
         public void Put_edge_between_nodes_in_the_same_session_should_work()
         {
-            var graph = new GraphEnvironment("TestGraph", Env);
+            var graph = new GraphStorage("TestGraph", Env);
             Node node1, node2, node3;
 
-            using (var session = graph.OpenSession())
+            using (var tx = graph.NewTransaction(TransactionFlags.ReadWrite))
             {
-                node1 = session.CreateNode("test1");
-                node2 = session.CreateNode("test2");
-                node3 = session.CreateNode("test3");
+                node1 = graph.Commands.CreateNode(tx, JsonFromValue("test1"));
+                node2 = graph.Commands.CreateNode(tx, JsonFromValue("test2"));
+                node3 = graph.Commands.CreateNode(tx, JsonFromValue("test3"));
 
-                session.CreateEdgeBetween(node3, node1);
-                session.CreateEdgeBetween(node3, node2);
+                graph.Commands.CreateEdgeBetween(tx, node3, node1);
+                graph.Commands.CreateEdgeBetween(tx, node3, node2);
 
                 //looping edge also ok!
                 //adding multiple loops will overwrite each other
                 //TODO: add support for multiple edges that have the same keyFrom and keyTo
-                session.CreateEdgeBetween(node2, node2);
+                graph.Commands.CreateEdgeBetween(tx, node2, node2);
 
-                session.SaveChanges();
+                tx.Commit();
             }
 
-            using (var session = graph.OpenSession())
+            using (var tx = graph.NewTransaction(TransactionFlags.Read))
             {
-                var adjacentNodes = session.GetAdjacentOf(node3).ToList();
+                var adjacentNodes = graph.Queries.GetAdjacentOf(tx, node3).ToList();
                 adjacentNodes.Select(x => x.Key).Should().Contain(new[] { node1.Key, node2.Key });
             }
         }
@@ -52,157 +65,83 @@ namespace Voron.Graph.Tests
         [TestMethod]
         public void Put_edge_between_nodes_in_different_session_should_work()
         {
-            var graph = new GraphEnvironment("TestGraph", Env);
+            var graph = new GraphStorage("TestGraph", Env);
             Node node1, node2, node3;
-            using (var session = graph.OpenSession())
+            using (var tx = graph.NewTransaction(TransactionFlags.ReadWrite))
             {
-                node1 = session.CreateNode("test1");
-                node2 = session.CreateNode("test2");
-                node3 = session.CreateNode("test3");
-                session.SaveChanges();
+                node1 = graph.Commands.CreateNode(tx, JsonFromValue("test1"));
+                node2 = graph.Commands.CreateNode(tx, JsonFromValue("test2"));
+                node3 = graph.Commands.CreateNode(tx, JsonFromValue("test3"));
+                tx.Commit();
             }
 
-            using (var session = graph.OpenSession())
+            using (var tx = graph.NewTransaction(TransactionFlags.ReadWrite))
             {
-                session.CreateEdgeBetween(node2, node3);
-                session.CreateEdgeBetween(node2, node1);
+                graph.Commands.CreateEdgeBetween(tx, node2, node3);
+                graph.Commands.CreateEdgeBetween(tx, node2, node1);
 
                 //looping edge also ok!
                 //adding multiple loops will overwrite each other
                 //TODO: add support for multiple edges that have the same keyFrom and keyTo
-                session.CreateEdgeBetween(node2, node2);
+                graph.Commands.CreateEdgeBetween(tx, node2, node2);
 
-                session.SaveChanges();
+                tx.Commit();
             }
 
-            using (var session = graph.OpenSession())
+            using (var tx = graph.NewTransaction(TransactionFlags.Read))
             {
-                var adjacentNodes = session.GetAdjacentOf(node2);
+                var adjacentNodes = graph.Queries.GetAdjacentOf(tx, node2);
                 adjacentNodes.Select(x => x.Key).Should().Contain(new []{ node1.Key, node2.Key, node3.Key});
             }
         }
+     
 
         [TestMethod]
-        public void Can_iterate_on_nodes()
+        public async Task Can_Avoid_Duplicate_Nodes_InParallel_Adds()
         {
-            var graph = new GraphEnvironment("TestGraph", Env);
-
-            var nodeValues = new[] { "test1", "test2", "test3" };
-
-            using (var session = graph.OpenSession())
-            {
-                foreach (var value in nodeValues)
-                    session.CreateNode(value);
-
-                session.SaveChanges();
-            }
-
-            using (var session = graph.OpenSession())
-            {
-               using(var iterator = session.IterateNodes())
-               {
-                   Assert.IsTrue(iterator.TrySeekToBegin());
-
-                   do
-                   {                       
-                       nodeValues.Should().Contain(iterator.Current.Data.Value<string>("Value"));
-                   } while (iterator.MoveNext());
-               }
-            }
-        }
-
-        [TestMethod]
-        public void Can_iterate_on_edges()
-        {
-            var graph = new GraphEnvironment("TestGraph", Env);
-            Tuple<Node,Node>[] edges;
-            using (var session = graph.OpenSession())
-            {
-                var node1 = session.CreateNode("test1");
-                var node2 = session.CreateNode("test2");
-                var node3 = session.CreateNode("test3");
-
-                edges = new[]{
-                    Tuple.Create(node1,node3),
-                    Tuple.Create(node1,node2),
-                    Tuple.Create(node3,node2)
-                };
-
-                foreach (var nodePair in edges)
-                    session.CreateEdgeBetween(nodePair.Item1, nodePair.Item2);
-
-                session.SaveChanges();
-            }
-
-            using (var session = graph.OpenSession())
-            {
-                using(var edgeIterator = session.IterateEdges())
-                {
-                    Assert.IsTrue(edgeIterator.TrySeekToBegin());
-
-                    do
-                    {
-                        var edgeKey = edgeIterator.Current.Key;
-                        Assert.IsTrue(edges.Any(x => x.Item1.Key == edgeKey.NodeKeyFrom && x.Item2.Key == edgeKey.NodeKeyTo));
-                    } while (edgeIterator.MoveNext());
-                }
-            }
-        }
-
-        [TestMethod]
-        public void Can_Avoid_Duplicate_Nodes_InParallel_Adds()
-        {
-            var graph = new GraphEnvironment("TestGraph",Env);
+            var graph = new GraphStorage("TestGraph",Env);
 
             Parallel.For(0, 100, i =>
             {
-                using (var session = graph.OpenSession())
+                using (var tx = graph.NewTransaction(TransactionFlags.ReadWrite))
                 {
-                    var newNode = session.CreateNode("newNode" + i);
-                    session.SaveChanges();
+                    var newNode = graph.Commands.CreateNode(tx, JsonFromValue("newNode" + i));
+                    tx.Commit();
                 }
 
             });
            
             var fetchedKeys = new List<long>();
 
-            using (var session = graph.OpenSession())
-            using (var nodeIterator = session.IterateNodes())
+            using (var tx = graph.NewTransaction(TransactionFlags.Read))
             {
-                Assert.IsTrue(nodeIterator.TrySeekToBegin());
-
-                do
-                {
-                    Assert.IsFalse(fetchedKeys.Contains(nodeIterator.Current.Key));
-                    fetchedKeys.Add(nodeIterator.Current.Key);
-                } while (nodeIterator.MoveNext());
+                var nodesList = await graph.AdminQueries.GetAllNodes(tx, CancelTokenSource.Token);
+                nodesList.Select(node => node.Key).Should().OnlyHaveUniqueItems();
             }
-            
         }
-
-        //TODO: investigate why this test throws Voron's debug assertion
+       
         [TestMethod]
         public void Can_Iterate_On_Nearest_Nodes()
         {
-            var graph = new GraphEnvironment("TestGraph", Env);
+            var graph = new GraphStorage("TestGraph", Env);
             long centerNodeKey = 0;
 
             centerNodeKey = Create2DepthHierarchy(graph);
 
-            using (var session = graph.OpenSession())
+            using (var tx = graph.NewTransaction(TransactionFlags.Read))
             {
-                var centerNode = session.LoadNode(centerNodeKey);
-                Dictionary<string, string> nodeValues = new Dictionary<string, string>();
+                var centerNode = graph.Queries.LoadNode(tx, centerNodeKey);
+                var nodeValues = new Dictionary<string, string>();
                 var buffer = new byte[100];
                 string curEdgeVal;
                 string curNodeVal;
 
-                foreach (var curNode in session.GetAdjacentOf(centerNode))
+                foreach (var curNode in graph.Queries.GetAdjacentOf(tx, centerNode))
                 {
-                    var curEdge = session.GetEdgesBetween(centerNode, curNode).FirstOrDefault();
+                    var curEdge = graph.Queries.GetEdgesBetween(tx, centerNode, curNode).FirstOrDefault();
                     if (curNode == null)
                     {
-                        curEdge = session.GetEdgesBetween(curNode, centerNode).FirstOrDefault();
+                        curEdge = graph.Queries.GetEdgesBetween(tx, curNode, centerNode).FirstOrDefault();
                     }
                     Assert.IsNotNull(curEdge);
 
@@ -220,44 +159,44 @@ namespace Voron.Graph.Tests
             }
         }
 
-        private long Create2DepthHierarchy(GraphEnvironment graph)
+        private long Create2DepthHierarchy(GraphStorage graph)
         {
             long centerNodeKey = 0;
-            using (var session = graph.OpenSession())
+            using (var tx = graph.NewTransaction(TransactionFlags.ReadWrite))
             {
-                var centerNode = session.CreateNode("centerNode");
+                var centerNode = graph.Commands.CreateNode(tx, JsonFromValue("centerNode"));
                 centerNodeKey = centerNode.Key;
 
 
                 for (var i = 0; i < 5; i++)
                 {
-                    var curChild = session.CreateNode("childNode" + i.ToString());
-                    session.CreateEdgeBetween(centerNode, curChild, i.ToString());
+                    var curChild = graph.Commands.CreateNode(tx,JsonFromValue("childNode" + i.ToString()));
+                    graph.Commands.CreateEdgeBetween(tx, centerNode, curChild, JsonFromValue(i.ToString()));
 
                     for (var j = 0; j < 5; j++)
                     {
-                        var curGrandChild = session.CreateNode(string.Concat("childNode", i.ToString(), "child", i.ToString()));
-                        session.CreateEdgeBetween(curChild, curGrandChild, (i * 10 + j).ToString());
+                        var curGrandChild = graph.Commands.CreateNode(tx, JsonFromValue(string.Concat("childNode", i.ToString(), "child", i.ToString())));
+                        graph.Commands.CreateEdgeBetween(tx, curChild, curGrandChild,JsonFromValue((i * 10 + j).ToString()));
                     }
                 }
-                session.SaveChanges();
+                tx.Commit();
             }
             return centerNodeKey;
         }
 
         [TestMethod]
         public void Load_nonexisting_node_should_return_null() {
-            var graph = new GraphEnvironment("TestGraph", Env);
+            var graph = new GraphStorage("TestGraph", Env);
 
 
-            using (var session = graph.OpenSession())
+            using (var tx = graph.NewTransaction(TransactionFlags.ReadWrite))
             {
-                var illegalNode = session.CreateNode("onlyNode");
+                var illegalNode = graph.Commands.CreateNode(tx,JsonFromValue("onlyNode"));
                 illegalNode.Should().NotBeNull();
             }
 
-            using (var session = graph.OpenSession()) {
-                var noneExistingNode = session.LoadNode(1);
+            using (var tx = graph.NewTransaction(TransactionFlags.Read)) {
+                var noneExistingNode = graph.Queries.LoadNode(tx, 1);
                 noneExistingNode.Should().BeNull();
             }
 
@@ -267,14 +206,14 @@ namespace Voron.Graph.Tests
         [TestMethod]
         public void Get_edges_between_two_nonexisting_nodes_should_return_empty_collection()
         {
-            var graph = new GraphEnvironment("TestGraph", Env);
+            var graph = new GraphStorage("TestGraph", Env);
 
-            using (var session = graph.OpenSession())
+            using (var tx = graph.NewTransaction(TransactionFlags.ReadWrite))
             {
-                var node1 = new Node(-1,"node1");
-                var node2 = new Node(-2,"node2");
+                var node1 = new Node(-1,JsonFromValue("node1"));
+                var node2 = new Node(-2,JsonFromValue("node2"));
 
-                var edgesList = session.GetEdgesBetween(node1, node2);
+                var edgesList = graph.Queries.GetEdgesBetween(tx, node1, node2);
                 edgesList.Should().BeEmpty();
             }                        
         }
@@ -284,25 +223,25 @@ namespace Voron.Graph.Tests
         [TestMethod]
         public void Get_edges_between_existing_and_nonexisting_node_should_return_empty_collection()
         {
-            var graph = new GraphEnvironment("TestGraph", Env);
+            var graph = new GraphStorage("TestGraph", Env);
             long node1Id = 0;
 
-            using (var session = graph.OpenSession())
+            using (var tx = graph.NewTransaction(TransactionFlags.ReadWrite))
             {
-                var node1 = session.CreateNode("node1");
+                var node1 = graph.Commands.CreateNode(tx, JsonFromValue("node1"));
 
                 Assert.IsNotNull(node1);
                 node1Id = node1.Key;
                 
-                session.SaveChanges();
+                tx.Commit();
             }
 
-            using (var session = graph.OpenSession())
+            using (var tx = graph.NewTransaction(TransactionFlags.ReadWrite))
             {
-                Node node1 = session.LoadNode(node1Id);
-                Node node2 = new Node(-2, "node2");
+                Node node1 = graph.Queries.LoadNode(tx, node1Id);
+                Node node2 = new Node(-2, JsonFromValue("node2"));
 
-                var edgesList = session.GetEdgesBetween(node1, node2);
+                var edgesList = graph.Queries.GetEdgesBetween(tx, node1, node2);
                 edgesList.Should().BeEmpty();
             }
         }

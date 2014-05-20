@@ -4,27 +4,28 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Voron.Trees;
 namespace Voron.Graph
 {
     public class GraphQueries
     {
-        private readonly Tree _nodesTree;
-        private readonly Tree _edgesTree;
-        private readonly Tree _disconnectedNodesTree;
+        private readonly string _nodesTreeName;
+        private readonly string _edgesTreeName;
+        private readonly string _disconnectedNodesTreeName;
 
-        internal GraphQueries(Tree nodesTree, Tree edgesTree, Tree disconnectedNodesTree)
+        internal GraphQueries(string nodesTreeName, string edgesTreeName, string disconnectedNodesTreeName)
         {
-            _nodesTree = nodesTree;
-            _edgesTree = edgesTree;
-            _disconnectedNodesTree = disconnectedNodesTree;
+            _disconnectedNodesTreeName = disconnectedNodesTreeName;
+            _nodesTreeName = nodesTreeName;
+            _edgesTreeName = edgesTreeName;
         }
 
         public IEnumerable<Node> GetAdjacentOf(Transaction tx, Node node, ushort type = 0)
         {            
             var alreadyRetrievedKeys = new HashSet<long>();
-            using (var edgeIterator = _edgesTree.Iterate(tx.VoronTransaction))
+            using (var edgeIterator = tx.EdgeTree.Iterate(tx.VoronTransaction))
             {
                 var nodeKey = node.Key.ToSlice();
                 edgeIterator.RequiredPrefix = nodeKey;
@@ -50,7 +51,7 @@ namespace Voron.Graph
 
         public bool IsIsolated(Transaction tx, Node node)
         {
-            using (var edgeIterator = _edgesTree.Iterate(tx.VoronTransaction))
+            using (var edgeIterator = tx.EdgeTree.Iterate(tx.VoronTransaction))
             {
                 edgeIterator.RequiredPrefix = node.Key.ToSlice();
                 return edgeIterator.Seek(Slice.BeforeAllKeys);
@@ -59,7 +60,7 @@ namespace Voron.Graph
 
         public bool ContainsEdge(Transaction tx, Edge edge)
         {
-            return _nodesTree.ReadVersion(tx.VoronTransaction, edge.Key.ToSlice()) > 0;
+            return tx.EdgeTree.ReadVersion(tx.VoronTransaction, edge.Key.ToSlice()) > 0;
         }
         
         public bool ContainsNode(Transaction tx, Node node)
@@ -69,12 +70,12 @@ namespace Voron.Graph
         
         public bool ContainsNode(Transaction tx, long nodeKey)
         {
-            return _nodesTree.ReadVersion(tx.VoronTransaction, nodeKey.ToSlice()) > 0;
+            return tx.NodeTree.ReadVersion(tx.VoronTransaction, nodeKey.ToSlice()) > 0;
         }
 
         public Node LoadNode(Transaction tx, long nodeKey)
         {
-            var readResult = _nodesTree.Read(tx.VoronTransaction, nodeKey.ToSlice());
+            var readResult = tx.NodeTree.Read(tx.VoronTransaction, nodeKey.ToSlice());
             if (readResult == null)
                 return null;
 
@@ -90,7 +91,7 @@ namespace Voron.Graph
             if (nodeTo == null)
                 throw new ArgumentNullException("nodeTo");
 
-            using (var edgeIterator = _edgesTree.Iterate(tx.VoronTransaction))
+            using (var edgeIterator = tx.EdgeTree.Iterate(tx.VoronTransaction))
             {
                 edgeIterator.RequiredPrefix = Util.EdgeKeyPrefix(nodeFrom, nodeTo);
                 if (!edgeIterator.Seek(edgeIterator.RequiredPrefix))

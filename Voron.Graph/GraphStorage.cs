@@ -17,8 +17,6 @@ namespace Voron.Graph
         private readonly string _disconnectedNodesTreeName;
         private long _nextId;
 
-        private readonly SemaphoreSlim _writeSequenceSync;
-
         public GraphStorage(string graphName, StorageEnvironment storageEnvironment)
         {
             if (String.IsNullOrWhiteSpace(graphName)) throw new ArgumentNullException("graphName");
@@ -27,15 +25,17 @@ namespace Voron.Graph
             _edgeTreeName = graphName + Constants.EdgeTreeNameSuffix;
             _disconnectedNodesTreeName = graphName + Constants.DisconnectedNodesTreeName;
             _storageEnvironment = storageEnvironment;
-            _writeSequenceSync = new SemaphoreSlim(1, 1);
+            
             CreateConventions();
             CreateSchema();
+            CreateCommandAndQueryInstances();
             _nextId = GetLatestStoredNodeKey();
         }
 
         public Transaction NewTransaction(Voron.TransactionFlags flags, TimeSpan? timeout = null)
         {
-            return new Transaction(_storageEnvironment.NewTransaction(flags, timeout));
+            var voronTransaction = _storageEnvironment.NewTransaction(flags, timeout);
+            return new Transaction(voronTransaction, _nodeTreeName, _edgeTreeName, _disconnectedNodesTreeName);
         }
 
         private long GetLatestStoredNodeKey()
@@ -67,23 +67,29 @@ namespace Voron.Graph
 
         public GraphQueries Queries { get; private set; }
 
+        public GraphAdminQueries AdminQueries { get; private set; }
+
         private void CreateSchema()
         {
             using (var tx = _storageEnvironment.NewTransaction(TransactionFlags.ReadWrite))
             {
-                var nodeTree = _storageEnvironment.CreateTree(tx, _nodeTreeName);
-                var edgeTree = _storageEnvironment.CreateTree(tx, _edgeTreeName);
-                var disconnectedNodesTree = _storageEnvironment.CreateTree(tx, _disconnectedNodesTreeName);
+                _storageEnvironment.CreateTree(tx, _nodeTreeName);
+                _storageEnvironment.CreateTree(tx, _edgeTreeName);
+                _storageEnvironment.CreateTree(tx, _disconnectedNodesTreeName);
                 tx.Commit();
-
-                Queries = new GraphQueries(nodeTree, edgeTree, disconnectedNodesTree);
-                Commands = new GraphCommands(Queries, nodeTree, edgeTree, disconnectedNodesTree, Conventions);
             }
+        }
+
+        public void CreateCommandAndQueryInstances()
+        {
+            AdminQueries = new GraphAdminQueries(_nodeTreeName, _edgeTreeName, _disconnectedNodesTreeName);
+            Queries = new GraphQueries(_nodeTreeName, _edgeTreeName, _disconnectedNodesTreeName);
+            Commands = new GraphCommands(Queries, _nodeTreeName, _edgeTreeName, _disconnectedNodesTreeName, Conventions);
+
         }
 
         public void Dispose()
         {
-            _writeSequenceSync.Dispose();
         }
     }
 }

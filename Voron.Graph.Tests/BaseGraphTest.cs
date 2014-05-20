@@ -1,22 +1,25 @@
-﻿using System;
+﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Newtonsoft.Json.Linq;
+using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System.Collections.Concurrent;
+using System.Threading;
 
 namespace Voron.Graph.Tests
 {
     [TestClass]
     public class BaseGraphTest
     {
-        protected StorageEnvironment Env;
-        protected ConcurrentQueue<IDisposable> DisposalQueue;
+        public StorageEnvironment Env;
+        public ConcurrentQueue<IDisposable> DisposalQueue;
 
-        protected StorageEnvironmentOptions StorageOptions;
+        public StorageEnvironmentOptions StorageOptions;
 
-        protected virtual void BeforeTestInitialize() { }
+
+        public virtual void BeforeTestInitialize() { }
 
         [TestInitialize]
         public void BeforeTest()
@@ -33,7 +36,7 @@ namespace Voron.Graph.Tests
                 disposable.Dispose();
         }
 
-        public Stream StreamFrom(string s)
+        protected Stream StreamFrom(string s)
         {
             var stream = new MemoryStream(Encoding.UTF8.GetBytes(s));
             //just to be sure
@@ -42,7 +45,7 @@ namespace Voron.Graph.Tests
             return stream;
         }
 
-        public string StringFrom(Stream stream)
+        protected string StringFrom(Stream stream)
         {
             var buffer = new byte[128];
             var readBytes = new List<byte>();
@@ -51,6 +54,16 @@ namespace Voron.Graph.Tests
 
             DisposalQueue.Enqueue(stream);
             return Encoding.UTF8.GetString(readBytes.ToArray());
+        }
+
+        protected JObject JsonFromValue<T>(T value)
+        {
+            return JObject.FromObject(new { Value = value });
+        }
+
+        protected T ValueFromJson<T>(JObject @object)
+        {
+            return @object.Value<T>("Value");
         }
     }
 }
