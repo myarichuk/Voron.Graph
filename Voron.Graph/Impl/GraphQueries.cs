@@ -84,7 +84,7 @@ namespace Voron.Graph
         }
 
 
-        public IEnumerable<Edge> GetEdgesBetween(Transaction tx, Node nodeFrom, Node nodeTo, Func<ushort, bool> typePredicate = null)
+        public IEnumerable<Edge> GetEdgesBetween(Transaction tx, Node nodeFrom, Node nodeTo, ushort? type = null)
         {
             if (nodeFrom == null)
                 throw new ArgumentNullException("nodeFrom");
@@ -100,7 +100,7 @@ namespace Voron.Graph
                 do
                 {
                     var edgeTreeKey = edgeIterator.CurrentKey.ToEdgeTreeKey();
-                    if (typePredicate != null && !typePredicate(edgeTreeKey.Type))
+                    if (type.HasValue && edgeTreeKey.Type != type)
                         continue;
 
                     var valueReader = edgeIterator.CreateReaderForCurrent();
