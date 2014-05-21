@@ -2,33 +2,24 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Voron.Trees;
 
-namespace Voron.Graph
+namespace Voron.Graph.Impl
 {
     public class GraphCommands
     {
-        private readonly string _nodesTreeName;
-        private readonly string _edgesTreeName;
-        private readonly string _disconnectedNodesTreeName;
         private readonly Conventions _conventions;
         private readonly GraphQueries _graphQueries;
 
-        internal GraphCommands(GraphQueries graphQueries, string nodesTreeName, string edgesTreeName, string disconnectedNodesTreeName, Conventions conventions)
+        internal GraphCommands(GraphQueries graphQueries, Conventions conventions)
         {
             _graphQueries = graphQueries;
-            _nodesTreeName = nodesTreeName;
-            _edgesTreeName = edgesTreeName;
-            _disconnectedNodesTreeName = disconnectedNodesTreeName;
             _conventions = conventions;
         }
 
         public Node CreateNode(Transaction tx, JObject value)
         {
-            if (value == null) throw new ArgumentNullException("value");
+	        if (tx == null) throw new ArgumentNullException("tx");
+	        if (value == null) throw new ArgumentNullException("value");
 
             var key = _conventions.GetNextNodeKey();
 
@@ -47,7 +38,10 @@ namespace Voron.Graph
 
         public bool TryUpdate(Transaction tx, Node node)
         {
-            if (!_graphQueries.ContainsNode(tx, node))
+	        if (tx == null) throw new ArgumentNullException("tx");
+	        if (node == null) throw new ArgumentNullException("node");
+
+	        if (!_graphQueries.ContainsNode(tx, node))
                 return false;
 
             //Voron's method name here is misleading --> it performs updates as well
@@ -57,7 +51,9 @@ namespace Voron.Graph
 
         public Edge CreateEdgeBetween(Transaction tx, Node nodeFrom, Node nodeTo, JObject value = null, ushort type = 0)
         {
-            if (nodeFrom == null) throw new ArgumentNullException("nodeFrom");
+	        if (tx == null) throw new ArgumentNullException("tx");
+
+	        if (nodeFrom == null) throw new ArgumentNullException("nodeFrom");
             if (!_graphQueries.ContainsNode(tx, nodeFrom.Key))
                 throw new ArgumentException("nodeFrom does not exist in the tree", "nodeFrom");
 
@@ -75,7 +71,10 @@ namespace Voron.Graph
 
         public void Delete(Transaction tx, Node node)
         {
-            var nodeKey = node.Key.ToSlice();
+	        if (tx == null) throw new ArgumentNullException("tx");
+	        if (node == null) throw new ArgumentNullException("node");
+
+	        var nodeKey = node.Key.ToSlice();
             tx.NodeTree.Delete(tx.VoronTransaction, nodeKey);
             foreach (var edge in GetEdgesOf(tx, node))
                 tx.EdgeTree.Delete(tx.VoronTransaction, edge.Key.ToSlice());
@@ -88,7 +87,10 @@ namespace Voron.Graph
 
         public IEnumerable<Edge> GetEdgesOf(Transaction tx, Node node)
         {
-            using (var edgeIterator = tx.EdgeTree.Iterate(tx.VoronTransaction))
+	        if (tx == null) throw new ArgumentNullException("tx");
+	        if (node == null) throw new ArgumentNullException("node");
+
+	        using (var edgeIterator = tx.EdgeTree.Iterate(tx.VoronTransaction))
             {
                 var nodeKey = node.Key.ToSlice();
                 edgeIterator.RequiredPrefix = nodeKey;
@@ -108,8 +110,6 @@ namespace Voron.Graph
                     }
                 } while (edgeIterator.MoveNext());
             }
-
         }
-
     }
 }

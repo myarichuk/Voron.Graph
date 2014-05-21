@@ -1,14 +1,8 @@
 ﻿using FluentAssertions;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Newtonsoft.Json.Linq;
-using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
-using Voron.Graph;
 
 namespace Voron.Graph.Tests
 {
@@ -105,10 +99,9 @@ namespace Voron.Graph.Tests
             {
                 using (var tx = graph.NewTransaction(TransactionFlags.ReadWrite))
                 {
-                    var newNode = graph.Commands.CreateNode(tx, JsonFromValue("newNode" + i));
-                    tx.Commit();
+	                graph.Commands.CreateNode(tx, JsonFromValue("newNode" + i));
+	                tx.Commit();
                 }
-
             });
            
             var fetchedKeys = new List<long>();
@@ -133,8 +126,7 @@ namespace Voron.Graph.Tests
             {
                 var centerNode = graph.Queries.LoadNode(tx, centerNodeKey);
                 var nodeValues = new Dictionary<string, string>();
-                var buffer = new byte[100];
-                string curEdgeVal;
+	            string curEdgeVal;
                 string curNodeVal;
 
                 foreach (var curNode in graph.Queries.GetAdjacentOf(tx, centerNode))
@@ -203,7 +195,6 @@ namespace Voron.Graph.Tests
 
         }
 
-        //TODO : investigate why this test causes debug assertion
         [TestMethod]
         public void Get_edges_between_two_nonexisting_nodes_should_return_empty_collection()
         {
@@ -220,7 +211,6 @@ namespace Voron.Graph.Tests
         }
 
 
-        //TODO : investigate why this test causes debug assertion
         [TestMethod]
         public void Get_edges_between_existing_and_nonexisting_node_should_return_empty_collection()
         {
