@@ -49,6 +49,10 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Algorithms\AlgorithmState.cs" />
+    <Compile Include="Algorithms\BaseAlgorithm.cs" />
+    <Compile Include="Algorithms\Search\BreadthFirstSearch.cs" />
+    <Compile Include="DisposableAction.cs" />
     <Compile Include="Impl\GraphAdminQueries.cs" />
     <Compile Include="Impl\GraphCommands.cs" />
     <Compile Include="Constants.cs" />
@@ -66,6 +70,7 @@
   <ItemGroup>
     <None Include="packages.config" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
