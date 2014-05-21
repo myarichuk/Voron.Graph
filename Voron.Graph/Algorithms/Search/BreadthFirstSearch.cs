@@ -16,12 +16,7 @@ namespace Voron.Graph.Algorithms.Search
             : base(cancelToken)
         {
             _graphStorage = graphStorage;
-        }        
-
-        public Task<Node> FindOneAndUpdate(Transaction tx, Func<JObject,bool> searchPredicate, Func<long,JObject,JObject> newDataFactory)
-        {
-            throw new NotImplementedException();
-        }
+        }               
 
         public Task<Node> FindOne(Transaction tx, Func<JObject,bool> searchPredicate)
         {
@@ -64,10 +59,46 @@ namespace Voron.Graph.Algorithms.Search
          
         }
 
-        public Task<IEnumerable<Node>> FindMany(Transaction tx, Func<JObject, bool> searchPredicate)
+        public Task<List<Node>> FindMany(Transaction tx, Func<JObject, bool> searchPredicate)
         {
-            var visitedNodes = new HashSet<long>();
-            throw new NotImplementedException();
+            return Task.Run(() =>
+            {
+                var results = new List<Node>();
+                OnStateChange(AlgorithmState.Running);
+
+                var visitedNodes = new HashSet<long>();
+                var processingQueue = new Queue<Node>();
+                var rootNode = GetRootNode(tx);
+                processingQueue.Enqueue(rootNode);
+
+                while (processingQueue.Count > 0)
+                {
+                    AbortExecutionIfNeeded();
+
+                    var currentNode = processingQueue.Dequeue();
+                    if (!visitedNodes.Contains(currentNode.Key))
+                    {
+                        visitedNodes.Add(currentNode.Key);
+                        OnNodeVisited(currentNode);
+
+                        if (searchPredicate(currentNode.Data))
+                        {
+                            results.Add(currentNode);
+                            OnNodeFound(currentNode);
+                        }
+
+                        foreach (var childNode in _graphStorage.Queries.GetAdjacentOf(tx, currentNode)
+                                                                       .Where(node => !visitedNodes.Contains(node.Key)))
+                        {
+                            AbortExecutionIfNeeded();
+                            processingQueue.Enqueue(childNode);
+                        }
+                    }
+                }
+
+                OnStateChange(AlgorithmState.Finished);
+                return results;
+            });
         }
 
         protected override Node GetRootNode(Transaction tx)
