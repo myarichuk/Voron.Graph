@@ -4,6 +4,12 @@ The aim of this project to supply rich graph library functionality, with persist
 
 *Note : this project is work in progress and is far from finished*
 
+#### Compiling and doing something useful with this project
+Voron.Graph depends on Voron storage, and if you choose to download and compile, you need to:
+* Get [Voron](https://github.com/ayende/raven.voron/) sources
+* Update references to Voron in the project
+* Compile!
+
 #### Show me the code
 And how do I use it?<br/>
 Usage of the library is simple. The following code creates graph, creates hierarchy of objects
@@ -73,3 +79,7 @@ using (var tx = graph.NewTransaction(TransactionFlags.Read))
   nodes.Select(x => ValueFromJson<string>(x.Data)).Should().Contain("test2", "test4");
 }
 ```
+
+####License
+Apache v2 License for the code of this project. Probably having/not having a license doesn't matter at this point, but still, just in case, I've added one. 
+About licensing of the Voron project - you need to contact Hibernating Rhinos to inquire more about it.
