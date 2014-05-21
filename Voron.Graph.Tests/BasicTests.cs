@@ -131,17 +131,10 @@ namespace Voron.Graph.Tests
 
                 foreach (var curNode in graph.Queries.GetAdjacentOf(tx, centerNode))
                 {
-                    var curEdge = graph.Queries.GetEdgesBetween(tx, centerNode, curNode).FirstOrDefault();
-                    if (curNode == null)
-                    {
-                        curEdge = graph.Queries.GetEdgesBetween(tx, curNode, centerNode).FirstOrDefault();
-                    }
+                    var curEdge = graph.Queries.GetEdgesBetween(tx, centerNode, curNode).FirstOrDefault();              
                     Assert.IsNotNull(curEdge);
 
-                    Assert.AreNotEqual(0, curEdge.Data.Value<int>("Value"));
                     curEdgeVal = curEdge.Data.Value<string>("Value");
-
-                    Assert.AreNotEqual(0, curNode.Data.Value<int>("Value"));
                     curNodeVal = curNode.Data.Value<string>("Value");
 
                     nodeValues.Add(curNodeVal, curEdgeVal);
@@ -161,12 +154,12 @@ namespace Voron.Graph.Tests
                 centerNodeKey = centerNode.Key;
 
 
-                for (var i = 0; i < 5; i++)
+                for (var i = 1; i < 6; i++)
                 {
                     var curChild = graph.Commands.CreateNode(tx,JsonFromValue("childNode" + i.ToString()));
                     graph.Commands.CreateEdgeBetween(tx, centerNode, curChild, JsonFromValue(i.ToString()));
 
-                    for (var j = 0; j < 5; j++)
+                    for (var j = 1; j < 6; j++)
                     {
                         var curGrandChild = graph.Commands.CreateNode(tx, JsonFromValue(string.Concat("childNode", i.ToString(), "child", i.ToString())));
                         graph.Commands.CreateEdgeBetween(tx, curChild, curGrandChild,JsonFromValue((i * 10 + j).ToString()));
