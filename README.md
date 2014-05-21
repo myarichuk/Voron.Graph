@@ -48,7 +48,7 @@ using (var storage = new StorageEnvironment(StorageEnvironmentOptions.CreateMemo
 <br/>
 #### Algorithms
 Using algorithm implementations in Voron.Graph is also simple.<br/>
-In this code snippet a graph with hierarchy is created, and then with BFS find all nodes that contain either test2 or test4 in their data
+In this code snippet a graph with hierarchy is created, and then with BFS find all nodes that contain either test2 or test4 in their data<br/>
 *Assume that Env is StorageEnvironment of the Voron that was initialized earlier.*<br/>
 ```C#
 var graph = new GraphStorage("TestGraph", Env);
