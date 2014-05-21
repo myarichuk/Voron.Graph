@@ -1,30 +1,18 @@
-﻿using Newtonsoft.Json.Linq;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
-using Voron.Trees;
-namespace Voron.Graph
+using Newtonsoft.Json.Linq;
+
+namespace Voron.Graph.Impl
 {
     public class GraphQueries
     {
-        private readonly string _nodesTreeName;
-        private readonly string _edgesTreeName;
-        private readonly string _disconnectedNodesTreeName;
-
-        internal GraphQueries(string nodesTreeName, string edgesTreeName, string disconnectedNodesTreeName)
-        {
-            _disconnectedNodesTreeName = disconnectedNodesTreeName;
-            _nodesTreeName = nodesTreeName;
-            _edgesTreeName = edgesTreeName;
-        }
-
         public IEnumerable<Node> GetAdjacentOf(Transaction tx, Node node, ushort type = 0)
-        {            
-            var alreadyRetrievedKeys = new HashSet<long>();
+        {
+	        if (tx == null) throw new ArgumentNullException("tx");
+	        if (node == null) throw new ArgumentNullException("node");
+
+	        var alreadyRetrievedKeys = new HashSet<long>();
             using (var edgeIterator = tx.EdgeTree.Iterate(tx.VoronTransaction))
             {
                 var nodeKey = node.Key.ToSlice();
@@ -51,31 +39,44 @@ namespace Voron.Graph
 
         public bool IsIsolated(Transaction tx, Node node)
         {
-            using (var edgeIterator = tx.EdgeTree.Iterate(tx.VoronTransaction))
+	        if (tx == null) throw new ArgumentNullException("tx");
+	        if (node == null) throw new ArgumentNullException("node");
+
+	        using (var edgeIterator = tx.EdgeTree.Iterate(tx.VoronTransaction))
             {
                 edgeIterator.RequiredPrefix = node.Key.ToSlice();
                 return edgeIterator.Seek(Slice.BeforeAllKeys);
             }
         }
 
-        public bool ContainsEdge(Transaction tx, Edge edge)
+	    public bool ContainsEdge(Transaction tx, Edge edge)
         {
-            return tx.EdgeTree.ReadVersion(tx.VoronTransaction, edge.Key.ToSlice()) > 0;
-        }
-        
-        public bool ContainsNode(Transaction tx, Node node)
-        {
-            return ContainsNode(tx, node.Key);
-        }
-        
-        public bool ContainsNode(Transaction tx, long nodeKey)
-        {
-            return tx.NodeTree.ReadVersion(tx.VoronTransaction, nodeKey.ToSlice()) > 0;
+	        if (tx == null) throw new ArgumentNullException("tx");
+	        if (edge == null) throw new ArgumentNullException("edge");
+
+	        return tx.EdgeTree.ReadVersion(tx.VoronTransaction, edge.Key.ToSlice()) > 0;
         }
 
-        public Node LoadNode(Transaction tx, long nodeKey)
+	    public bool ContainsNode(Transaction tx, Node node)
         {
-            var readResult = tx.NodeTree.Read(tx.VoronTransaction, nodeKey.ToSlice());
+	        if (tx == null) throw new ArgumentNullException("tx");
+	        if (node == null) throw new ArgumentNullException("node");
+
+	        return ContainsNode(tx, node.Key);
+        }
+
+	    public bool ContainsNode(Transaction tx, long nodeKey)
+        {
+	        if (tx == null) throw new ArgumentNullException("tx");
+
+	        return tx.NodeTree.ReadVersion(tx.VoronTransaction, nodeKey.ToSlice()) > 0;
+        }
+
+	    public Node LoadNode(Transaction tx, long nodeKey)
+        {
+	        if (tx == null) throw new ArgumentNullException("tx");
+
+	        var readResult = tx.NodeTree.Read(tx.VoronTransaction, nodeKey.ToSlice());
             if (readResult == null)
                 return null;
 
@@ -86,7 +87,8 @@ namespace Voron.Graph
 
         public IEnumerable<Edge> GetEdgesBetween(Transaction tx, Node nodeFrom, Node nodeTo, ushort? type = null)
         {
-            if (nodeFrom == null)
+	        if (tx == null) throw new ArgumentNullException("tx");
+	        if (nodeFrom == null)
                 throw new ArgumentNullException("nodeFrom");
             if (nodeTo == null)
                 throw new ArgumentNullException("nodeTo");
@@ -105,10 +107,7 @@ namespace Voron.Graph
 
                     var valueReader = edgeIterator.CreateReaderForCurrent();
                     using (var valueStream = valueReader.AsStream() ?? Stream.Null)
-                    {
-                        var jsonValue = valueStream.Length > 0 ? valueStream.ToJObject() : new JObject();
-                        yield return new Edge(edgeTreeKey, valueStream.ToJObject());
-                    }
+	                    yield return new Edge(edgeTreeKey, valueStream.ToJObject());
 
                 } while (edgeIterator.MoveNext());
             }

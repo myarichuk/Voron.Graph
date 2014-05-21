@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Voron.Graph.Impl;
 using Voron.Impl;
 
 namespace Voron.Graph
@@ -32,7 +33,7 @@ namespace Voron.Graph
             _nextId = GetLatestStoredNodeKey();
         }
 
-        public Transaction NewTransaction(Voron.TransactionFlags flags, TimeSpan? timeout = null)
+        public Transaction NewTransaction(TransactionFlags flags, TimeSpan? timeout = null)
         {
             var voronTransaction = _storageEnvironment.NewTransaction(flags, timeout);
             return new Transaction(voronTransaction, _nodeTreeName, _edgeTreeName, _disconnectedNodesTreeName);
@@ -82,10 +83,9 @@ namespace Voron.Graph
 
         public void CreateCommandAndQueryInstances()
         {
-            AdminQueries = new GraphAdminQueries(_nodeTreeName, _edgeTreeName, _disconnectedNodesTreeName);
-            Queries = new GraphQueries(_nodeTreeName, _edgeTreeName, _disconnectedNodesTreeName);
-            Commands = new GraphCommands(Queries, _nodeTreeName, _edgeTreeName, _disconnectedNodesTreeName, Conventions);
-
+            AdminQueries = new GraphAdminQueries();
+            Queries = new GraphQueries();
+            Commands = new GraphCommands(Queries, Conventions);
         }
 
         public void Dispose()
