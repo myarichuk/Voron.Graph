@@ -82,4 +82,4 @@ using (var tx = graph.NewTransaction(TransactionFlags.Read))
 
 ####License
 Apache v2 License for the code of this project. Probably having/not having a license doesn't matter at this point, but still, just in case, I've added one. <br/>
-About licensing of the Voron project - you need to contact Hibernating Rhinos to inquire more about it.
+About licensing of the Voron project - you need to contact [Hibernating Rhinos](http://hibernatingrhinos.com/) to inquire more about it.
