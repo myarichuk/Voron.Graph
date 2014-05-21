@@ -141,6 +141,7 @@ namespace Voron.Graph.Tests
 
                 }
 
+                nodeValues.Values.Should().NotContain("grandchild");
                 Assert.AreEqual(nodeValues.Count, 5);
             }
         }
@@ -161,7 +162,7 @@ namespace Voron.Graph.Tests
 
                     for (var j = 1; j < 6; j++)
                     {
-                        var curGrandChild = graph.Commands.CreateNode(tx, JsonFromValue(string.Concat("childNode", i.ToString(), "child", i.ToString())));
+                        var curGrandChild = graph.Commands.CreateNode(tx, JsonFromValue(string.Concat("grandchild", i.ToString(), "child", i.ToString())));
                         graph.Commands.CreateEdgeBetween(tx, curChild, curGrandChild,JsonFromValue((i * 10 + j).ToString()));
                     }
                 }
