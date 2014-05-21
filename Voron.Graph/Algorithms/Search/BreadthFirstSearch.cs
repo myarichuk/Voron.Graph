@@ -39,6 +39,11 @@ namespace Voron.Graph.Algorithms
                 using (var resultStream = iter.CreateReaderForCurrent().AsStream())
                     return new Node(iter.CurrentKey.CreateReader().ReadBigEndianInt64(), resultStream.ToJObject());
             }
-        }      
+        }
+
+        public void Dispose()
+        {
+            throw new NotImplementedException();
+        }
     }
 }
