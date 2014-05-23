@@ -57,6 +57,7 @@
     <Compile Include="Algorithms\Search\DepthFirstSearch.cs" />
     <Compile Include="Algorithms\Search\ISearchAlgorithm.cs" />
     <Compile Include="DisposableAction.cs" />
+    <Compile Include="Etag.cs" />
     <Compile Include="Impl\GraphAdminQueries.cs" />
     <Compile Include="Impl\GraphCommands.cs" />
     <Compile Include="Constants.cs" />
