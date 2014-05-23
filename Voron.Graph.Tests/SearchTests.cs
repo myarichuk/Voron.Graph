@@ -22,7 +22,7 @@ namespace Voron.Graph.Tests
         }
 
         [TestMethod]
-        public async Task BFS_FindOne_with_connected_root_should_return_correct_results()
+        public async Task searchAlgorithm_FindOne_with_connected_root_should_return_correct_results()
         {
             var graph = new GraphStorage("TestGraph", Env);
             Node node2;
@@ -43,8 +43,8 @@ namespace Voron.Graph.Tests
 
             using (var tx = graph.NewTransaction(TransactionFlags.Read))
             {
-                var bfs = new BreadthFirstSearch(graph, CancelTokenSource.Token);
-                var node = await bfs.FindOne(tx, data => ValueFromJson<string>(data).Equals("test2"));
+                var searchAlgorithm = new BreadthFirstSearch(graph, CancelTokenSource.Token);
+                var node = await searchAlgorithm.FindOne(tx, data => ValueFromJson<string>(data).Equals("test2"));
 
                 node.Should().NotBeNull();
                 node.Key.Should().Be(node2.Key);
@@ -73,8 +73,8 @@ namespace Voron.Graph.Tests
 
             using (var tx = graph.NewTransaction(TransactionFlags.Read))
             {
-                var bfs = new DepthFirstSearch(graph, CancelTokenSource.Token);
-                var node = await bfs.FindOne(tx, data => ValueFromJson<string>(data).Equals("test2"));
+                var searchAlgorithm = new DepthFirstSearch(graph, CancelTokenSource.Token);
+                var node = await searchAlgorithm.FindOne(tx, data => ValueFromJson<string>(data).Equals("test2"));
 
                 node.Should().NotBeNull();
                 node.Key.Should().Be(node2.Key);
@@ -82,7 +82,7 @@ namespace Voron.Graph.Tests
         }
 
         [TestMethod]
-        public async Task BFS_FindOne_with_only_root_node_in_graph_returns_correct_results()
+        public async Task searchAlgorithm_FindOne_with_only_root_node_in_graph_returns_correct_results()
         {
             var graph = new GraphStorage("TestGraph", Env);
             using (var tx = graph.NewTransaction(TransactionFlags.ReadWrite))
@@ -93,8 +93,8 @@ namespace Voron.Graph.Tests
 
             using (var tx = graph.NewTransaction(TransactionFlags.Read))
             {
-                var bfs = new BreadthFirstSearch(graph, CancelTokenSource.Token);
-                var node = await bfs.FindOne(tx, data => ValueFromJson<string>(data).Equals("test1"));
+                var searchAlgorithm = new BreadthFirstSearch(graph, CancelTokenSource.Token);
+                var node = await searchAlgorithm.FindOne(tx, data => ValueFromJson<string>(data).Equals("test1"));
 
                 node.Should().NotBeNull();
             }
@@ -112,15 +112,15 @@ namespace Voron.Graph.Tests
 
             using (var tx = graph.NewTransaction(TransactionFlags.Read))
             {
-                var bfs = new DepthFirstSearch(graph, CancelTokenSource.Token);
-                var node = await bfs.FindOne(tx, data => ValueFromJson<string>(data).Equals("test1"));
+                var searchAlgorithm = new DepthFirstSearch(graph, CancelTokenSource.Token);
+                var node = await searchAlgorithm.FindOne(tx, data => ValueFromJson<string>(data).Equals("test1"));
 
                 node.Should().NotBeNull();
             }
         }
 
         [TestMethod]
-        public async Task BFS_FindOne_with_disconnected_root_should_return_null()
+        public async Task searchAlgorithm_FindOne_with_disconnected_root_should_return_null()
         {
             var graph = new GraphStorage("TestGraph", Env);
             Node node2;
@@ -142,8 +142,8 @@ namespace Voron.Graph.Tests
 
             using (var tx = graph.NewTransaction(TransactionFlags.Read))
             {
-                var bfs = new BreadthFirstSearch(graph, CancelTokenSource.Token);
-                var node = await bfs.FindOne(tx, data => ValueFromJson<string>(data).Equals("test2"));
+                var searchAlgorithm = new BreadthFirstSearch(graph, CancelTokenSource.Token);
+                var node = await searchAlgorithm.FindOne(tx, data => ValueFromJson<string>(data).Equals("test2"));
 
                 node.Should().BeNull();
             }
@@ -172,15 +172,15 @@ namespace Voron.Graph.Tests
 
             using (var tx = graph.NewTransaction(TransactionFlags.Read))
             {
-                var bfs = new DepthFirstSearch(graph, CancelTokenSource.Token);
-                var node = await bfs.FindOne(tx, data => ValueFromJson<string>(data).Equals("test2"));
+                var searchAlgorithm = new DepthFirstSearch(graph, CancelTokenSource.Token);
+                var node = await searchAlgorithm.FindOne(tx, data => ValueFromJson<string>(data).Equals("test2"));
 
                 node.Should().BeNull();
             }
         }
 
         [TestMethod]
-        public async Task BFS_FindMany_with_connected_root_returns_correct_results()
+        public async Task searchAlgorithm_FindMany_with_connected_root_returns_correct_results()
         {
             var graph = new GraphStorage("TestGraph", Env);
             using (var tx = graph.NewTransaction(TransactionFlags.ReadWrite))
@@ -203,8 +203,8 @@ namespace Voron.Graph.Tests
 
             using (var tx = graph.NewTransaction(TransactionFlags.Read))
             {
-                var bfs = new BreadthFirstSearch(graph, CancelTokenSource.Token);
-                var nodes = await bfs.FindMany(tx, data => ValueFromJson<string>(data).Contains("2") ||
+                var searchAlgorithm = new BreadthFirstSearch(graph, CancelTokenSource.Token);
+                var nodes = await searchAlgorithm.FindMany(tx, data => ValueFromJson<string>(data).Contains("2") ||
                                                            ValueFromJson<string>(data).Contains("4"));
 
                 nodes.Select(x => ValueFromJson<string>(x.Data)).Should().Contain("test2", "test4");
@@ -235,8 +235,8 @@ namespace Voron.Graph.Tests
 
             using (var tx = graph.NewTransaction(TransactionFlags.Read))
             {
-                var bfs = new DepthFirstSearch(graph, CancelTokenSource.Token);
-                var nodes = await bfs.FindMany(tx, data => ValueFromJson<string>(data).Contains("2") ||
+                var searchAlgorithm = new DepthFirstSearch(graph, CancelTokenSource.Token);
+                var nodes = await searchAlgorithm.FindMany(tx, data => ValueFromJson<string>(data).Contains("2") ||
                                                            ValueFromJson<string>(data).Contains("4"));
 
                 nodes.Select(x => ValueFromJson<string>(x.Data)).Should().Contain("test2", "test4");
@@ -244,7 +244,7 @@ namespace Voron.Graph.Tests
         }
 
         [TestMethod]
-        public void BFS_FindOne_should_throw_exception_if_algorithm_already_runs()
+        public void searchAlgorithm_FindOne_should_throw_exception_if_algorithm_already_runs()
         {
             var graph = new GraphStorage("TestGraph", Env);
             using (var tx = graph.NewTransaction(TransactionFlags.ReadWrite))
@@ -255,9 +255,9 @@ namespace Voron.Graph.Tests
 
             using (var tx = graph.NewTransaction(TransactionFlags.Read))
             {
-                var bfs = new BreadthFirstSearch(graph, CancelTokenSource.Token);
+                var searchAlgorithm = new BreadthFirstSearch(graph, CancelTokenSource.Token);
                 var searchStallEvent = new ManualResetEventSlim();
-                var findTask = bfs.Traverse(tx, 
+                var findTask = searchAlgorithm.Traverse(tx, 
                 data =>
                 {
                     searchStallEvent.Wait();
@@ -269,7 +269,7 @@ namespace Voron.Graph.Tests
                     return true;
                 });
 
-                findTask = bfs.FindOne(tx, data => ValueFromJson<string>(data).Equals("test1"));
+                findTask = searchAlgorithm.FindOne(tx, data => ValueFromJson<string>(data).Equals("test1"));
 
                 findTask.ContinueWith(task =>
                     {
@@ -293,9 +293,9 @@ namespace Voron.Graph.Tests
 
             using (var tx = graph.NewTransaction(TransactionFlags.Read))
             {
-                var bfs = new DepthFirstSearch(graph, CancelTokenSource.Token);
+                var searchAlgorithm = new DepthFirstSearch(graph, CancelTokenSource.Token);
                 var searchStallEvent = new ManualResetEventSlim();
-                var findTask = bfs.Traverse(tx,
+                var findTask = searchAlgorithm.Traverse(tx,
                 data =>
                 {
                     searchStallEvent.Wait();
@@ -307,7 +307,7 @@ namespace Voron.Graph.Tests
                     return true;
                 });
 
-                findTask = bfs.FindOne(tx, data => ValueFromJson<string>(data).Equals("test1"));
+                findTask = searchAlgorithm.FindOne(tx, data => ValueFromJson<string>(data).Equals("test1"));
 
                 findTask.ContinueWith(task =>
                 {
