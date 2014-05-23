@@ -68,6 +68,7 @@
   <ItemGroup>
     <Compile Include="BaseGraphTest.cs" />
     <Compile Include="BasicTests.cs" />
+    <Compile Include="EtagTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SearchTests.cs" />
   </ItemGroup>

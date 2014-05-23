@@ -12,10 +12,35 @@ namespace Voron.Graph
 	public class Etag : IEquatable<Etag>
 	{
 		private static long _globalCount;
+        private static Etag _emptyInstance;
+        private static Etag _invalidInstance;
+
 		private const int SizeOfLong = sizeof (long);
 
 		private readonly long _timestamp;
 		private readonly long _count;
+
+        static Etag()
+        {
+            _emptyInstance = new Etag(0, 0);
+            _invalidInstance = new Etag(Int64.MinValue,Int64.MinValue);
+        }
+
+        public long Count
+        {
+            get
+            {
+                return _count;
+            }
+        }
+
+        public long Timestamp
+        {
+            get
+            {
+                return _timestamp;
+            }
+        }
 
 		public Etag(long count, long timestamp)
 		{
@@ -45,6 +70,26 @@ namespace Voron.Graph
 			return new MemoryStream(ToBytes());
 		}
 
+        public override string ToString()
+        {
+            return String.Format("{0}-{1}", _timestamp, _count);
+        }
+
+        public static Etag Empty
+        {
+            get
+            {
+                return _emptyInstance;
+            }
+        }
+        
+        public static Etag Invalid
+        {
+            get
+            {
+                return _invalidInstance;
+            }
+        }
 		#region Comparison Methods Implementation
 
 		public bool Equals(Etag other)
@@ -86,22 +131,12 @@ namespace Voron.Graph
 
 		public static bool operator >(Etag left, Etag right)
 		{
-			return left._count > right._count && left._timestamp > right._timestamp;
+			return left._count > right._count && left._timestamp >= right._timestamp;
 		}
 
 		public static bool operator <(Etag left, Etag right)
 		{
-			return left._count < right._count && left._timestamp < right._timestamp;
-		}
-
-		public static bool operator >=(Etag left, Etag right)
-		{
-			return left._count >= right._count && left._timestamp >= right._timestamp;
-		}
-
-		public static bool operator <=(Etag left, Etag right)
-		{
-			return left._count <= right._count && left._timestamp <= right._timestamp;
+			return left._count < right._count && left._timestamp <= right._timestamp;
 		}
 
 		#endregion
