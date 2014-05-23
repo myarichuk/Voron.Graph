@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -11,6 +12,16 @@ namespace Voron.Graph.Algorithms
     {
         protected readonly object _syncObject = new object();
         protected readonly CancellationToken _cancelToken;
+        private int _state;
+
+        protected AlgorithmState State
+        {
+            get
+            {
+                Debug.Assert(Enum.IsDefined(typeof(AlgorithmState), _state));
+                return (AlgorithmState)_state;
+            }
+        }
 
         public BaseAlgorithm(CancellationToken cancelToken)
         {
@@ -20,6 +31,8 @@ namespace Voron.Graph.Algorithms
         public event Action<AlgorithmState> StateChanged;
         protected virtual void OnStateChange(AlgorithmState state)
         {
+            Interlocked.CompareExchange(ref _state, (int)state, _state);
+
             var stateChanged = this.StateChanged;
 
             if (stateChanged != null)

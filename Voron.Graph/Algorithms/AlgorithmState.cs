@@ -6,11 +6,11 @@ using System.Threading.Tasks;
 
 namespace Voron.Graph.Algorithms
 {
-    public enum AlgorithmState
+    public enum AlgorithmState : int
     {
-        NotStarted,
-        Running,
-        Finished,
-        Aborted
+        NotStarted = 0,
+        Running = 1,
+        Finished = 2,
+        Aborted = 3
     }
 }

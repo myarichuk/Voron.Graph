@@ -16,90 +16,53 @@ namespace Voron.Graph.Algorithms.Search
             : base(cancelToken)
         {
             _graphStorage = graphStorage;
-        }               
-
-        public Task<Node> FindOne(Transaction tx, Func<JObject,bool> searchPredicate)
-        {
-            return Task.Run(() =>
-            {
-                OnStateChange(AlgorithmState.Running);
-
-                var visitedNodes = new HashSet<long>();
-                var processingQueue = new Queue<Node>();
-                Node foundNode = null;
-                var rootNode = GetRootNode(tx);
-                processingQueue.Enqueue(rootNode);
-
-                while (processingQueue.Count > 0)
-                {
-                    AbortExecutionIfNeeded();
-
-                    var currentNode = processingQueue.Dequeue();
-                    visitedNodes.Add(currentNode.Key);
-                    OnNodeVisited(currentNode);
-
-                    if (searchPredicate(currentNode.Data))
-                    {
-                        foundNode = currentNode;
-                        OnNodeFound(currentNode);
-                        OnStateChange(AlgorithmState.Finished);
-                        break;
-                    }
-
-                    foreach (var childNode in _graphStorage.Queries.GetAdjacentOf(tx, currentNode)
-                                                                   .Where(node => !visitedNodes.Contains(node.Key)))
-                    {
-                        AbortExecutionIfNeeded();
-                        processingQueue.Enqueue(childNode);                        
-                    }
-
-                }
-                return foundNode;
-            });
-         
         }
 
-        public Task<List<Node>> FindMany(Transaction tx, Func<JObject, bool> searchPredicate)
+        public Task Search(Transaction tx, Func<JObject, bool> searchPredicate, Func<bool> shouldStopPredicate)
         {
-            return Task.Run(() =>
-            {
-                var results = new List<Node>();
-                OnStateChange(AlgorithmState.Running);
-
-                var visitedNodes = new HashSet<long>();
-                var processingQueue = new Queue<Node>();
-                var rootNode = GetRootNode(tx);
-                processingQueue.Enqueue(rootNode);
-
-                while (processingQueue.Count > 0)
+            if (State == AlgorithmState.Running)
+                throw new InvalidOperationException("The search already running");
+            else
+                return Task.Run(() =>
                 {
-                    AbortExecutionIfNeeded();
+                    OnStateChange(AlgorithmState.Running);
 
-                    var currentNode = processingQueue.Dequeue();
-                    if (!visitedNodes.Contains(currentNode.Key))
+                    var visitedNodes = new HashSet<long>();
+                    var processingQueue = new Queue<Node>();
+                    var rootNode = GetRootNode(tx);
+                    processingQueue.Enqueue(rootNode);
+
+                    while (processingQueue.Count > 0)
                     {
+                        if (shouldStopPredicate())
+                        {
+                            OnStateChange(AlgorithmState.Finished);
+                            break;
+                        }
+    
+                        AbortExecutionIfNeeded();
+    
+                        var currentNode = processingQueue.Dequeue();
                         visitedNodes.Add(currentNode.Key);
                         OnNodeVisited(currentNode);
-
+    
                         if (searchPredicate(currentNode.Data))
-                        {
-                            results.Add(currentNode);
+                        {                        
                             OnNodeFound(currentNode);
+                            OnStateChange(AlgorithmState.Finished);
+                            break;
                         }
-
+    
                         foreach (var childNode in _graphStorage.Queries.GetAdjacentOf(tx, currentNode)
-                                                                       .Where(node => !visitedNodes.Contains(node.Key)))
+                                                                    .Where(node => !visitedNodes.Contains(node.Key)))
                         {
                             AbortExecutionIfNeeded();
                             processingQueue.Enqueue(childNode);
                         }
+    
                     }
-                }
-
-                OnStateChange(AlgorithmState.Finished);
-                return results;
-            });
-        }
+                });
+        }       
 
         protected override Node GetRootNode(Transaction tx)
         {
@@ -117,24 +80,18 @@ namespace Voron.Graph.Algorithms.Search
 
         protected void OnNodeVisited(Node node)
         {
-            using(Lock())
-            {
-                var nodeVisited = NodeVisited;
-                if (nodeVisited != null)
-                    nodeVisited(node);
-            }
+            var nodeVisited = NodeVisited;
+            if (nodeVisited != null)
+                nodeVisited(node);
         }
 
         public event Action<Node> NodeFound;
 
         protected void OnNodeFound(Node node)
         {
-            using(Lock())
-            {
-                var nodeFound = NodeFound;
-                if (nodeFound != null)
-                    nodeFound(node);
-            }
+            var nodeFound = NodeFound;
+            if (nodeFound != null)
+                nodeFound(node);
         }
     }
 }

@@ -10,9 +10,7 @@ namespace Voron.Graph.Algorithms.Search
 {
     public interface ISearchAlgorithm
     {
-        Task<Node> FindOne(Transaction tx, Func<JObject, bool> searchPredicate);
-
-        Task<List<Node>> FindMany(Transaction tx, Func<JObject, bool> searchPredicate);
+        Task Search(Transaction tx, Func<JObject, bool> searchPredicate, Func<bool> shouldStopPredicate);
 
         event Action<Node> NodeVisited;
 

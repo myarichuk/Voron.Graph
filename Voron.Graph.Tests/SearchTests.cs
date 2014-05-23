@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Voron.Graph.Algorithms.Search;
 using FluentAssertions;
+using System.Threading;
 
 namespace Voron.Graph.Tests
 {
@@ -128,6 +129,44 @@ namespace Voron.Graph.Tests
                                                            ValueFromJson<string>(data).Contains("4"));
 
                 nodes.Select(x => ValueFromJson<string>(x.Data)).Should().Contain("test2", "test4");
+            }
+        }
+
+        [TestMethod]
+        public void BFS_FindOne_should_throw_exception_if_algorithm_already_runs()
+        {
+            var graph = new GraphStorage("TestGraph", Env);
+            using (var tx = graph.NewTransaction(TransactionFlags.ReadWrite))
+            {
+                graph.Commands.CreateNode(tx, JsonFromValue("test1"));                
+                tx.Commit();
+            }
+
+            using (var tx = graph.NewTransaction(TransactionFlags.Read))
+            {
+                var bfs = new BreadthFirstSearch(graph, CancelTokenSource.Token);
+                var searchStallEvent = new ManualResetEventSlim();
+                var findTask = bfs.Search(tx, 
+                node =>
+                {
+                    searchStallEvent.Wait();
+                    return true;
+                }, 
+                () =>
+                {
+                    searchStallEvent.Wait();
+                    return true;
+                });
+
+                findTask = bfs.FindOne(tx, data => ValueFromJson<string>(data).Equals("test1"));
+
+                findTask.ContinueWith(task =>
+                    {
+                        task.IsFaulted.Should().BeTrue();
+                        task.Exception.InnerExceptions.First().Should().BeOfType<InvalidOperationException>();
+
+                        searchStallEvent.Set();
+                    });
             }
         }
     
