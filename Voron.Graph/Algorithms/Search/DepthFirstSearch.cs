@@ -31,7 +31,7 @@ namespace Voron.Graph.Algorithms.Search
             }
         }
 
-        public Task Traverse(Transaction tx, Func<JObject, bool> searchPredicate, Func<bool> shouldStopPredicate)
+        public Task Traverse(Transaction tx, Func<JObject, bool> searchPredicate, Func<bool> shouldStopPredicate, ushort? edgeTypeFilter = null)
         {
             if (State == AlgorithmState.Running)
                 throw new InvalidOperationException("The search already running");
@@ -71,7 +71,8 @@ namespace Voron.Graph.Algorithms.Search
                             visitedNodes.Add(currentNode.Key);
                             OnNodeVisited(currentNode);
 
-                            foreach (var node in _graphStorage.Queries.GetAdjacentOf(tx, currentNode))
+                            foreach (var node in _graphStorage.Queries.GetAdjacentOf(tx, currentNode, edgeTypeFilter ?? 0)
+                                                                      .Where(node => !visitedNodes.Contains(node.Key)))
                             {
                                 AbortExecutionIfNeeded();
                                 processingQueue.Push(node);

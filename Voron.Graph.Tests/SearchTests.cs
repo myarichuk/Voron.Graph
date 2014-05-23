@@ -22,7 +22,7 @@ namespace Voron.Graph.Tests
         }
 
         [TestMethod]
-        public async Task searchAlgorithm_FindOne_with_connected_root_should_return_correct_results()
+        public async Task BFS_FindOne_with_connected_root_should_return_correct_results()
         {
             var graph = new GraphStorage("TestGraph", Env);
             Node node2;
@@ -82,7 +82,7 @@ namespace Voron.Graph.Tests
         }
 
         [TestMethod]
-        public async Task searchAlgorithm_FindOne_with_only_root_node_in_graph_returns_correct_results()
+        public async Task BFS_FindOne_with_only_root_node_in_graph_returns_correct_results()
         {
             var graph = new GraphStorage("TestGraph", Env);
             using (var tx = graph.NewTransaction(TransactionFlags.ReadWrite))
@@ -97,6 +97,62 @@ namespace Voron.Graph.Tests
                 var node = await searchAlgorithm.FindOne(tx, data => ValueFromJson<string>(data).Equals("test1"));
 
                 node.Should().NotBeNull();
+            }
+        }
+
+        [TestMethod]
+        public void BFS_FindOne_with_request_cancellation_will_return_canceled_search_task()
+        {
+            var graph = new GraphStorage("TestGraph", Env);
+            using (var tx = graph.NewTransaction(TransactionFlags.ReadWrite))
+            {
+                var node1 = graph.Commands.CreateNode(tx, JsonFromValue("test1"));
+                var node2 = graph.Commands.CreateNode(tx, JsonFromValue("test2"));
+
+                graph.Commands.CreateEdgeBetween(tx, node1, node2);
+
+                tx.Commit();
+            }
+
+            using (var tx = graph.NewTransaction(TransactionFlags.Read))
+            {
+                var searchAlgorithm = new BreadthFirstSearch(graph, CancelTokenSource.Token);
+                searchAlgorithm.NodeVisited += node => CancelTokenSource.Cancel();
+                var searchTask = searchAlgorithm.FindOne(tx, data => ValueFromJson<string>(data).Equals("test2"));
+
+                searchTask.ContinueWith(task =>
+                {
+                    task.IsFaulted.Should().BeFalse();
+                    task.IsCanceled.Should().BeTrue();
+                });
+            }
+        }
+
+        [TestMethod]
+        public void DFS_FindOne_with_request_cancellation_will_return_canceled_search_task()
+        {
+            var graph = new GraphStorage("TestGraph", Env);
+            using (var tx = graph.NewTransaction(TransactionFlags.ReadWrite))
+            {
+                var node1 = graph.Commands.CreateNode(tx, JsonFromValue("test1"));
+                var node2 = graph.Commands.CreateNode(tx, JsonFromValue("test2"));
+
+                graph.Commands.CreateEdgeBetween(tx, node1, node2);
+
+                tx.Commit();
+            }
+
+            using (var tx = graph.NewTransaction(TransactionFlags.Read))
+            {
+                var searchAlgorithm = new DepthFirstSearch(graph, CancelTokenSource.Token);
+                searchAlgorithm.NodeVisited += node => CancelTokenSource.Cancel();
+                var searchTask = searchAlgorithm.FindOne(tx, data => ValueFromJson<string>(data).Equals("test2"));
+
+                searchTask.ContinueWith(task =>
+                {
+                    task.IsFaulted.Should().BeFalse();
+                    task.IsCanceled.Should().BeTrue();
+                });
             }
         }
 
@@ -120,7 +176,7 @@ namespace Voron.Graph.Tests
         }
 
         [TestMethod]
-        public async Task searchAlgorithm_FindOne_with_disconnected_root_should_return_null()
+        public async Task BFS_FindOne_with_disconnected_root_should_return_null()
         {
             var graph = new GraphStorage("TestGraph", Env);
             Node node2;
@@ -180,7 +236,7 @@ namespace Voron.Graph.Tests
         }
 
         [TestMethod]
-        public async Task searchAlgorithm_FindMany_with_connected_root_returns_correct_results()
+        public async Task BFS_FindMany_with_connected_root_returns_correct_results()
         {
             var graph = new GraphStorage("TestGraph", Env);
             using (var tx = graph.NewTransaction(TransactionFlags.ReadWrite))
@@ -244,7 +300,7 @@ namespace Voron.Graph.Tests
         }
 
         [TestMethod]
-        public void searchAlgorithm_FindOne_should_throw_exception_if_algorithm_already_runs()
+        public void BFS_FindOne_should_throw_exception_if_algorithm_already_runs()
         {
             var graph = new GraphStorage("TestGraph", Env);
             using (var tx = graph.NewTransaction(TransactionFlags.ReadWrite))
