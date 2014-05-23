@@ -71,10 +71,14 @@ namespace Voron.Graph.Algorithms.Search
                             visitedNodes.Add(currentNode.Key);
                             OnNodeVisited(currentNode);
 
-                            foreach(var node in _graphStorage.Queries.GetAdjacentOf(tx,currentNode))
+                            foreach (var node in _graphStorage.Queries.GetAdjacentOf(tx, currentNode))
+                            {
+                                AbortExecutionIfNeeded();
                                 processingQueue.Push(node);
+                            }
                         }
                     }
+                    OnStateChange(AlgorithmState.Finished);
                 });
         }
 
