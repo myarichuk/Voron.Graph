@@ -12,6 +12,16 @@ namespace Voron.Graph
     /// </remarks>
     public class Transaction : IDisposable
     {
+        private bool _isDisposed;
+
+        public bool IsDisposed
+        {
+            get
+            {
+                return _isDisposed;
+            }
+        }
+
         public TransactionFlags Flags
         {
             get
@@ -24,6 +34,7 @@ namespace Voron.Graph
 
         public Transaction(Voron.Impl.Transaction voronTransaction, string nodeTreeName, string edgesTreeName, string disconnectedNodesTreeName)
         {
+            _isDisposed = false;
             if (voronTransaction == null)
                 throw new ArgumentNullException("voronTransaction");
             VoronTransaction = voronTransaction;
@@ -41,6 +52,7 @@ namespace Voron.Graph
 
         public void Dispose()
         {
+            _isDisposed = true;
             VoronTransaction.Dispose();
         }
 

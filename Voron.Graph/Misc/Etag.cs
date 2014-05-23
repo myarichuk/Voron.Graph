@@ -12,8 +12,8 @@ namespace Voron.Graph
 	public class Etag : IEquatable<Etag>
 	{
 		private static long _globalCount;
-        private static Etag _emptyInstance;
-        private static Etag _invalidInstance;
+        private readonly static Etag _emptyInstance;
+        private readonly static Etag _invalidInstance;
 
 		private const int SizeOfLong = sizeof (long);
 

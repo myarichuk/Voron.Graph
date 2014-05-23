@@ -21,6 +21,7 @@ namespace Voron.Graph.Impl
                     do
                     {
                         cancelToken.ThrowIfCancellationRequested();
+                        CheckTransactionDisposedAndThrowIfNeeded(tx);
 
                         var readResult = nodesIterator.CreateReaderForCurrent();
                         using (var readResultAsStream = readResult.AsStream())
@@ -29,33 +30,53 @@ namespace Voron.Graph.Impl
                     } while (nodesIterator.MoveNext());
                 }
 
+                CheckTransactionDisposedAndThrowIfNeeded(tx);
                 return results;
             });
         }
 
         public Task<List<Edge>> GetAllEdges(Transaction tx, CancellationToken cancelToken)
         {
-            return Task.Run(() =>
+            return Task.Run(() => GetEdges(tx, null, ref cancelToken));
+        }
+
+        public Task<List<Edge>> GetEdgesOfNode(Transaction tx, Node node, CancellationToken cancelToken)
+        {
+            return Task.Run(() => GetEdges(tx, node.Key.ToSlice(), ref cancelToken));
+        }
+
+        private static void CheckTransactionDisposedAndThrowIfNeeded(Transaction tx)
+        {
+            if (tx.IsDisposed)
+                throw new InvalidOperationException("Transaction was disposed before the operation has been complete.");
+        }
+
+        private static List<Edge> GetEdges(Transaction tx,Slice requiredPrefix, ref CancellationToken cancelToken)
+        {
+            var results = new List<Edge>();
+            using (var edgesIterator = tx.EdgeTree.Iterate(tx.VoronTransaction))
             {
-                var results = new List<Edge>();
-                using (var edgesIterator = tx.EdgeTree.Iterate(tx.VoronTransaction))
+                if (requiredPrefix != null)
                 {
-                    if (!edgesIterator.Seek(Slice.BeforeAllKeys))
-                        return results;
-
-                    do
-                    {
-                        cancelToken.ThrowIfCancellationRequested();
-
-                        var readResult = edgesIterator.CreateReaderForCurrent();
-                        using (var readResultAsStream = readResult.AsStream())
-                            results.Add(new Edge(edgesIterator.CurrentKey.ToEdgeTreeKey(), readResultAsStream.ToJObject()));
-
-                    } while (edgesIterator.MoveNext());
+                    edgesIterator.RequiredPrefix = requiredPrefix;
+                    edgesIterator.Seek(requiredPrefix);
                 }
+                else if (!edgesIterator.Seek(Slice.BeforeAllKeys))
+                    return results;
 
-                return results;
-            });
+                do
+                {
+                    cancelToken.ThrowIfCancellationRequested();
+                    CheckTransactionDisposedAndThrowIfNeeded(tx);
+
+                    var readResult = edgesIterator.CreateReaderForCurrent();
+                    using (var readResultAsStream = readResult.AsStream())
+                        results.Add(new Edge(edgesIterator.CurrentKey.ToEdgeTreeKey(), readResultAsStream.ToJObject()));
+
+                } while (edgesIterator.MoveNext());
+            }
+
+            return results;
         }
     }
 }

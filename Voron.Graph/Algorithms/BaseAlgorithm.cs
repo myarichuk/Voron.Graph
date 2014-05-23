@@ -24,15 +24,28 @@ namespace Voron.Graph.Algorithms
             _cancelToken = cancelToken;
         }
 
+        public event Action Finished;
+
         public event Action<AlgorithmState> StateChanged;
         protected virtual void OnStateChange(AlgorithmState state)
         {
+            if(state == AlgorithmState.Finished ||
+               state == AlgorithmState.Aborted)
+                OnFinished();
+
             Interlocked.CompareExchange(ref _state, (int)state, _state);
 
             var stateChanged = this.StateChanged;
 
             if (stateChanged != null)
                 stateChanged(state);
+        }
+
+        protected void OnFinished()
+        {
+            var finished = Finished;
+            if (finished != null)
+                finished();
         }
 
         protected void AbortExecutionIfNeeded()
