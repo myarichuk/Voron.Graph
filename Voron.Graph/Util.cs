@@ -15,9 +15,10 @@ namespace Voron.Graph
 
     internal unsafe static class Util
     {
-        private static int EdgeTreeKeySize = Marshal.SizeOf(typeof(EdgeTreeKey));
-        private static int SizeOfUShort = Marshal.SizeOf(typeof(ushort));
-        private static int SizeOfLong = Marshal.SizeOf(typeof(long));
+	    private static readonly int EdgeTreeKeySize = Marshal.SizeOf(typeof(EdgeTreeKey));
+		private static readonly int SizeOfUShort = Marshal.SizeOf(typeof(ushort));
+		private static readonly int SizeOfInt = Marshal.SizeOf(typeof(int));
+		private static readonly int SizeOfLong = Marshal.SizeOf(typeof(long));
 
         internal static Stream ToStream(this JObject jsonObject)
         {
@@ -48,24 +49,23 @@ namespace Voron.Graph
 
         internal static Slice EdgeKeyPrefix(Node nodeFrom, Node nodeTo)
         {
-            var sizeofLong = sizeof(long);
-            var prefixBytes = new byte[sizeofLong * 2]; //TODO : this should be taken from Buffer Pool
-            BigEndianBitConverter.Big.CopyBytes(nodeFrom.Key, prefixBytes, 0);
-            BigEndianBitConverter.Big.CopyBytes(nodeTo.Key, prefixBytes, sizeofLong);
+			var prefixBytes = new byte[SizeOfLong * 2]; //TODO : this should be taken from Buffer Pool
+            EndianBitConverter.Big.CopyBytes(nodeFrom.Key, prefixBytes, 0);
+			EndianBitConverter.Big.CopyBytes(nodeTo.Key, prefixBytes, SizeOfLong);
             return new Slice(prefixBytes);
         }
 
         internal static Slice ToSlice(this long key)
         {
-            var buffer = new byte[Marshal.SizeOf(typeof(long))]; //TODO: refactor this with BufferPool implementation
-            BigEndianBitConverter.Big.CopyBytes(key, buffer, 0);
+			var buffer = new byte[SizeOfLong]; //TODO: refactor this with BufferPool implementation
+            EndianBitConverter.Big.CopyBytes(key, buffer, 0);
             return new Slice(buffer);
         }
 
         internal static Slice ToSlice(this int key)
         {
-            var buffer = new byte[Marshal.SizeOf(key)]; //TODO: refactor this with BufferPool implementation
-            BigEndianBitConverter.Big.CopyBytes(key, buffer, 0);
+            var buffer = new byte[SizeOfInt]; //TODO: refactor this with BufferPool implementation
+            EndianBitConverter.Big.CopyBytes(key, buffer, 0);
             return new Slice(buffer);
         }
 
@@ -73,9 +73,9 @@ namespace Voron.Graph
         {
             var keyData = new byte[EdgeTreeKeySize];
 
-            BigEndianBitConverter.Big.CopyBytes(edgeKey.NodeKeyFrom, keyData, 0);
-            BigEndianBitConverter.Big.CopyBytes(edgeKey.NodeKeyTo, keyData, SizeOfLong);
-            BigEndianBitConverter.Big.CopyBytes(edgeKey.Type, keyData, SizeOfLong + SizeOfUShort);
+            EndianBitConverter.Big.CopyBytes(edgeKey.NodeKeyFrom, keyData, 0);
+            EndianBitConverter.Big.CopyBytes(edgeKey.NodeKeyTo, keyData, SizeOfLong);
+            EndianBitConverter.Big.CopyBytes(edgeKey.Type, keyData, SizeOfLong + SizeOfUShort);
 
             return new Slice(keyData);
         }
@@ -87,12 +87,30 @@ namespace Voron.Graph
             edgeKey.CopyTo(keyData);
             var edgeTreeKey = new EdgeTreeKey
             {
-                NodeKeyFrom = BigEndianBitConverter.Big.ToInt64(keyData, 0),
-                NodeKeyTo = BigEndianBitConverter.Big.ToInt64(keyData, SizeOfLong),
-                Type = BigEndianBitConverter.Big.ToUInt16(keyData, SizeOfLong + SizeOfUShort)
+                NodeKeyFrom = EndianBitConverter.Big.ToInt64(keyData, 0),
+                NodeKeyTo = EndianBitConverter.Big.ToInt64(keyData, SizeOfLong),
+                Type = EndianBitConverter.Big.ToUInt16(keyData, SizeOfLong + SizeOfUShort)
             };
             
             return edgeTreeKey;
-        }    
+        }
+
+	    internal static Etag ToEtag(this Stream stream)
+	    {
+		    if(stream.CanRead == false)
+				throw new ArgumentException("Cannot read from the stream --> unreadable!");
+
+		    var sizeOfEtag = SizeOfLong*2;
+		    if(stream.Length - stream.Position > sizeOfEtag)
+				throw new ArgumentException("Invalid etag size in stream - data is corrupted?");
+
+		    var etagBytes = new byte[sizeOfEtag];
+		    stream.Read(etagBytes, 0, sizeOfEtag);
+
+			var timestamp = EndianBitConverter.Big.ToInt64(etagBytes, 0);
+			var count = EndianBitConverter.Big.ToInt64(etagBytes, SizeOfLong);
+
+			return new Etag(count,timestamp);
+		}
     }
 }
