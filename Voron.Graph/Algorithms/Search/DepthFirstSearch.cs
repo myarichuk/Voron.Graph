@@ -1,20 +1,34 @@
 ﻿using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Linq;
 
 namespace Voron.Graph.Algorithms.Search
 {
-    public class BreadthFirstSearch : BaseRootedAlgorithm, ISearchAlgorithm
+    public class DepthFirstSearch : BaseRootedAlgorithm, ISearchAlgorithm
     {
+
         private readonly GraphStorage _graphStorage;
 
-        public BreadthFirstSearch(GraphStorage graphStorage, CancellationToken cancelToken)
+        public DepthFirstSearch(GraphStorage graphStorage, CancellationToken cancelToken)
             : base(cancelToken)
         {
             _graphStorage = graphStorage;
+        }
+
+        protected override Node GetRootNode(Transaction tx)
+        {
+            using (var iter = tx.NodeTree.Iterate(tx.VoronTransaction))
+            {
+                if (!iter.Seek(Slice.BeforeAllKeys))
+                    return null;
+
+                using (var resultStream = iter.CreateReaderForCurrent().AsStream())
+                    return new Node(iter.CurrentKey.CreateReader().ReadBigEndianInt64(), resultStream.ToJObject());
+            }
         }
 
         public Task Traverse(Transaction tx, Func<JObject, bool> searchPredicate, Func<bool> shouldStopPredicate)
@@ -26,10 +40,10 @@ namespace Voron.Graph.Algorithms.Search
                 {
                     OnStateChange(AlgorithmState.Running);
 
-                    var visitedNodes = new HashSet<long>();
-                    var processingQueue = new Queue<Node>();
                     var rootNode = GetRootNode(tx);
-                    processingQueue.Enqueue(rootNode);
+                    var visitedNodes = new HashSet<long>();
+                    var processingQueue = new Stack<Node>();
+                    processingQueue.Push(rootNode);
 
                     while (processingQueue.Count > 0)
                     {
@@ -38,13 +52,10 @@ namespace Voron.Graph.Algorithms.Search
                             OnStateChange(AlgorithmState.Finished);
                             break;
                         }
-    
-                        AbortExecutionIfNeeded();
-    
-                        var currentNode = processingQueue.Dequeue();
-                        visitedNodes.Add(currentNode.Key);
-                        OnNodeVisited(currentNode);
 
+                        AbortExecutionIfNeeded();
+
+                        var currentNode = processingQueue.Pop();
                         if (searchPredicate(currentNode.Data))
                         {
                             OnNodeFound(currentNode);
@@ -54,30 +65,17 @@ namespace Voron.Graph.Algorithms.Search
                                 break;
                             }
                         }
-    
-                        foreach (var childNode in _graphStorage.Queries.GetAdjacentOf(tx, currentNode)
-                                                                    .Where(node => !visitedNodes.Contains(node.Key)))
+
+                        if(!visitedNodes.Contains(currentNode.Key))
                         {
-                            AbortExecutionIfNeeded();
-                            processingQueue.Enqueue(childNode);
+                            visitedNodes.Add(currentNode.Key);
+                            OnNodeVisited(currentNode);
+
+                            foreach(var node in _graphStorage.Queries.GetAdjacentOf(tx,currentNode))
+                                processingQueue.Push(node);
                         }
-    
                     }
-
-                    OnStateChange(AlgorithmState.Finished);
                 });
-        }       
-
-        protected override Node GetRootNode(Transaction tx)
-        {
-            using(var iter = tx.NodeTree.Iterate(tx.VoronTransaction))
-            {
-                if (!iter.Seek(Slice.BeforeAllKeys))
-                    return null;
-
-                using (var resultStream = iter.CreateReaderForCurrent().AsStream())
-                    return new Node(iter.CurrentKey.CreateReader().ReadBigEndianInt64(), resultStream.ToJObject());
-            }
         }
 
         public event Action<Node> NodeVisited;

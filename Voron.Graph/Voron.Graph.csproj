@@ -54,6 +54,7 @@
     <Compile Include="Algorithms\BaseAlgorithm.cs" />
     <Compile Include="Algorithms\BaseRootedAlgorithm.cs" />
     <Compile Include="Algorithms\Search\BreadthFirstSearch.cs" />
+    <Compile Include="Algorithms\Search\DepthFirstSearch.cs" />
     <Compile Include="Algorithms\Search\ISearchAlgorithm.cs" />
     <Compile Include="DisposableAction.cs" />
     <Compile Include="Impl\GraphAdminQueries.cs" />

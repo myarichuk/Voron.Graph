@@ -1,8 +1,6 @@
 ﻿using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using Voron.Graph.Algorithms.Search;
 
@@ -16,7 +14,7 @@ namespace Voron.Graph
             Func<bool> shouldStopFunc = () => result != null;
             searchAlgorithm.NodeFound += foundNode => result = foundNode;
 
-            await searchAlgorithm.Search(tx, searchPredicate, shouldStopFunc);
+            await searchAlgorithm.Traverse(tx, searchPredicate, shouldStopFunc);
 
             return result;
         }
@@ -26,7 +24,7 @@ namespace Voron.Graph
             var results = new List<Node>();
             searchAlgorithm.NodeFound += foundNode => results.Add(foundNode);
 
-            await searchAlgorithm.Search(tx, searchPredicate, () => false);
+            await searchAlgorithm.Traverse(tx, searchPredicate, () => false);
 
             return results;
         }
