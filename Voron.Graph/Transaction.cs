@@ -32,7 +32,11 @@ namespace Voron.Graph
 
         internal Voron.Impl.Transaction VoronTransaction { get; private set; }
 
-        public Transaction(Voron.Impl.Transaction voronTransaction, string nodeTreeName, string edgesTreeName, string disconnectedNodesTreeName)
+        public Transaction(Voron.Impl.Transaction voronTransaction, 
+            string nodeTreeName, 
+            string edgesTreeName, 
+            string disconnectedNodesTreeName,
+            string keyByEtagTreeName)
         {
             _isDisposed = false;
             if (voronTransaction == null)
@@ -42,6 +46,7 @@ namespace Voron.Graph
             NodeTree = voronTransaction.ReadTree(nodeTreeName);
             EdgeTree = voronTransaction.ReadTree(edgesTreeName);
             DisconnectedNodeTree = voronTransaction.ReadTree(disconnectedNodesTreeName);
+            KeyByEtagTree = voronTransaction.ReadTree(keyByEtagTreeName);
         }
 
         public Tree NodeTree { get; private set; }
@@ -49,6 +54,8 @@ namespace Voron.Graph
         public Tree EdgeTree { get; private set; }
 
         public Tree DisconnectedNodeTree { get; private set; }
+
+        public Tree KeyByEtagTree { get; private set; }
 
         public void Dispose()
         {

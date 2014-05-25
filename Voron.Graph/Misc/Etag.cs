@@ -9,7 +9,7 @@ using Voron.Util.Conversion;
 
 namespace Voron.Graph
 {
-	public class Etag : IEquatable<Etag>
+	public class Etag : IEquatable<Etag>, IComparable<Etag>, IComparable
 	{
 		private static long _globalCount;
         private readonly static Etag _emptyInstance;
@@ -19,6 +19,8 @@ namespace Voron.Graph
 
 		private readonly long _timestamp;
 		private readonly long _count;
+
+        public const int Size = SizeOfLong * 2;
 
         static Etag()
         {
@@ -48,6 +50,15 @@ namespace Voron.Graph
 			_timestamp = timestamp;
 		}		
 
+        public Etag(byte[] etagBytes)
+        {
+            if (etagBytes == null || etagBytes.Length != Size)
+                throw new ArgumentException("Invalid etag byte array");
+
+            _timestamp = EndianBitConverter.Big.ToInt64(etagBytes, 0);
+            _count = EndianBitConverter.Big.ToInt64(etagBytes, SizeOfLong);
+        }
+
 		public static Etag Generate()
 		{
 			var count = Interlocked.Increment(ref _globalCount);
@@ -61,7 +72,7 @@ namespace Voron.Graph
 			var bytes = new byte[SizeOfLong*2];
 			EndianBitConverter.Big.CopyBytes(_timestamp,bytes,0);
 			EndianBitConverter.Big.CopyBytes(_count,bytes,SizeOfLong);
-
+            
 			return bytes;
 		}
 
@@ -69,6 +80,15 @@ namespace Voron.Graph
 		{
 			return new MemoryStream(ToBytes());
 		}
+
+        public Slice ToSlice()
+        {
+            var sliceWriter = new SliceWriter(SizeOfLong * 2);
+            sliceWriter.WriteBigEndian(_timestamp);
+            sliceWriter.WriteBigEndian(_count);
+            
+            return sliceWriter.CreateSlice();
+        }
 
         public override string ToString()
         {
@@ -141,5 +161,24 @@ namespace Voron.Graph
 
 		#endregion
 
-	}
+
+        public int CompareTo(object otherObject)
+        {
+            if (otherObject == null)
+                return -1;
+
+            var otherEtag = otherObject as Etag;
+            return CompareTo(otherEtag);
+        }
+
+        public int CompareTo(Etag otherEtag)
+        {
+            if (otherEtag == null)
+                return -1;
+            if (ReferenceEquals(this, otherEtag) || this == otherEtag)
+                return 0;
+
+            return this > otherEtag ? 1 : -1;
+        }
+    }
 }

@@ -71,13 +71,13 @@ namespace Voron.Graph
 
         internal static Slice ToSlice(this EdgeTreeKey edgeKey)
         {
-            var keyData = new byte[EdgeTreeKeySize];
+            var sliceWriter = new SliceWriter(EdgeTreeKeySize);
+            
+            sliceWriter.WriteBigEndian(edgeKey.NodeKeyFrom);
+            sliceWriter.WriteBigEndian(edgeKey.NodeKeyTo);
+            sliceWriter.WriteBigEndian(edgeKey.Type);
 
-            EndianBitConverter.Big.CopyBytes(edgeKey.NodeKeyFrom, keyData, 0);
-            EndianBitConverter.Big.CopyBytes(edgeKey.NodeKeyTo, keyData, SizeOfLong);
-            EndianBitConverter.Big.CopyBytes(edgeKey.Type, keyData, SizeOfLong + SizeOfUShort);
-
-            return new Slice(keyData);
+            return sliceWriter.CreateSlice();
         }
 
 
@@ -100,17 +100,42 @@ namespace Voron.Graph
 		    if(stream.CanRead == false)
 				throw new ArgumentException("Cannot read from the stream --> unreadable!");
 
-		    var sizeOfEtag = SizeOfLong*2;
-		    if(stream.Length - stream.Position > sizeOfEtag)
+            if (stream.Length - stream.Position > Etag.Size)
 				throw new ArgumentException("Invalid etag size in stream - data is corrupted?");
 
-		    var etagBytes = new byte[sizeOfEtag];
-		    stream.Read(etagBytes, 0, sizeOfEtag);
+            var etagBytes = new byte[Etag.Size];
+            stream.Read(etagBytes, 0, Etag.Size);
 
 			var timestamp = EndianBitConverter.Big.ToInt64(etagBytes, 0);
 			var count = EndianBitConverter.Big.ToInt64(etagBytes, SizeOfLong);
 
 			return new Etag(count,timestamp);
 		}
+
+        internal static Stream EtagAndValueToStream(Etag etag, JObject value)
+        {
+            var stream = new MemoryStream();
+            var etagBytes = etag.ToBytes();
+
+            stream.Write(etagBytes, 0, etagBytes.Length);
+            
+            var writer = new BsonWriter(stream);
+            value.WriteTo(writer);
+
+            stream.Position = 0;
+            return stream;
+        }
+
+        internal static void EtagAndValueFromStream(Stream source, out Etag etag, out JObject value)
+        {
+            source.Position = 0;
+            var etagBytes = new byte[Etag.Size];
+            var reader = new BsonReader(source);
+
+            source.Read(etagBytes, 0, Etag.Size);
+            etag = new Etag(etagBytes);
+            value = JObject.Load(reader);
+        }
+
     }
 }

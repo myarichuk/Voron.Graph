@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Newtonsoft.Json.Linq;
+using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -25,7 +26,13 @@ namespace Voron.Graph.Impl
 
                         var readResult = nodesIterator.CreateReaderForCurrent();
                         using (var readResultAsStream = readResult.AsStream())
-                            results.Add(new Node(nodesIterator.CurrentKey.CreateReader().ReadBigEndianInt64(), readResultAsStream.ToJObject()));
+                        {
+                            Etag etag;
+                            JObject value;
+                            Util.EtagAndValueFromStream(readResultAsStream, out etag, out value);
+
+                            results.Add(new Node(nodesIterator.CurrentKey.CreateReader().ReadBigEndianInt64(), value, etag));
+                        }
 
                     } while (nodesIterator.MoveNext());
                 }
@@ -71,7 +78,13 @@ namespace Voron.Graph.Impl
 
                     var readResult = edgesIterator.CreateReaderForCurrent();
                     using (var readResultAsStream = readResult.AsStream())
-                        results.Add(new Edge(edgesIterator.CurrentKey.ToEdgeTreeKey(), readResultAsStream.ToJObject()));
+                    {
+                        Etag etag;
+                        JObject value;
+
+                        Util.EtagAndValueFromStream(readResultAsStream, out etag, out value);
+                        results.Add(new Edge(edgesIterator.CurrentKey.ToEdgeTreeKey(), value, etag));
+                    }
 
                 } while (edgesIterator.MoveNext());
             }

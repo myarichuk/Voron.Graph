@@ -7,7 +7,7 @@
         public const string EdgeTreeNameSuffix = "_EdgeTree";
         public const string NodesWithEdgesTreeNameSuffix = "_NodeWithEdgesTree";
         public const string NodeTreeNameSuffix = "_NodeTree";
-        public const string DisconnectedNodesTreeName = "_DisconnectedNodes";
-
+        public const string DisconnectedNodesTreeNameSuffix = "_DisconnectedNodes";
+        public const string KeyByEtagTreeNameSuffix = "_EtagByKeyTree";
     }
 }

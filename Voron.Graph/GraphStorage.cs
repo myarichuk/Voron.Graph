@@ -16,6 +16,7 @@ namespace Voron.Graph
         private readonly string _nodeTreeName;
         private readonly string _edgeTreeName;
         private readonly string _disconnectedNodesTreeName;
+        private readonly string _keyByEtagTreeName;
         private long _nextId;
 
         public GraphStorage(string graphName, StorageEnvironment storageEnvironment)
@@ -24,7 +25,8 @@ namespace Voron.Graph
             if (storageEnvironment == null) throw new ArgumentNullException("storageEnvironment");
             _nodeTreeName = graphName + Constants.NodeTreeNameSuffix;
             _edgeTreeName = graphName + Constants.EdgeTreeNameSuffix;
-            _disconnectedNodesTreeName = graphName + Constants.DisconnectedNodesTreeName;
+            _disconnectedNodesTreeName = graphName + Constants.DisconnectedNodesTreeNameSuffix;
+            _keyByEtagTreeName = graphName + Constants.KeyByEtagTreeNameSuffix;
             _storageEnvironment = storageEnvironment;
             
             CreateConventions();
@@ -36,7 +38,7 @@ namespace Voron.Graph
         public Transaction NewTransaction(TransactionFlags flags, TimeSpan? timeout = null)
         {
             var voronTransaction = _storageEnvironment.NewTransaction(flags, timeout);
-            return new Transaction(voronTransaction, _nodeTreeName, _edgeTreeName, _disconnectedNodesTreeName);
+            return new Transaction(voronTransaction, _nodeTreeName, _edgeTreeName, _disconnectedNodesTreeName, _keyByEtagTreeName);
         }
 
         private long GetLatestStoredNodeKey()
@@ -77,6 +79,7 @@ namespace Voron.Graph
                 _storageEnvironment.CreateTree(tx, _nodeTreeName);
                 _storageEnvironment.CreateTree(tx, _edgeTreeName);
                 _storageEnvironment.CreateTree(tx, _disconnectedNodesTreeName);
+                _storageEnvironment.CreateTree(tx, _keyByEtagTreeName);
                 tx.Commit();
             }
         }

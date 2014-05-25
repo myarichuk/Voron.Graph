@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json.Linq;
+﻿using Newtonsoft.Json.Bson;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -24,12 +25,15 @@ namespace Voron.Graph.Impl
             var key = _conventions.GetNextNodeKey();
 
             var nodeKey = key.ToSlice();
+            var etag = Etag.Generate();
 
-            tx.NodeTree.Add(tx.VoronTransaction, nodeKey, value.ToStream());
+            tx.NodeTree.Add(tx.VoronTransaction, nodeKey, Util.EtagAndValueToStream(etag,value));
+            tx.KeyByEtagTree.Add(tx.VoronTransaction, etag.ToSlice(), nodeKey);
             tx.DisconnectedNodeTree.Add(tx.VoronTransaction, nodeKey, value.ToStream());
 
-            return new Node(key, value);
+            return new Node(key, value, etag);
         }
+
 
         public Node CreateNode(Transaction tx)
         {
@@ -45,7 +49,13 @@ namespace Voron.Graph.Impl
                 return false;
 
             //Voron's method name here is misleading --> it performs updates as well
-            tx.NodeTree.Add(tx.VoronTransaction, node.Key.ToSlice(), node.Data.ToStream());
+            tx.KeyByEtagTree.Delete(tx.VoronTransaction, node.Etag.ToSlice());
+            var newEtag = Etag.Generate();
+            node.Etag = newEtag;
+
+            tx.NodeTree.Add(tx.VoronTransaction, node.Key.ToSlice(), Util.EtagAndValueToStream(newEtag, node.Data));
+
+            tx.KeyByEtagTree.Add(tx.VoronTransaction, newEtag.ToSlice(), node.Key.ToSlice());
             return true;
         }
 
@@ -60,11 +70,14 @@ namespace Voron.Graph.Impl
             if (nodeTo == null) throw new ArgumentNullException("nodeTo");
             if (!_graphQueries.ContainsNode(tx, nodeTo.Key))
                 throw new ArgumentException("nodeTo does not exist in the tree", "nodeTo");
-
-            var edge = new Edge(nodeFrom.Key, nodeTo.Key, value);
-            tx.EdgeTree.Add(tx.VoronTransaction, edge.Key.ToSlice(), value.ToStream() ?? Stream.Null);
-
+            
+            var newEtag = Etag.Generate();
+            var edge = new Edge(nodeFrom.Key, nodeTo.Key, value, type, newEtag);
+            
             tx.DisconnectedNodeTree.Delete(tx.VoronTransaction, nodeFrom.Key.ToSlice());
+            tx.KeyByEtagTree.Add(tx.VoronTransaction, edge.Etag.ToSlice(), edge.Key.ToSlice());
+
+            tx.EdgeTree.Add(tx.VoronTransaction, edge.Key.ToSlice(), Util.EtagAndValueToStream(newEtag,value ?? new JObject()));
 
             return edge;
         }
@@ -76,40 +89,18 @@ namespace Voron.Graph.Impl
 
 	        var nodeKey = node.Key.ToSlice();
             tx.NodeTree.Delete(tx.VoronTransaction, nodeKey);
-            foreach (var edge in GetEdgesOf(tx, node))
+            foreach (var edge in _graphQueries.GetEdgesOf(tx, node))
                 tx.EdgeTree.Delete(tx.VoronTransaction, edge.Key.ToSlice());
+
+            tx.KeyByEtagTree.Delete(tx.VoronTransaction, node.Etag.ToSlice());
         }
 
         public void Delete(Transaction tx, Edge edge)
         {
             tx.EdgeTree.Delete(tx.VoronTransaction, edge.Key.ToSlice());
+            tx.KeyByEtagTree.Delete(tx.VoronTransaction, edge.Etag.ToSlice());
         }
 
-        public IEnumerable<Edge> GetEdgesOf(Transaction tx, Node node)
-        {
-	        if (tx == null) throw new ArgumentNullException("tx");
-	        if (node == null) throw new ArgumentNullException("node");
-
-	        using (var edgeIterator = tx.EdgeTree.Iterate(tx.VoronTransaction))
-            {
-                var nodeKey = node.Key.ToSlice();
-                edgeIterator.RequiredPrefix = nodeKey;
-                if (!edgeIterator.Seek(nodeKey))
-                    yield break;
-
-                do
-                {
-                    var edgeKey = edgeIterator.CurrentKey.ToEdgeTreeKey();
-                    var edgeValueReader = edgeIterator.CreateReaderForCurrent();
-
-                    using (var edgeValueAsStream = edgeValueReader.AsStream())
-                    {
-                        var edge = new Edge(edgeKey, edgeValueAsStream.ToJObject());
-
-                        yield return edge;
-                    }
-                } while (edgeIterator.MoveNext());
-            }
-        }
+       
     }
 }

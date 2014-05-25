@@ -14,10 +14,13 @@ namespace Voron.Graph
 
         public JObject Data { get; private set; }
 
-        public Node(long key, JObject data)
+        public Etag Etag { get; internal set; }
+
+        public Node(long key, JObject data, Etag etag = null)
         {
             Key = key;
             Data = data;
+            Etag = etag ?? Etag.Empty;
         }
     }
 }

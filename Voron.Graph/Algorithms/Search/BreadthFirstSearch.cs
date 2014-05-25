@@ -76,7 +76,12 @@ namespace Voron.Graph.Algorithms.Search
                     return null;
 
                 using (var resultStream = iter.CreateReaderForCurrent().AsStream())
-                    return new Node(iter.CurrentKey.CreateReader().ReadBigEndianInt64(), resultStream.ToJObject());
+                {
+                    Etag etag;
+                    JObject value;
+                    Util.EtagAndValueFromStream(resultStream,out etag,out value);
+                    return new Node(iter.CurrentKey.CreateReader().ReadBigEndianInt64(),value,etag);
+                }
             }
         }
 
