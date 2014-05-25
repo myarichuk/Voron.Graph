@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using Voron.Graph.Extensions;
 
 namespace Voron.Graph.Impl
 {

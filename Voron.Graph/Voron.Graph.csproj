@@ -57,12 +57,13 @@
     <Compile Include="Algorithms\Search\DepthFirstSearch.cs" />
     <Compile Include="Algorithms\Search\ISearchAlgorithm.cs" />
     <Compile Include="DisposableAction.cs" />
+    <Compile Include="Extensions\UtilityExtensions.cs" />
     <Compile Include="Misc\Etag.cs" />
     <Compile Include="Impl\GraphAdminQueries.cs" />
     <Compile Include="Impl\GraphCommands.cs" />
     <Compile Include="Constants.cs" />
     <Compile Include="Conventions.cs" />
-    <Compile Include="Misc\NodeExtensions.cs" />
+    <Compile Include="Extensions\NodeExtensions.cs" />
     <Compile Include="Primitives\EdgeTreeKey.cs" />
     <Compile Include="GraphStorage.cs" />
     <Compile Include="Misc\NativeMethods.cs" />

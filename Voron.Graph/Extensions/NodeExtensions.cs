@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Voron.Graph.Misc
+namespace Voron.Graph.Extensions
 {
     //alternative syntax for doing stuff with nodes
     public static class NodeExtensions

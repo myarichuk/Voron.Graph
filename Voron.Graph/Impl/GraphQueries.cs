@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using Newtonsoft.Json.Linq;
 using System.Diagnostics;
+using Voron.Graph.Extensions;
 
 namespace Voron.Graph.Impl
 {

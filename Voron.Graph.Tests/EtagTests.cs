@@ -7,7 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using FluentAssertions;
 using System.Threading;
-using Voron.Graph.Misc;
+using Voron.Graph.Extensions;
 
 namespace Voron.Graph.Tests
 {
