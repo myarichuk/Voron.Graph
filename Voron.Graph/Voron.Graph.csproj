@@ -49,7 +49,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Algorithms\AlgorithmExtensions.cs" />
+    <Compile Include="Extensions\AlgorithmExtensions.cs" />
     <Compile Include="Algorithms\AlgorithmState.cs" />
     <Compile Include="Algorithms\BaseAlgorithm.cs" />
     <Compile Include="Algorithms\BaseRootedAlgorithm.cs" />

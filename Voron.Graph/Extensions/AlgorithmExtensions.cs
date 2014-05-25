@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Voron.Graph.Algorithms.Search;
 
-namespace Voron.Graph
+namespace Voron.Graph.Extensions
 {
     public static class AlgorithmExtensions
     {

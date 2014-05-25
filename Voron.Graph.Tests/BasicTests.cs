@@ -139,6 +139,42 @@ namespace Voron.Graph.Tests
         }
 
         [TestMethod]
+        public void Read_and_writing_node_metadata_should_work()
+        {
+            var graph = new GraphStorage("TestGraph", Env);
+            Node node1, node2;
+
+            using (var tx = graph.NewTransaction(TransactionFlags.ReadWrite))
+            {
+                node1 = graph.Commands.CreateNode(tx);
+                node2 = graph.Commands.CreateNode(tx);
+
+                graph.Commands.PutToNodeMetadata(tx, node1, "Foo", "Bar");
+                graph.Commands.PutToNodeMetadata(tx, node1, "FooNum", 123);
+
+                graph.Commands.PutToNodeMetadata(tx, node2, "Foo", "Bar2");
+                graph.Commands.PutToNodeMetadata(tx, node2, "FooNum", 456);
+
+                tx.Commit();
+            }
+
+            using (var tx = graph.NewTransaction(TransactionFlags.Read))
+            {
+                var bar1 = graph.Queries.GetFromNodeMetadata<string>(tx, node1, "Foo");
+                var fooNum1 = graph.Queries.GetFromNodeMetadata<int>(tx, node1, "FooNum");
+
+                var bar2 = graph.Queries.GetFromNodeMetadata<string>(tx, node2, "Foo");
+                var fooNum2 = graph.Queries.GetFromNodeMetadata<int>(tx, node2, "FooNum");
+
+                Assert.AreEqual("Bar", bar1);
+                Assert.AreEqual(123, fooNum1);
+
+                Assert.AreEqual("Bar2", bar2);
+                Assert.AreEqual(456, fooNum2);
+            }
+        }
+
+        [TestMethod]
         public void Can_Iterate_On_Nearest_Nodes()
         {
             var graph = new GraphStorage("TestGraph", Env);

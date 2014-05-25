@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Voron.Graph.Algorithms.Search;
 using FluentAssertions;
 using System.Threading;
+using Voron.Graph.Extensions;
 
 namespace Voron.Graph.Tests
 {
