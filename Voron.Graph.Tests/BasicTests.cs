@@ -156,8 +156,6 @@ namespace Voron.Graph.Tests
             //update existing values
             using (var tx = graph.NewTransaction(TransactionFlags.ReadWrite))
             {
-                node = graph.Commands.CreateNode(tx);
-
                 graph.Commands.PutToNodeMetadata(tx, node, "Foo", "Bar-2");
                 graph.Commands.PutToNodeMetadata(tx, node, "FooNum", 456);
 
