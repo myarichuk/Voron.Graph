@@ -2,7 +2,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -38,57 +37,57 @@ namespace Voron.Graph.Algorithms.Search
 
         public Task Traverse(Transaction tx, Func<JObject, bool> searchPredicate, Func<bool> shouldStopPredicate, ushort? edgeTypeFilter = null)
         {
-            if (State == AlgorithmState.Running)
+	        if (State == AlgorithmState.Running)
                 throw new InvalidOperationException("The search already running");
-            else
-                return Task.Run(() =>
-                {
-                    OnStateChange(AlgorithmState.Running);
+	        
+			return Task.Run(() =>
+	        {
+		        OnStateChange(AlgorithmState.Running);
 
-                    var rootNode = GetRootNode(tx);
-                    var visitedNodes = new HashSet<long>();
-                    var processingQueue = new Stack<Node>();
-                    processingQueue.Push(rootNode);
+		        var rootNode = GetRootNode(tx);
+		        var visitedNodes = new HashSet<long>();
+		        var processingQueue = new Stack<Node>();
+		        processingQueue.Push(rootNode);
 
-                    while (processingQueue.Count > 0)
-                    {
-                        if (shouldStopPredicate())
-                        {
-                            OnStateChange(AlgorithmState.Finished);
-                            break;
-                        }
+		        while (processingQueue.Count > 0)
+		        {
+			        if (shouldStopPredicate())
+			        {
+				        OnStateChange(AlgorithmState.Finished);
+				        break;
+			        }
 
-                        AbortExecutionIfNeeded();
+			        AbortExecutionIfNeeded();
 
-                        var currentNode = processingQueue.Pop();
-                        if (searchPredicate(currentNode.Data))
-                        {
-                            OnNodeFound(currentNode);
-                            if (shouldStopPredicate())
-                            {
-                                OnStateChange(AlgorithmState.Finished);
-                                break;
-                            }
-                        }
+			        var currentNode = processingQueue.Pop();
+			        if (searchPredicate(currentNode.Data))
+			        {
+				        OnNodeFound(currentNode);
+				        if (shouldStopPredicate())
+				        {
+					        OnStateChange(AlgorithmState.Finished);
+					        break;
+				        }
+			        }
 
-                        if(!visitedNodes.Contains(currentNode.Key))
-                        {
-                            visitedNodes.Add(currentNode.Key);
-                            OnNodeVisited(currentNode);
+			        if(!visitedNodes.Contains(currentNode.Key))
+			        {
+				        visitedNodes.Add(currentNode.Key);
+				        OnNodeVisited(currentNode);
 
-                            foreach (var node in _graphStorage.Queries.GetAdjacentOf(tx, currentNode, edgeTypeFilter ?? 0)
-                                                                      .Where(node => !visitedNodes.Contains(node.Key)))
-                            {
-                                AbortExecutionIfNeeded();
-                                processingQueue.Push(node);
-                            }
-                        }
-                    }
-                    OnStateChange(AlgorithmState.Finished);
-                });
+				        foreach (var node in _graphStorage.Queries.GetAdjacentOf(tx, currentNode, edgeTypeFilter ?? 0)
+					        .Where(node => !visitedNodes.Contains(node.Key)))
+				        {
+					        AbortExecutionIfNeeded();
+					        processingQueue.Push(node);
+				        }
+			        }
+		        }
+		        OnStateChange(AlgorithmState.Finished);
+	        });
         }
 
-        public event Action<Node> NodeVisited;
+	    public event Action<Node> NodeVisited;
 
         protected void OnNodeVisited(Node node)
         {

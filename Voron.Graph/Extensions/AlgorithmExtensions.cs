@@ -22,7 +22,7 @@ namespace Voron.Graph.Extensions
         public static async Task<List<Node>> FindMany(this ISearchAlgorithm searchAlgorithm, Transaction tx, Func<JObject, bool> searchPredicate)
         {
             var results = new List<Node>();
-            searchAlgorithm.NodeFound += foundNode => results.Add(foundNode);
+            searchAlgorithm.NodeFound += results.Add;
 
             await searchAlgorithm.Traverse(tx, searchPredicate, () => false);
 

@@ -1,4 +1,5 @@
-﻿using FluentAssertions;
+﻿using System.Threading;
+using FluentAssertions;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,12 +10,12 @@ namespace Voron.Graph.Tests
     [TestClass]
     public class BasicTests : BaseGraphTest
     {
-        public System.Threading.CancellationTokenSource CancelTokenSource;
+        public CancellationTokenSource CancelTokenSource;
         
         [TestInitialize]
         public void InitTest()
         {
-            CancelTokenSource = new System.Threading.CancellationTokenSource();
+            CancelTokenSource = new CancellationTokenSource();
         }
 
         [TestCleanup]
@@ -104,8 +105,6 @@ namespace Voron.Graph.Tests
                 }
             });
            
-            var fetchedKeys = new List<long>();
-
             using (var tx = graph.NewTransaction(TransactionFlags.Read))
             {
                 var nodesList = await graph.AdminQueries.GetAllNodes(tx, CancelTokenSource.Token);
@@ -178,24 +177,20 @@ namespace Voron.Graph.Tests
         public void Can_Iterate_On_Nearest_Nodes()
         {
             var graph = new GraphStorage("TestGraph", Env);
-            long centerNodeKey = 0;
-
-            centerNodeKey = Create2DepthHierarchy(graph);
+	        var centerNodeKey = Create2DepthHierarchy(graph);
 
             using (var tx = graph.NewTransaction(TransactionFlags.Read))
             {
                 var centerNode = graph.Queries.LoadNode(tx, centerNodeKey);
                 var nodeValues = new Dictionary<string, string>();
-	            string curEdgeVal;
-                string curNodeVal;
 
-                foreach (var curNode in graph.Queries.GetAdjacentOf(tx, centerNode))
+	            foreach (var curNode in graph.Queries.GetAdjacentOf(tx, centerNode))
                 {
                     var curEdge = graph.Queries.GetEdgesBetween(tx, centerNode, curNode).FirstOrDefault();              
                     Assert.IsNotNull(curEdge);
 
-                    curEdgeVal = curEdge.Data.Value<string>("Value");
-                    curNodeVal = curNode.Data.Value<string>("Value");
+                    var curEdgeVal = curEdge.Data.Value<string>("Value");
+                    var curNodeVal = curNode.Data.Value<string>("Value");
 
                     nodeValues.Add(curNodeVal, curEdgeVal);
 
@@ -208,7 +203,7 @@ namespace Voron.Graph.Tests
 
         private long Create2DepthHierarchy(GraphStorage graph)
         {
-            long centerNodeKey = 0;
+            long centerNodeKey;
             using (var tx = graph.NewTransaction(TransactionFlags.ReadWrite))
             {
                 var centerNode = graph.Commands.CreateNode(tx, JsonFromValue("centerNode"));
@@ -269,7 +264,7 @@ namespace Voron.Graph.Tests
         public void Get_edges_between_existing_and_nonexisting_node_should_return_empty_collection()
         {
             var graph = new GraphStorage("TestGraph", Env);
-            long node1Id = 0;
+            long node1Id;
 
             using (var tx = graph.NewTransaction(TransactionFlags.ReadWrite))
             {
@@ -283,8 +278,8 @@ namespace Voron.Graph.Tests
 
             using (var tx = graph.NewTransaction(TransactionFlags.ReadWrite))
             {
-                Node node1 = graph.Queries.LoadNode(tx, node1Id);
-                Node node2 = new Node(-2, JsonFromValue("node2"));
+                var node1 = graph.Queries.LoadNode(tx, node1Id);
+                var node2 = new Node(-2, JsonFromValue("node2"));
 
                 var edgesList = graph.Queries.GetEdgesBetween(tx, node1, node2);
                 edgesList.Should().BeEmpty();

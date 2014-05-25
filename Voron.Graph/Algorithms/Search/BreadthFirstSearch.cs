@@ -19,56 +19,56 @@ namespace Voron.Graph.Algorithms.Search
 
         public Task Traverse(Transaction tx, Func<JObject, bool> searchPredicate, Func<bool> shouldStopPredicate, ushort? edgeTypeFilter = null)
         {
-            if (State == AlgorithmState.Running)
+	        if (State == AlgorithmState.Running)
                 throw new InvalidOperationException("The search already running");
-            else
-                return Task.Run(() =>
-                {
-                    OnStateChange(AlgorithmState.Running);
 
-                    var visitedNodes = new HashSet<long>();
-                    var processingQueue = new Queue<Node>();
-                    var rootNode = GetRootNode(tx);
-                    processingQueue.Enqueue(rootNode);
+	        return Task.Run(() =>
+	        {
+		        OnStateChange(AlgorithmState.Running);
 
-                    while (processingQueue.Count > 0)
-                    {
-                        if (shouldStopPredicate())
-                        {
-                            OnStateChange(AlgorithmState.Finished);
-                            break;
-                        }
+		        var visitedNodes = new HashSet<long>();
+		        var processingQueue = new Queue<Node>();
+		        var rootNode = GetRootNode(tx);
+		        processingQueue.Enqueue(rootNode);
+
+		        while (processingQueue.Count > 0)
+		        {
+			        if (shouldStopPredicate())
+			        {
+				        OnStateChange(AlgorithmState.Finished);
+				        break;
+			        }
     
-                        AbortExecutionIfNeeded();
+			        AbortExecutionIfNeeded();
     
-                        var currentNode = processingQueue.Dequeue();
-                        visitedNodes.Add(currentNode.Key);
-                        OnNodeVisited(currentNode);
+			        var currentNode = processingQueue.Dequeue();
+			        visitedNodes.Add(currentNode.Key);
+			        OnNodeVisited(currentNode);
 
-                        if (searchPredicate(currentNode.Data))
-                        {
-                            OnNodeFound(currentNode);
-                            if (shouldStopPredicate())
-                            {
-                                OnStateChange(AlgorithmState.Finished);
-                                break;
-                            }
-                        }
+			        if (searchPredicate(currentNode.Data))
+			        {
+				        OnNodeFound(currentNode);
+				        if (shouldStopPredicate())
+				        {
+					        OnStateChange(AlgorithmState.Finished);
+					        break;
+				        }
+			        }
 
-                        foreach (var childNode in _graphStorage.Queries.GetAdjacentOf(tx, currentNode, edgeTypeFilter ?? 0)
-                                                                       .Where(node => !visitedNodes.Contains(node.Key)))
-                        {
-                            AbortExecutionIfNeeded();
-                            processingQueue.Enqueue(childNode);
-                        }
+			        foreach (var childNode in _graphStorage.Queries.GetAdjacentOf(tx, currentNode, edgeTypeFilter ?? 0)
+				        .Where(node => !visitedNodes.Contains(node.Key)))
+			        {
+				        AbortExecutionIfNeeded();
+				        processingQueue.Enqueue(childNode);
+			        }
     
-                    }
+		        }
 
-                    OnStateChange(AlgorithmState.Finished);
-                });
-        }       
+		        OnStateChange(AlgorithmState.Finished);
+	        });
+        }
 
-        protected override Node GetRootNode(Transaction tx)
+	    protected override Node GetRootNode(Transaction tx)
         {
             using(var iter = tx.NodeTree.Iterate(tx.VoronTransaction))
             {

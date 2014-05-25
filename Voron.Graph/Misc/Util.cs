@@ -6,9 +6,7 @@ using Voron.Util.Conversion;
 
 namespace Voron.Graph
 {
-
-
-    internal unsafe static class Util
+    internal static class Util
     {
 	    private static readonly int EdgeTreeKeySize = Marshal.SizeOf(typeof(EdgeTreeKey));
 		private static readonly int SizeOfUShort = Marshal.SizeOf(typeof(ushort));

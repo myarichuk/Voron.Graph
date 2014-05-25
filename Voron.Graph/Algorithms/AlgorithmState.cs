@@ -1,7 +1,7 @@
 ﻿
 namespace Voron.Graph.Algorithms
 {
-    public enum AlgorithmState : int
+    public enum AlgorithmState
     {
         NotStarted = 0,
         Running = 1,

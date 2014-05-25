@@ -4,7 +4,7 @@ namespace Voron.Graph
 {
     public class DisposableAction : IDisposable
     {
-        private Action _onDisposeAction;
+        private readonly Action _onDisposeAction;
 
         public DisposableAction(Action onDisposeAction)
         {

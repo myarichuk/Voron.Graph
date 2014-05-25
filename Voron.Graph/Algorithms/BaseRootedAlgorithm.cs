@@ -4,7 +4,7 @@ namespace Voron.Graph.Algorithms
 {
     public abstract class BaseRootedAlgorithm : BaseAlgorithm
     {
-        public BaseRootedAlgorithm(CancellationToken cancelToken)
+	    protected BaseRootedAlgorithm(CancellationToken cancelToken)
             : base(cancelToken)
         {
         }

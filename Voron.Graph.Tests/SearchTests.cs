@@ -1,8 +1,6 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using Voron.Graph.Algorithms.Search;
 using FluentAssertions;
@@ -14,12 +12,12 @@ namespace Voron.Graph.Tests
     [TestClass]
     public class SearchTests : BaseGraphTest
     {
-        public System.Threading.CancellationTokenSource CancelTokenSource;
+        public CancellationTokenSource CancelTokenSource;
 
         [TestInitialize]
         public void InitTest()
         {
-            CancelTokenSource = new System.Threading.CancellationTokenSource();
+            CancelTokenSource = new CancellationTokenSource();
         }
 
         [TestMethod]
@@ -180,11 +178,10 @@ namespace Voron.Graph.Tests
         public async Task BFS_FindOne_with_disconnected_root_should_return_null()
         {
             var graph = new GraphStorage("TestGraph", Env);
-            Node node2;
-            using (var tx = graph.NewTransaction(TransactionFlags.ReadWrite))
+	        using (var tx = graph.NewTransaction(TransactionFlags.ReadWrite))
             {
                 var node1 = graph.Commands.CreateNode(tx, JsonFromValue("test1"));
-                node2 = graph.Commands.CreateNode(tx, JsonFromValue("test2"));
+                var node2 = graph.Commands.CreateNode(tx, JsonFromValue("test2"));
                 var node3 = graph.Commands.CreateNode(tx, JsonFromValue("test3"));
 
                 graph.Commands.CreateEdgeBetween(tx, node3, node1);
@@ -210,11 +207,10 @@ namespace Voron.Graph.Tests
         public async Task DFS_FindOne_with_disconnected_root_should_return_null()
         {
             var graph = new GraphStorage("TestGraph", Env);
-            Node node2;
-            using (var tx = graph.NewTransaction(TransactionFlags.ReadWrite))
+	        using (var tx = graph.NewTransaction(TransactionFlags.ReadWrite))
             {
                 var node1 = graph.Commands.CreateNode(tx, JsonFromValue("test1"));
-                node2 = graph.Commands.CreateNode(tx, JsonFromValue("test2"));
+                var node2 = graph.Commands.CreateNode(tx, JsonFromValue("test2"));
                 var node3 = graph.Commands.CreateNode(tx, JsonFromValue("test3"));
 
                 graph.Commands.CreateEdgeBetween(tx, node3, node1);
@@ -314,7 +310,7 @@ namespace Voron.Graph.Tests
             {
                 var searchAlgorithm = new BreadthFirstSearch(graph, CancelTokenSource.Token);
                 var searchStallEvent = new ManualResetEventSlim();
-                var findTask = searchAlgorithm.Traverse(tx, 
+                searchAlgorithm.Traverse(tx, 
                 data =>
                 {
                     searchStallEvent.Wait();
@@ -326,14 +322,15 @@ namespace Voron.Graph.Tests
                     return true;
                 });
 
-                findTask = searchAlgorithm.FindOne(tx, data => ValueFromJson<string>(data).Equals("test1"));
+                var findTask = searchAlgorithm.FindOne(tx, data => ValueFromJson<string>(data).Equals("test1"));
 
                 findTask.ContinueWith(task =>
                     {
                         task.IsFaulted.Should().BeTrue();
-                        task.Exception.InnerExceptions.First().Should().BeOfType<InvalidOperationException>();
+	                    if (task.Exception != null)
+		                    task.Exception.InnerExceptions.First().Should().BeOfType<InvalidOperationException>();
 
-                        searchStallEvent.Set();
+	                    searchStallEvent.Set();
                     });
             }
         }
@@ -352,7 +349,7 @@ namespace Voron.Graph.Tests
             {
                 var searchAlgorithm = new DepthFirstSearch(graph, CancelTokenSource.Token);
                 var searchStallEvent = new ManualResetEventSlim();
-                var findTask = searchAlgorithm.Traverse(tx,
+                searchAlgorithm.Traverse(tx,
                 data =>
                 {
                     searchStallEvent.Wait();
@@ -364,14 +361,15 @@ namespace Voron.Graph.Tests
                     return true;
                 });
 
-                findTask = searchAlgorithm.FindOne(tx, data => ValueFromJson<string>(data).Equals("test1"));
+                var findTask = searchAlgorithm.FindOne(tx, data => ValueFromJson<string>(data).Equals("test1"));
 
                 findTask.ContinueWith(task =>
                 {
                     task.IsFaulted.Should().BeTrue();
-                    task.Exception.InnerExceptions.First().Should().BeOfType<InvalidOperationException>();
+	                if (task.Exception != null)
+		                task.Exception.InnerExceptions.First().Should().BeOfType<InvalidOperationException>();
 
-                    searchStallEvent.Set();
+	                searchStallEvent.Set();
                 });
             }
         }

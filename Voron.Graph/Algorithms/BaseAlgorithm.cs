@@ -19,7 +19,7 @@ namespace Voron.Graph.Algorithms
             }
         }
 
-        public BaseAlgorithm(CancellationToken cancelToken)
+	    protected BaseAlgorithm(CancellationToken cancelToken)
         {
             _cancelToken = cancelToken;
         }
@@ -35,7 +35,7 @@ namespace Voron.Graph.Algorithms
 
             Interlocked.CompareExchange(ref _state, (int)state, _state);
 
-            var stateChanged = this.StateChanged;
+            var stateChanged = StateChanged;
 
             if (stateChanged != null)
                 stateChanged(state);

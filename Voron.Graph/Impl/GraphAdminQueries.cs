@@ -23,9 +23,10 @@ namespace Voron.Graph.Impl
                     do
                     {
                         cancelToken.ThrowIfCancellationRequested();
-                        CheckTransactionDisposedAndThrowIfNeeded(tx);
+	                    if (tx.IsDisposed)
+		                    throw new InvalidOperationException("Transaction was disposed before the operation has been complete.");
 
-                        var readResult = nodesIterator.CreateReaderForCurrent();
+	                    var readResult = nodesIterator.CreateReaderForCurrent();
                         using (var readResultAsStream = readResult.AsStream())
                         {
                             Etag etag;
@@ -38,28 +39,23 @@ namespace Voron.Graph.Impl
                     } while (nodesIterator.MoveNext());
                 }
 
-                CheckTransactionDisposedAndThrowIfNeeded(tx);
-                return results;
-            });
+	            if (tx.IsDisposed)
+		            throw new InvalidOperationException("Transaction was disposed before the operation has been complete.");
+	            return results;
+            }, cancelToken);
         }
 
         public Task<List<Edge>> GetAllEdges(Transaction tx, CancellationToken cancelToken)
         {
-            return Task.Run(() => GetEdges(tx, null, ref cancelToken));
+            return Task.Run(() => GetEdges(tx, null, ref cancelToken), cancelToken);
         }
 
         public Task<List<Edge>> GetEdgesOfNode(Transaction tx, Node node, CancellationToken cancelToken)
         {
-            return Task.Run(() => GetEdges(tx, node.Key.ToSlice(), ref cancelToken));
+            return Task.Run(() => GetEdges(tx, node.Key.ToSlice(), ref cancelToken), cancelToken);
         }
 
-        private static void CheckTransactionDisposedAndThrowIfNeeded(Transaction tx)
-        {
-            if (tx.IsDisposed)
-                throw new InvalidOperationException("Transaction was disposed before the operation has been complete.");
-        }
-
-        private static List<Edge> GetEdges(Transaction tx,Slice requiredPrefix, ref CancellationToken cancelToken)
+	    private static List<Edge> GetEdges(Transaction tx,Slice requiredPrefix, ref CancellationToken cancelToken)
         {
             var results = new List<Edge>();
             using (var edgesIterator = tx.EdgeTree.Iterate(tx.VoronTransaction))
@@ -75,9 +71,10 @@ namespace Voron.Graph.Impl
                 do
                 {
                     cancelToken.ThrowIfCancellationRequested();
-                    CheckTransactionDisposedAndThrowIfNeeded(tx);
+	                if (tx.IsDisposed)
+		                throw new InvalidOperationException("Transaction was disposed before the operation has been complete.");
 
-                    var readResult = edgesIterator.CreateReaderForCurrent();
+	                var readResult = edgesIterator.CreateReaderForCurrent();
                     using (var readResultAsStream = readResult.AsStream())
                     {
                         Etag etag;
