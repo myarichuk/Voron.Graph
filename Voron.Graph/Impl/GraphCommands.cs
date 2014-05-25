@@ -19,7 +19,7 @@ namespace Voron.Graph.Impl
             _conventions = conventions;
         }
 
-        public void SystemMetadataPut<T>(Transaction tx, string key, T value)
+        public void PutToSystemMetadata<T>(Transaction tx, string key, T value)
         {
             var metadataReadResult = tx.SystemTree.Read(tx.VoronTransaction, tx.GraphMetadataKey);
             Debug.Assert(metadataReadResult.Version > 0);

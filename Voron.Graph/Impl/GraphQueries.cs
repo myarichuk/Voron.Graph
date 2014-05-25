@@ -8,7 +8,7 @@ namespace Voron.Graph.Impl
 {
     public class GraphQueries
     {
-        public T SystemMetadataGet<T>(Transaction tx, string key)
+        public T GetFromSystemMetadata<T>(Transaction tx, string key)
         {
             var metadataReadResult = tx.SystemTree.Read(tx.VoronTransaction, tx.GraphMetadataKey);
             Debug.Assert(metadataReadResult.Version > 0);

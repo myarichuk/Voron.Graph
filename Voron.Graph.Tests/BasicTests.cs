@@ -119,18 +119,18 @@ namespace Voron.Graph.Tests
             var graph = new GraphStorage("TestGraph", Env);
             using (var tx = graph.NewTransaction(TransactionFlags.ReadWrite))
             {
-                graph.Commands.SystemMetadataPut(tx, "Foo", "Bar");
-                graph.Commands.SystemMetadataPut(tx, "FooNum", 123);
-                graph.Commands.SystemMetadataPut(tx, "FooBoolean", false);
+                graph.Commands.PutToSystemMetadata(tx, "Foo", "Bar");
+                graph.Commands.PutToSystemMetadata(tx, "FooNum", 123);
+                graph.Commands.PutToSystemMetadata(tx, "FooBoolean", false);
                 
                 tx.Commit();
             }
 
             using (var tx = graph.NewTransaction(TransactionFlags.Read))
             {
-                var bar = graph.Queries.SystemMetadataGet<string>(tx, "Foo");
-                var fooNum = graph.Queries.SystemMetadataGet<int>(tx, "FooNum");
-                var fooBoolean = graph.Queries.SystemMetadataGet<bool>(tx, "FooBoolean");
+                var bar = graph.Queries.GetFromSystemMetadata<string>(tx, "Foo");
+                var fooNum = graph.Queries.GetFromSystemMetadata<int>(tx, "FooNum");
+                var fooBoolean = graph.Queries.GetFromSystemMetadata<bool>(tx, "FooBoolean");
 
                 Assert.AreEqual("Bar", bar);
                 Assert.AreEqual(123, fooNum);
