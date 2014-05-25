@@ -112,8 +112,32 @@ namespace Voron.Graph.Tests
                 nodesList.Select(node => node.Key).Should().OnlyHaveUniqueItems();
             }
         }
-       
-        //TODO: make this pass
+
+        [TestMethod]
+        public void Read_and_writing_system_metadata_should_work()
+        {
+            var graph = new GraphStorage("TestGraph", Env);
+            using (var tx = graph.NewTransaction(TransactionFlags.ReadWrite))
+            {
+                graph.Commands.SystemMetadataPut(tx, "Foo", "Bar");
+                graph.Commands.SystemMetadataPut(tx, "FooNum", 123);
+                graph.Commands.SystemMetadataPut(tx, "FooBoolean", false);
+                
+                tx.Commit();
+            }
+
+            using (var tx = graph.NewTransaction(TransactionFlags.Read))
+            {
+                var bar = graph.Queries.SystemMetadataGet<string>(tx, "Foo");
+                var fooNum = graph.Queries.SystemMetadataGet<int>(tx, "FooNum");
+                var fooBoolean = graph.Queries.SystemMetadataGet<bool>(tx, "FooBoolean");
+
+                Assert.AreEqual("Bar", bar);
+                Assert.AreEqual(123, fooNum);
+                Assert.AreEqual(false, fooBoolean);
+            }
+        }
+
         [TestMethod]
         public void Can_Iterate_On_Nearest_Nodes()
         {

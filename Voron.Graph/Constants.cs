@@ -9,5 +9,7 @@
         public const string NodeTreeNameSuffix = "_NodeTree";
         public const string DisconnectedNodesTreeNameSuffix = "_DisconnectedNodes";
         public const string KeyByEtagTreeNameSuffix = "_EtagByKeyTree";
+
+        public const string GraphMetadataKeySuffix = "_GraphMetadata";
     }
 }

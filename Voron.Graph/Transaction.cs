@@ -36,7 +36,8 @@ namespace Voron.Graph
             string nodeTreeName, 
             string edgesTreeName, 
             string disconnectedNodesTreeName,
-            string keyByEtagTreeName)
+            string keyByEtagTreeName,
+            string graphMetadataKey)
         {
             _isDisposed = false;
             if (voronTransaction == null)
@@ -47,7 +48,14 @@ namespace Voron.Graph
             EdgeTree = voronTransaction.ReadTree(edgesTreeName);
             DisconnectedNodeTree = voronTransaction.ReadTree(disconnectedNodesTreeName);
             KeyByEtagTree = voronTransaction.ReadTree(keyByEtagTreeName);
+            
+            SystemTree = voronTransaction.State.Root;
+            GraphMetadataKey = graphMetadataKey;
         }
+
+        internal string GraphMetadataKey { get; private set; }
+
+        internal Tree SystemTree { get; private set; }
 
         public Tree NodeTree { get; private set; }
 

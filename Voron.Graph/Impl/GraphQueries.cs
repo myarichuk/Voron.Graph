@@ -2,11 +2,27 @@
 using System.Collections.Generic;
 using System.IO;
 using Newtonsoft.Json.Linq;
+using System.Diagnostics;
 
 namespace Voron.Graph.Impl
 {
     public class GraphQueries
     {
+        public T SystemMetadataGet<T>(Transaction tx, string key)
+        {
+            var metadataReadResult = tx.SystemTree.Read(tx.VoronTransaction, tx.GraphMetadataKey);
+            Debug.Assert(metadataReadResult.Version > 0);
+
+            using (var metadataStream = metadataReadResult.Reader.AsStream())
+            {
+                if (metadataStream == null)
+                    return default(T);
+
+                var metadata = metadataStream.ToJObject();
+                return metadata.Value<T>(key);
+            }
+        }
+
         public IEnumerable<Edge> GetEdgesOf(Transaction tx, Node node)
         {
             if (tx == null) throw new ArgumentNullException("tx");

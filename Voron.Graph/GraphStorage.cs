@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Newtonsoft.Json.Linq;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -17,6 +18,7 @@ namespace Voron.Graph
         private readonly string _edgeTreeName;
         private readonly string _disconnectedNodesTreeName;
         private readonly string _keyByEtagTreeName;
+        private readonly string _graphMetadataKey;
         private long _nextId;
 
         public GraphStorage(string graphName, StorageEnvironment storageEnvironment)
@@ -28,7 +30,8 @@ namespace Voron.Graph
             _disconnectedNodesTreeName = graphName + Constants.DisconnectedNodesTreeNameSuffix;
             _keyByEtagTreeName = graphName + Constants.KeyByEtagTreeNameSuffix;
             _storageEnvironment = storageEnvironment;
-            
+            _graphMetadataKey = graphName + Constants.GraphMetadataKeySuffix;
+
             CreateConventions();
             CreateSchema();
             CreateCommandAndQueryInstances();
@@ -38,7 +41,12 @@ namespace Voron.Graph
         public Transaction NewTransaction(TransactionFlags flags, TimeSpan? timeout = null)
         {
             var voronTransaction = _storageEnvironment.NewTransaction(flags, timeout);
-            return new Transaction(voronTransaction, _nodeTreeName, _edgeTreeName, _disconnectedNodesTreeName, _keyByEtagTreeName);
+            return new Transaction(voronTransaction, 
+                _nodeTreeName, 
+                _edgeTreeName, 
+                _disconnectedNodesTreeName, 
+                _keyByEtagTreeName, 
+                _graphMetadataKey);
         }
 
         private long GetLatestStoredNodeKey()
@@ -80,6 +88,10 @@ namespace Voron.Graph
                 _storageEnvironment.CreateTree(tx, _edgeTreeName);
                 _storageEnvironment.CreateTree(tx, _disconnectedNodesTreeName);
                 _storageEnvironment.CreateTree(tx, _keyByEtagTreeName);
+
+                if(tx.State.Root.ReadVersion(tx,_graphMetadataKey) == 0)
+                    tx.State.Root.Add(tx, _graphMetadataKey, (new JObject()).ToStream());
+
                 tx.Commit();
             }
         }

@@ -2,7 +2,9 @@
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
+using System.Linq;
 
 namespace Voron.Graph.Impl
 {
@@ -15,6 +17,22 @@ namespace Voron.Graph.Impl
         {
             _graphQueries = graphQueries;
             _conventions = conventions;
+        }
+
+        public void SystemMetadataPut<T>(Transaction tx, string key, T value)
+        {
+            var metadataReadResult = tx.SystemTree.Read(tx.VoronTransaction, tx.GraphMetadataKey);
+            Debug.Assert(metadataReadResult.Version > 0);
+
+            using (var metadataStream = metadataReadResult.Reader.AsStream())
+            {
+                Debug.Assert(metadataStream != null);
+
+                var metadata = metadataStream.ToJObject();
+                metadata[key] = JToken.FromObject(value);
+
+                tx.SystemTree.Add(tx.VoronTransaction, tx.GraphMetadataKey, metadata.ToStream());
+            }            
         }
 
         public Node CreateNode(Transaction tx, JObject value)
