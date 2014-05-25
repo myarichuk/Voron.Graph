@@ -138,6 +138,44 @@ namespace Voron.Graph.Tests
         }
 
         [TestMethod]
+        public void Writing_and_updating_node_metadata_should_work()
+        {
+            var graph = new GraphStorage("TestGraph", Env);
+            Node node;
+
+            using (var tx = graph.NewTransaction(TransactionFlags.ReadWrite))
+            {
+                node = graph.Commands.CreateNode(tx);
+
+                graph.Commands.PutToNodeMetadata(tx, node, "Foo", "Bar");
+                graph.Commands.PutToNodeMetadata(tx, node, "FooNum", 123);
+
+                tx.Commit();
+            }
+
+            //update existing values
+            using (var tx = graph.NewTransaction(TransactionFlags.ReadWrite))
+            {
+                node = graph.Commands.CreateNode(tx);
+
+                graph.Commands.PutToNodeMetadata(tx, node, "Foo", "Bar-2");
+                graph.Commands.PutToNodeMetadata(tx, node, "FooNum", 456);
+
+                tx.Commit();
+            }
+
+            //test that updates were properly saved
+            using (var tx = graph.NewTransaction(TransactionFlags.Read))
+            {
+                var bar = graph.Queries.GetFromNodeMetadata<string>(tx, node, "Foo");
+                var fooNum = graph.Queries.GetFromNodeMetadata<int>(tx, node, "FooNum");
+
+                Assert.AreEqual("Bar-2", bar);
+                Assert.AreEqual(456, fooNum);
+            }
+        }
+
+        [TestMethod]
         public void Read_and_writing_node_metadata_should_work()
         {
             var graph = new GraphStorage("TestGraph", Env);
@@ -151,6 +189,11 @@ namespace Voron.Graph.Tests
                 graph.Commands.PutToNodeMetadata(tx, node1, "Foo", "Bar");
                 graph.Commands.PutToNodeMetadata(tx, node1, "FooNum", 123);
 
+                tx.Commit();
+            }
+
+            using (var tx = graph.NewTransaction(TransactionFlags.ReadWrite))
+            {
                 graph.Commands.PutToNodeMetadata(tx, node2, "Foo", "Bar2");
                 graph.Commands.PutToNodeMetadata(tx, node2, "FooNum", 456);
 
