@@ -9,22 +9,7 @@ using Voron.Trees;
 namespace Voron.Graph.Impl
 {
 	public class GraphQueries
-	{
-		public T GetFromNodeMetadata<T>(Transaction tx, Node node, string key)
-		{
-			ReadResult metadataReadResult = tx.NodeMetadataTree.Read(tx.VoronTransaction, node.Key.ToSlice());
-
-			//if no metadata found for node - create empty metadata record and return default value.
-			//note: until tx commits nothing will get written into voron
-			if (metadataReadResult == null || metadataReadResult.Version == 0)
-				return default(T);
-
-			using (Stream metadataStream = metadataReadResult.Reader.AsStream())
-			{
-				JObject metadata = metadataStream.ToJObject();
-				return metadata.Value<T>(key);
-			}
-		}
+	{		
 
 		public T GetFromSystemMetadata<T>(Transaction tx, string key)
 		{

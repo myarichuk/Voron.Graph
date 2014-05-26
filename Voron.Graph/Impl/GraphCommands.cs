@@ -14,22 +14,7 @@ namespace Voron.Graph.Impl
         {
             _graphQueries = graphQueries;
             _conventions = conventions;
-        }
-
-        public void PutToNodeMetadata<T>(Transaction tx, Node node, string key, T value)
-        {
-            var metadataReadResult = tx.NodeMetadataTree.Read(tx.VoronTransaction, node.Key.ToSlice());
-            JObject metadata;
-            if (metadataReadResult == null || metadataReadResult.Version == 0)
-                metadata = new JObject();
-            else
-                using (var metadataStream = metadataReadResult.Reader.AsStream())
-                    metadata = metadataStream.ToJObject();
-
-            metadata[key] = JToken.FromObject(value);
-
-            tx.NodeMetadataTree.Add(tx.VoronTransaction, node.Key.ToSlice(), metadata.ToStream());
-        }
+        }      
 
         public void PutToSystemMetadata<T>(Transaction tx, string key, T value)
         {

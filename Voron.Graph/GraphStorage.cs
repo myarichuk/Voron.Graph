@@ -10,7 +10,6 @@ namespace Voron.Graph
     {
         private readonly StorageEnvironment _storageEnvironment;
         private readonly string _nodeTreeName;
-        private readonly string _nodeMetadataTreeName; 
         private readonly string _edgeTreeName;
         private readonly string _disconnectedNodesTreeName;
         private readonly string _keyByEtagTreeName;
@@ -26,7 +25,6 @@ namespace Voron.Graph
             _edgeTreeName = graphName + Constants.EdgeTreeNameSuffix;
             _disconnectedNodesTreeName = graphName + Constants.DisconnectedNodesTreeNameSuffix;
             _keyByEtagTreeName = graphName + Constants.KeyByEtagTreeNameSuffix;
-            _nodeMetadataTreeName = graphName + Constants.NodeMetadataTreeNameSuffix;
 
             _storageEnvironment = storageEnvironment;
             _graphMetadataKey = graphName + Constants.GraphMetadataKeySuffix;
@@ -45,7 +43,6 @@ namespace Voron.Graph
                 _edgeTreeName, 
                 _disconnectedNodesTreeName, 
                 _keyByEtagTreeName, 
-                _nodeMetadataTreeName,
                 _graphMetadataKey);
         }
 
@@ -88,7 +85,6 @@ namespace Voron.Graph
                 _storageEnvironment.CreateTree(tx, _edgeTreeName);
                 _storageEnvironment.CreateTree(tx, _disconnectedNodesTreeName);
                 _storageEnvironment.CreateTree(tx, _keyByEtagTreeName);
-                _storageEnvironment.CreateTree(tx, _nodeMetadataTreeName);
 
                 if(tx.State.Root.ReadVersion(tx,_graphMetadataKey) == 0)
                     tx.State.Root.Add(tx, _graphMetadataKey, (new JObject()).ToStream());
