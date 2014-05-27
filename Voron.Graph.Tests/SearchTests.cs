@@ -21,9 +21,61 @@ namespace Voron.Graph.Tests
         }
 
         [TestMethod]
-        public async Task Traverse_Find_FriendsOfMyFriends()
+        public async Task BFS_Traverse_with_depth_limit_should_work()
         {
+            var graph = new GraphStorage("TestGraph", Env);
+            Node node1;
+            using (var tx = graph.NewTransaction(TransactionFlags.ReadWrite))
+            {
+                node1 = graph.Commands.CreateNode(tx, JsonFromValue("test1"));
+                var node2 = graph.Commands.CreateNode(tx, JsonFromValue("test2"));
+                var node3 = graph.Commands.CreateNode(tx, JsonFromValue("test3"));
+                var node4 = graph.Commands.CreateNode(tx, JsonFromValue("test4"));
 
+                graph.Commands.CreateEdgeBetween(tx, node1, node2);
+                graph.Commands.CreateEdgeBetween(tx, node2, node3);
+                graph.Commands.CreateEdgeBetween(tx, node3, node4);
+
+                tx.Commit();
+            }
+            using (var tx = graph.NewTransaction(TransactionFlags.Read))
+            {
+                var searchAlgorithm = new BreadthFirstSearch(graph, CancelTokenSource.Token);
+                var results = await searchAlgorithm.FindMany(tx, data => true,node1,searchDepthLimit:2);
+
+                results.Select(x => x.Key).Should().HaveCount(2)
+                                          .And
+                                          .OnlyContain(x => x == 1 || x == 2);
+            }
+        }
+
+        [TestMethod]
+        public async Task DFS_Traverse_with_depth_limit_should_work()
+        {
+            var graph = new GraphStorage("TestGraph", Env);
+            Node node1;
+            using (var tx = graph.NewTransaction(TransactionFlags.ReadWrite))
+            {
+                node1 = graph.Commands.CreateNode(tx, JsonFromValue("test1"));
+                var node2 = graph.Commands.CreateNode(tx, JsonFromValue("test2"));
+                var node3 = graph.Commands.CreateNode(tx, JsonFromValue("test3"));
+                var node4 = graph.Commands.CreateNode(tx, JsonFromValue("test4"));
+
+                graph.Commands.CreateEdgeBetween(tx, node1, node2);
+                graph.Commands.CreateEdgeBetween(tx, node2, node3);
+                graph.Commands.CreateEdgeBetween(tx, node3, node4);
+
+                tx.Commit();
+            }
+            using (var tx = graph.NewTransaction(TransactionFlags.Read))
+            {
+                var searchAlgorithm = new DepthFirstSearch(graph, CancelTokenSource.Token);
+                var results = await searchAlgorithm.FindMany(tx, data => true, node1, searchDepthLimit: 2);
+
+                results.Select(x => x.Key).Should().HaveCount(2)
+                                          .And
+                                          .OnlyContain(x => x == 1 || x == 2);
+            }
         }
 
         [TestMethod]

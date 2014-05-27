@@ -52,7 +52,7 @@ namespace Voron.Graph.Algorithms.Search
 		        rootNode = rootNode ?? GetDefaultRootNode(tx);
 		        var visitedNodes = new HashSet<long>();
 		        var processingQueue = new Stack<NodeVisitedEventArgs>();
-		        processingQueue.Push(new NodeVisitedEventArgs(rootNode,null,0));
+		        processingQueue.Push(new NodeVisitedEventArgs(rootNode,null,1));
 
 		        while (processingQueue.Count > 0)
 		        {
@@ -68,7 +68,8 @@ namespace Voron.Graph.Algorithms.Search
 			        if (searchPredicate(currentVisitedEventInfo.VisitedNode.Data))
 			        {
 				        OnNodeFound(currentVisitedEventInfo.VisitedNode);
-				        if (shouldStopPredicate())
+                        if (shouldStopPredicate() || 
+                            (traverseDepthLimit.HasValue && currentVisitedEventInfo.TraversedEdgeCount >= traverseDepthLimit.Value))
 				        {
 					        OnStateChange(AlgorithmState.Finished);
 					        break;
