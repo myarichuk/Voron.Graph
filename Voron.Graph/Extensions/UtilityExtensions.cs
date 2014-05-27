@@ -11,6 +11,7 @@ namespace Voron.Graph.Extensions
     {
         private static readonly int EdgeTreeKeySize = Marshal.SizeOf(typeof(EdgeTreeKey));
         private static readonly int SizeOfUShort = Marshal.SizeOf(typeof(ushort));
+        private static readonly int SizeOfShort = Marshal.SizeOf(typeof(short));
         private static readonly int SizeOfInt = Marshal.SizeOf(typeof(int));
         private static readonly int SizeOfLong = Marshal.SizeOf(typeof(long));
 
@@ -62,6 +63,7 @@ namespace Voron.Graph.Extensions
             sliceWriter.WriteBigEndian(edgeKey.NodeKeyFrom);
             sliceWriter.WriteBigEndian(edgeKey.NodeKeyTo);
             sliceWriter.WriteBigEndian(edgeKey.Type);
+            sliceWriter.WriteBigEndian(edgeKey.Weight);
 
             return sliceWriter.CreateSlice();
         }
@@ -75,7 +77,8 @@ namespace Voron.Graph.Extensions
             {
                 NodeKeyFrom = EndianBitConverter.Big.ToInt64(keyData, 0),
                 NodeKeyTo = EndianBitConverter.Big.ToInt64(keyData, SizeOfLong),
-                Type = EndianBitConverter.Big.ToUInt16(keyData, SizeOfLong + SizeOfUShort)
+                Type = EndianBitConverter.Big.ToUInt16(keyData, SizeOfLong + SizeOfUShort),
+                Weight = EndianBitConverter.Big.ToInt16(keyData, SizeOfLong + SizeOfUShort + SizeOfShort)
             };
 
             return edgeTreeKey;

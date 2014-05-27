@@ -50,6 +50,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Algorithms\Search\NodeVisitedEventArgs.cs" />
+    <Compile Include="Algorithms\Search\TraversalAlgorithm.cs" />
     <Compile Include="Extensions\AlgorithmExtensions.cs" />
     <Compile Include="Algorithms\AlgorithmState.cs" />
     <Compile Include="Algorithms\BaseAlgorithm.cs" />
