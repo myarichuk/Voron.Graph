@@ -15,7 +15,7 @@ namespace Voron.Graph.Impl
 	        return Task.Run(() =>
             {
                 var results = new List<Node>();
-                using (var nodesIterator = tx.NodeTree.Iterate(tx.VoronTransaction))
+                using (var nodesIterator = tx.NodeTree.Iterate())
                 {
                     if (!nodesIterator.Seek(Slice.BeforeAllKeys))
                         return results;
@@ -58,7 +58,7 @@ namespace Voron.Graph.Impl
 	    private static List<Edge> GetEdges(Transaction tx,Slice requiredPrefix, ref CancellationToken cancelToken)
         {
             var results = new List<Edge>();
-            using (var edgesIterator = tx.EdgeTree.Iterate(tx.VoronTransaction))
+            using (var edgesIterator = tx.EdgeTree.Iterate())
             {
                 if (requiredPrefix != null)
                 {

@@ -51,7 +51,7 @@ namespace Voron.Graph
             using(var tx = _storageEnvironment.NewTransaction(TransactionFlags.Read))
             {
                 var tree = tx.ReadTree(_nodeTreeName);
-                using(var iterator = tree.Iterate(tx))
+                using(var iterator = tree.Iterate())
                 {
                     if (!iterator.Seek(Slice.AfterAllKeys))
                         return 0;
@@ -86,8 +86,8 @@ namespace Voron.Graph
                 _storageEnvironment.CreateTree(tx, _disconnectedNodesTreeName);
                 _storageEnvironment.CreateTree(tx, _keyByEtagTreeName);
 
-                if(tx.State.Root.ReadVersion(tx,_graphMetadataKey) == 0)
-                    tx.State.Root.Add(tx, _graphMetadataKey, (new JObject()).ToStream());
+                if(tx.State.Root.ReadVersion(_graphMetadataKey) == 0)
+                    tx.State.Root.Add(_graphMetadataKey, (new JObject()).ToStream());
 
                 tx.Commit();
             }

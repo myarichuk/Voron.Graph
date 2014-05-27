@@ -13,7 +13,7 @@ namespace Voron.Graph.Impl
 
 		public T GetFromSystemMetadata<T>(Transaction tx, string key)
 		{
-			ReadResult metadataReadResult = tx.SystemTree.Read(tx.VoronTransaction, tx.GraphMetadataKey);
+			ReadResult metadataReadResult = tx.SystemTree.Read(tx.GraphMetadataKey);
 			Debug.Assert(metadataReadResult.Version > 0);
 
 			using (Stream metadataStream = metadataReadResult.Reader.AsStream())
@@ -31,7 +31,7 @@ namespace Voron.Graph.Impl
 			if (tx == null) throw new ArgumentNullException("tx");
 			if (node == null) throw new ArgumentNullException("node");
 
-			using (TreeIterator edgeIterator = tx.EdgeTree.Iterate(tx.VoronTransaction))
+			using (TreeIterator edgeIterator = tx.EdgeTree.Iterate())
 			{
 				Slice nodeKey = node.Key.ToSlice();
 				edgeIterator.RequiredPrefix = nodeKey;
@@ -63,7 +63,7 @@ namespace Voron.Graph.Impl
 			if (node == null) throw new ArgumentNullException("node");
 
 			var alreadyRetrievedKeys = new HashSet<long>();
-			using (TreeIterator edgeIterator = tx.EdgeTree.Iterate(tx.VoronTransaction))
+			using (TreeIterator edgeIterator = tx.EdgeTree.Iterate())
 			{
 				Slice nodeKey = node.Key.ToSlice();
 				edgeIterator.RequiredPrefix = nodeKey;
@@ -91,7 +91,7 @@ namespace Voron.Graph.Impl
 			if (tx == null) throw new ArgumentNullException("tx");
 			if (node == null) throw new ArgumentNullException("node");
 
-			using (TreeIterator edgeIterator = tx.EdgeTree.Iterate(tx.VoronTransaction))
+			using (TreeIterator edgeIterator = tx.EdgeTree.Iterate())
 			{
 				edgeIterator.RequiredPrefix = node.Key.ToSlice();
 				return edgeIterator.Seek(Slice.BeforeAllKeys);
@@ -103,7 +103,7 @@ namespace Voron.Graph.Impl
 			if (tx == null) throw new ArgumentNullException("tx");
 			if (edge == null) throw new ArgumentNullException("edge");
 
-			return tx.EdgeTree.ReadVersion(tx.VoronTransaction, edge.Key.ToSlice()) > 0;
+			return tx.EdgeTree.ReadVersion(edge.Key.ToSlice()) > 0;
 		}
 
 		public bool ContainsNode(Transaction tx, Node node)
@@ -118,14 +118,14 @@ namespace Voron.Graph.Impl
 		{
 			if (tx == null) throw new ArgumentNullException("tx");
 
-			return tx.NodeTree.ReadVersion(tx.VoronTransaction, nodeKey.ToSlice()) > 0;
+			return tx.NodeTree.ReadVersion(nodeKey.ToSlice()) > 0;
 		}
 
 		public Node LoadNode(Transaction tx, long nodeKey)
 		{
 			if (tx == null) throw new ArgumentNullException("tx");
 
-			ReadResult readResult = tx.NodeTree.Read(tx.VoronTransaction, nodeKey.ToSlice());
+			ReadResult readResult = tx.NodeTree.Read(nodeKey.ToSlice());
 			if (readResult == null)
 				return null;
 
@@ -148,7 +148,7 @@ namespace Voron.Graph.Impl
 			if (nodeTo == null)
 				throw new ArgumentNullException("nodeTo");
 
-			using (TreeIterator edgeIterator = tx.EdgeTree.Iterate(tx.VoronTransaction))
+			using (TreeIterator edgeIterator = tx.EdgeTree.Iterate())
 			{
 				edgeIterator.RequiredPrefix = Util.EdgeKeyPrefix(nodeFrom, nodeTo);
 				if (!edgeIterator.Seek(edgeIterator.RequiredPrefix))

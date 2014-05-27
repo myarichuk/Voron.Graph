@@ -18,7 +18,7 @@ namespace Voron.Graph.Impl
 
         public void PutToSystemMetadata<T>(Transaction tx, string key, T value)
         {
-            var metadataReadResult = tx.SystemTree.Read(tx.VoronTransaction, tx.GraphMetadataKey);
+            var metadataReadResult = tx.SystemTree.Read(tx.GraphMetadataKey);
             Debug.Assert(metadataReadResult != null && metadataReadResult.Version > 0);
 
             using (var metadataStream = metadataReadResult.Reader.AsStream())
@@ -28,7 +28,7 @@ namespace Voron.Graph.Impl
                 var metadata = metadataStream.ToJObject();
                 metadata[key] = JToken.FromObject(value);
 
-                tx.SystemTree.Add(tx.VoronTransaction, tx.GraphMetadataKey, metadata.ToStream());
+                tx.SystemTree.Add(tx.GraphMetadataKey, metadata.ToStream());
             }            
         }
 
@@ -42,9 +42,9 @@ namespace Voron.Graph.Impl
             var nodeKey = key.ToSlice();
             var etag = Etag.Generate();
 
-            tx.NodeTree.Add(tx.VoronTransaction, nodeKey, Util.EtagAndValueToStream(etag,value));
-            tx.KeyByEtagTree.Add(tx.VoronTransaction, etag.ToSlice(), nodeKey);
-            tx.DisconnectedNodeTree.Add(tx.VoronTransaction, nodeKey, value.ToStream());
+            tx.NodeTree.Add(nodeKey, Util.EtagAndValueToStream(etag,value));
+            tx.KeyByEtagTree.Add(etag.ToSlice(), nodeKey);
+            tx.DisconnectedNodeTree.Add(nodeKey, value.ToStream());
 
             return new Node(key, value, etag);
         }
@@ -64,13 +64,13 @@ namespace Voron.Graph.Impl
                 return false;
 
             //Voron's method name here is misleading --> it performs updates as well
-            tx.KeyByEtagTree.Delete(tx.VoronTransaction, node.Etag.ToSlice());
+            tx.KeyByEtagTree.Delete(node.Etag.ToSlice());
             var newEtag = Etag.Generate();
             node.Etag = newEtag;
 
-            tx.NodeTree.Add(tx.VoronTransaction, node.Key.ToSlice(), Util.EtagAndValueToStream(newEtag, node.Data));
+            tx.NodeTree.Add(node.Key.ToSlice(), Util.EtagAndValueToStream(newEtag, node.Data));
 
-            tx.KeyByEtagTree.Add(tx.VoronTransaction, newEtag.ToSlice(), node.Key.ToSlice());
+            tx.KeyByEtagTree.Add(newEtag.ToSlice(), node.Key.ToSlice());
             return true;
         }
 
@@ -89,10 +89,10 @@ namespace Voron.Graph.Impl
             var newEtag = Etag.Generate();
             var edge = new Edge(nodeFrom.Key, nodeTo.Key, value, type, newEtag);
             
-            tx.DisconnectedNodeTree.Delete(tx.VoronTransaction, nodeFrom.Key.ToSlice());
-            tx.KeyByEtagTree.Add(tx.VoronTransaction, edge.Etag.ToSlice(), edge.Key.ToSlice());
+            tx.DisconnectedNodeTree.Delete(nodeFrom.Key.ToSlice());
+            tx.KeyByEtagTree.Add(edge.Etag.ToSlice(), edge.Key.ToSlice());
 
-            tx.EdgeTree.Add(tx.VoronTransaction, edge.Key.ToSlice(), Util.EtagAndValueToStream(newEtag,value ?? new JObject()));
+            tx.EdgeTree.Add(edge.Key.ToSlice(), Util.EtagAndValueToStream(newEtag,value ?? new JObject()));
 
             return edge;
         }
@@ -103,17 +103,17 @@ namespace Voron.Graph.Impl
 	        if (node == null) throw new ArgumentNullException("node");
 
 	        var nodeKey = node.Key.ToSlice();
-            tx.NodeTree.Delete(tx.VoronTransaction, nodeKey);
+            tx.NodeTree.Delete(nodeKey);
             foreach (var edge in _graphQueries.GetEdgesOf(tx, node))
-                tx.EdgeTree.Delete(tx.VoronTransaction, edge.Key.ToSlice());
+                tx.EdgeTree.Delete(edge.Key.ToSlice());
 
-            tx.KeyByEtagTree.Delete(tx.VoronTransaction, node.Etag.ToSlice());
+            tx.KeyByEtagTree.Delete(node.Etag.ToSlice());
         }
 
         public void Delete(Transaction tx, Edge edge)
         {
-            tx.EdgeTree.Delete(tx.VoronTransaction, edge.Key.ToSlice());
-            tx.KeyByEtagTree.Delete(tx.VoronTransaction, edge.Etag.ToSlice());
+            tx.EdgeTree.Delete(edge.Key.ToSlice());
+            tx.KeyByEtagTree.Delete(edge.Etag.ToSlice());
         }
 
        

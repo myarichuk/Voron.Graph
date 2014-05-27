@@ -20,7 +20,7 @@ namespace Voron.Graph.Algorithms.Search
 
         protected override Node GetDefaultRootNode(Transaction tx)
         {
-            using (var iter = tx.NodeTree.Iterate(tx.VoronTransaction))
+            using (var iter = tx.NodeTree.Iterate())
             {
                 if (!iter.Seek(Slice.BeforeAllKeys))
                     return null;
