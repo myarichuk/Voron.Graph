@@ -10,7 +10,8 @@ namespace Voron.Graph.Algorithms.Search
             Func<JObject, bool> searchPredicate, 
             Func<bool> shouldStopPredicate, 
             Node rootNode = null,
-            ushort? edgeTypeFilter = null);
+            ushort? edgeTypeFilter = null,
+            uint? traverseDepthLimit = null);
 
         event Action<NodeVisitedEventArgs> NodeVisited;
 

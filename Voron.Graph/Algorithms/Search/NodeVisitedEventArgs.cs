@@ -12,10 +12,13 @@ namespace Voron.Graph.Algorithms.Search
 
         public Node PreviousNode { get; private set; }
 
-        public NodeVisitedEventArgs(Node visitedNode, Node previousNode)
+        public uint TraversedEdgeCount { get; private set; }
+
+        public NodeVisitedEventArgs(Node visitedNode, Node previousNode, uint traversedEdgeCount)
         {
             VisitedNode = visitedNode;
-            PreviousNode = previousNode; 
+            PreviousNode = previousNode;
+            TraversedEdgeCount = traversedEdgeCount;
         }
     }
 }

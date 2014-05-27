@@ -39,7 +39,8 @@ namespace Voron.Graph.Algorithms.Search
             Func<JObject, bool> searchPredicate,
             Func<bool> shouldStopPredicate,
             Node rootNode = null,
-            ushort? edgeTypeFilter = null)
+            ushort? edgeTypeFilter = null,
+            uint? traverseDepthLimit = null)
         {
 	        if (State == AlgorithmState.Running)
                 throw new InvalidOperationException("The search already running");
@@ -51,7 +52,7 @@ namespace Voron.Graph.Algorithms.Search
 		        rootNode = rootNode ?? GetDefaultRootNode(tx);
 		        var visitedNodes = new HashSet<long>();
 		        var processingQueue = new Stack<NodeVisitedEventArgs>();
-		        processingQueue.Push(new NodeVisitedEventArgs(rootNode,null));
+		        processingQueue.Push(new NodeVisitedEventArgs(rootNode,null,0));
 
 		        while (processingQueue.Count > 0)
 		        {
@@ -83,7 +84,7 @@ namespace Voron.Graph.Algorithms.Search
 					        .Where(node => !visitedNodes.Contains(node.Key)))
 				        {
 					        AbortExecutionIfNeeded();
-					        processingQueue.Push(new NodeVisitedEventArgs(node,currentVisitedEventInfo.VisitedNode));
+                            processingQueue.Push(new NodeVisitedEventArgs(node, currentVisitedEventInfo.VisitedNode, currentVisitedEventInfo.TraversedEdgeCount + 1));
 				        }
 			        }
 		        }

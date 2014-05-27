@@ -21,6 +21,12 @@ namespace Voron.Graph.Tests
         }
 
         [TestMethod]
+        public async Task Traverse_Find_FriendsOfMyFriends()
+        {
+
+        }
+
+        [TestMethod]
         public async Task BFS_FindOne_with_connected_root_should_return_correct_results()
         {
             var graph = new GraphStorage("TestGraph", Env);
