@@ -31,9 +31,9 @@ namespace Voron.Graph.Algorithms.Search
 		        OnStateChange(AlgorithmState.Running);
 
 		        var visitedNodes = new HashSet<long>();
-		        var processingQueue = new Queue<Node>();
+		        var processingQueue = new Queue<NodeVisitedEventArgs>();
 		        rootNode = rootNode ?? GetDefaultRootNode(tx);
-		        processingQueue.Enqueue(rootNode);
+		        processingQueue.Enqueue(new NodeVisitedEventArgs(rootNode,null));
 
 		        while (processingQueue.Count > 0)
 		        {
@@ -45,13 +45,13 @@ namespace Voron.Graph.Algorithms.Search
     
 			        AbortExecutionIfNeeded();
     
-			        var currentNode = processingQueue.Dequeue();
-			        visitedNodes.Add(currentNode.Key);
-			        OnNodeVisited(currentNode);
+			        var currentVisitedEventInfo = processingQueue.Dequeue();
+			        visitedNodes.Add(currentVisitedEventInfo.VisitedNode.Key);
+			        OnNodeVisited(currentVisitedEventInfo);
 
-			        if (searchPredicate(currentNode.Data))
+			        if (searchPredicate(currentVisitedEventInfo.VisitedNode.Data))
 			        {
-				        OnNodeFound(currentNode);
+				        OnNodeFound(currentVisitedEventInfo.VisitedNode);
 				        if (shouldStopPredicate())
 				        {
 					        OnStateChange(AlgorithmState.Finished);
@@ -59,11 +59,11 @@ namespace Voron.Graph.Algorithms.Search
 				        }
 			        }
 
-			        foreach (var childNode in _graphStorage.Queries.GetAdjacentOf(tx, currentNode, edgeTypeFilter ?? 0)
+			        foreach (var childNode in _graphStorage.Queries.GetAdjacentOf(tx, currentVisitedEventInfo.VisitedNode, edgeTypeFilter ?? 0)
 				        .Where(node => !visitedNodes.Contains(node.Key)))
 			        {
 				        AbortExecutionIfNeeded();
-				        processingQueue.Enqueue(childNode);
+				        processingQueue.Enqueue(new NodeVisitedEventArgs(childNode,currentVisitedEventInfo.VisitedNode));
 			        }
     
 		        }
@@ -89,9 +89,9 @@ namespace Voron.Graph.Algorithms.Search
             }
         }
 
-        public event Action<Node> NodeVisited;
+        public event Action<NodeVisitedEventArgs> NodeVisited;
 
-        protected void OnNodeVisited(Node node)
+        protected void OnNodeVisited(NodeVisitedEventArgs node)
         {
             var nodeVisited = NodeVisited;
             if (nodeVisited != null)

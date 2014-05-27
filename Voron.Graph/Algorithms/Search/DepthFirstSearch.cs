@@ -50,8 +50,8 @@ namespace Voron.Graph.Algorithms.Search
 
 		        rootNode = rootNode ?? GetDefaultRootNode(tx);
 		        var visitedNodes = new HashSet<long>();
-		        var processingQueue = new Stack<Node>();
-		        processingQueue.Push(rootNode);
+		        var processingQueue = new Stack<NodeVisitedEventArgs>();
+		        processingQueue.Push(new NodeVisitedEventArgs(rootNode,null));
 
 		        while (processingQueue.Count > 0)
 		        {
@@ -63,10 +63,10 @@ namespace Voron.Graph.Algorithms.Search
 
 			        AbortExecutionIfNeeded();
 
-			        var currentNode = processingQueue.Pop();
-			        if (searchPredicate(currentNode.Data))
+			        var currentVisitedEventInfo = processingQueue.Pop();
+			        if (searchPredicate(currentVisitedEventInfo.VisitedNode.Data))
 			        {
-				        OnNodeFound(currentNode);
+				        OnNodeFound(currentVisitedEventInfo.VisitedNode);
 				        if (shouldStopPredicate())
 				        {
 					        OnStateChange(AlgorithmState.Finished);
@@ -74,16 +74,16 @@ namespace Voron.Graph.Algorithms.Search
 				        }
 			        }
 
-			        if(!visitedNodes.Contains(currentNode.Key))
+			        if(!visitedNodes.Contains(currentVisitedEventInfo.VisitedNode.Key))
 			        {
-				        visitedNodes.Add(currentNode.Key);
-				        OnNodeVisited(currentNode);
+				        visitedNodes.Add(currentVisitedEventInfo.VisitedNode.Key);
+				        OnNodeVisited(currentVisitedEventInfo);
 
-				        foreach (var node in _graphStorage.Queries.GetAdjacentOf(tx, currentNode, edgeTypeFilter ?? 0)
+				        foreach (var node in _graphStorage.Queries.GetAdjacentOf(tx, currentVisitedEventInfo.VisitedNode, edgeTypeFilter ?? 0)
 					        .Where(node => !visitedNodes.Contains(node.Key)))
 				        {
 					        AbortExecutionIfNeeded();
-					        processingQueue.Push(node);
+					        processingQueue.Push(new NodeVisitedEventArgs(node,currentVisitedEventInfo.VisitedNode));
 				        }
 			        }
 		        }
@@ -91,9 +91,9 @@ namespace Voron.Graph.Algorithms.Search
 	        });
         }
 
-	    public event Action<Node> NodeVisited;
+        public event Action<NodeVisitedEventArgs> NodeVisited;
 
-        protected void OnNodeVisited(Node node)
+        protected void OnNodeVisited(NodeVisitedEventArgs node)
         {
             var nodeVisited = NodeVisited;
             if (nodeVisited != null)

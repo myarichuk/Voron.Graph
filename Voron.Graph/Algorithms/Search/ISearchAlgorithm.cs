@@ -12,7 +12,7 @@ namespace Voron.Graph.Algorithms.Search
             Node rootNode = null,
             ushort? edgeTypeFilter = null);
 
-        event Action<Node> NodeVisited;
+        event Action<NodeVisitedEventArgs> NodeVisited;
 
         event Action<Node> NodeFound;
     }
