@@ -17,7 +17,11 @@ namespace Voron.Graph.Algorithms.Search
             _graphStorage = graphStorage;
         }
 
-        public Task Traverse(Transaction tx, Func<JObject, bool> searchPredicate, Func<bool> shouldStopPredicate, ushort? edgeTypeFilter = null)
+        public Task Traverse(Transaction tx,
+            Func<JObject, bool> searchPredicate,
+            Func<bool> shouldStopPredicate,
+            Node rootNode = null,
+            ushort? edgeTypeFilter = null)
         {
 	        if (State == AlgorithmState.Running)
                 throw new InvalidOperationException("The search already running");
@@ -28,7 +32,7 @@ namespace Voron.Graph.Algorithms.Search
 
 		        var visitedNodes = new HashSet<long>();
 		        var processingQueue = new Queue<Node>();
-		        var rootNode = GetRootNode(tx);
+		        rootNode = rootNode ?? GetDefaultRootNode(tx);
 		        processingQueue.Enqueue(rootNode);
 
 		        while (processingQueue.Count > 0)
@@ -68,7 +72,7 @@ namespace Voron.Graph.Algorithms.Search
 	        });
         }
 
-	    protected override Node GetRootNode(Transaction tx)
+	    protected override Node GetDefaultRootNode(Transaction tx)
         {
             using(var iter = tx.NodeTree.Iterate(tx.VoronTransaction))
             {

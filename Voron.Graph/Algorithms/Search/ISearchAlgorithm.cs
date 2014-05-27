@@ -6,7 +6,11 @@ namespace Voron.Graph.Algorithms.Search
 {
     public interface ISearchAlgorithm
     {
-        Task Traverse(Transaction tx, Func<JObject, bool> searchPredicate, Func<bool> shouldStopPredicate, ushort? edgeTypeFilter = null);
+        Task Traverse(Transaction tx, 
+            Func<JObject, bool> searchPredicate, 
+            Func<bool> shouldStopPredicate, 
+            Node rootNode = null,
+            ushort? edgeTypeFilter = null);
 
         event Action<Node> NodeVisited;
 

@@ -9,6 +9,6 @@ namespace Voron.Graph.Algorithms
         {
         }
 
-        protected abstract Node GetRootNode(Transaction tx);
+        protected abstract Node GetDefaultRootNode(Transaction tx);
     }
 }

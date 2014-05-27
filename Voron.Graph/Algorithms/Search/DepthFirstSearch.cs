@@ -18,7 +18,7 @@ namespace Voron.Graph.Algorithms.Search
             _graphStorage = graphStorage;
         }
 
-        protected override Node GetRootNode(Transaction tx)
+        protected override Node GetDefaultRootNode(Transaction tx)
         {
             using (var iter = tx.NodeTree.Iterate(tx.VoronTransaction))
             {
@@ -35,7 +35,11 @@ namespace Voron.Graph.Algorithms.Search
             }
         }
 
-        public Task Traverse(Transaction tx, Func<JObject, bool> searchPredicate, Func<bool> shouldStopPredicate, ushort? edgeTypeFilter = null)
+        public Task Traverse(Transaction tx,
+            Func<JObject, bool> searchPredicate,
+            Func<bool> shouldStopPredicate,
+            Node rootNode = null,
+            ushort? edgeTypeFilter = null)
         {
 	        if (State == AlgorithmState.Running)
                 throw new InvalidOperationException("The search already running");
@@ -44,7 +48,7 @@ namespace Voron.Graph.Algorithms.Search
 	        {
 		        OnStateChange(AlgorithmState.Running);
 
-		        var rootNode = GetRootNode(tx);
+		        rootNode = rootNode ?? GetDefaultRootNode(tx);
 		        var visitedNodes = new HashSet<long>();
 		        var processingQueue = new Stack<Node>();
 		        processingQueue.Push(rootNode);
