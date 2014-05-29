@@ -5,6 +5,7 @@ using System.IO;
 using Newtonsoft.Json.Linq;
 using Voron.Graph.Extensions;
 using Voron.Trees;
+using Voron.Graph.Primitives;
 
 namespace Voron.Graph.Impl
 {
@@ -57,34 +58,51 @@ namespace Voron.Graph.Impl
 			}
 		}
 
-		public IEnumerable<Node> GetAdjacentOf(Transaction tx, Node node, ushort type = 0)
+        public IEnumerable<NodeWithEdge> GetAdjacentOf(Transaction tx, Node node, ushort type = 0)
 		{
 			if (tx == null) throw new ArgumentNullException("tx");
 			if (node == null) throw new ArgumentNullException("node");
 
 			var alreadyRetrievedKeys = new HashSet<long>();
-			using (TreeIterator edgeIterator = tx.EdgeTree.Iterate())
+			using (var edgeIterator = tx.EdgeTree.Iterate())
 			{
-				Slice nodeKey = node.Key.ToSlice();
+				var nodeKey = node.Key.ToSlice();
 				edgeIterator.RequiredPrefix = nodeKey;
 				if (!edgeIterator.Seek(nodeKey))
 					yield break;
 
 				do
 				{
-					EdgeTreeKey edgeKey = edgeIterator.CurrentKey.ToEdgeTreeKey();
+					var edgeKey = edgeIterator.CurrentKey.ToEdgeTreeKey();
 					if (edgeKey.Type != type)
 						continue;
 
-					if (!alreadyRetrievedKeys.Contains(edgeKey.NodeKeyTo))
-					{
-						alreadyRetrievedKeys.Add(edgeKey.NodeKeyTo);
-						Node adjacentNode = LoadNode(tx, edgeKey.NodeKeyTo);
-						yield return adjacentNode;
-					}
+                    if (!alreadyRetrievedKeys.Contains(edgeKey.NodeKeyTo))
+                    {
+                        alreadyRetrievedKeys.Add(edgeKey.NodeKeyTo);
+                        var adjacentNode = LoadNode(tx, edgeKey.NodeKeyTo);
+                        ValueReader edgeValueReader = edgeIterator.CreateReaderForCurrent();
+
+                        using (Stream edgeEtagAndValueAsStream = edgeValueReader.AsStream())
+                        {
+                            Etag etag;
+                            JObject value;
+
+                            Util.EtagAndValueFromStream(edgeEtagAndValueAsStream, out etag, out value);
+                            var edge = new Edge(edgeKey, value, etag);
+
+                            yield return new NodeWithEdge
+                            {
+                                Node = adjacentNode,
+                                EdgeTo = edge
+                            };
+                        }
+                    }
 				} while (edgeIterator.MoveNext());
 			}
 		}
+
+      
 
 		public bool IsIsolated(Transaction tx, Node node)
 		{

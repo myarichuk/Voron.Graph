@@ -52,7 +52,7 @@ namespace Voron.Graph.Algorithms.Search
 		        rootNode = rootNode ?? GetDefaultRootNode(tx);
 		        var visitedNodes = new HashSet<long>();
 		        var processingQueue = new Stack<NodeVisitedEventArgs>();
-		        processingQueue.Push(new NodeVisitedEventArgs(rootNode,null,1));
+		        processingQueue.Push(new NodeVisitedEventArgs(rootNode,null,1,0));
 
 		        while (processingQueue.Count > 0)
 		        {
@@ -81,11 +81,15 @@ namespace Voron.Graph.Algorithms.Search
 				        visitedNodes.Add(currentVisitedEventInfo.VisitedNode.Key);
 				        OnNodeVisited(currentVisitedEventInfo);
 
-				        foreach (var node in _graphStorage.Queries.GetAdjacentOf(tx, currentVisitedEventInfo.VisitedNode, edgeTypeFilter ?? 0)
-					        .Where(node => !visitedNodes.Contains(node.Key)))
+				        foreach (var childNodeWithWeight in 
+                            _graphStorage.Queries.GetAdjacentOf(tx, currentVisitedEventInfo.VisitedNode, edgeTypeFilter ?? 0)
+					            .Where(nodeWithWeight => !visitedNodes.Contains(nodeWithWeight.Node.Key)))
 				        {
 					        AbortExecutionIfNeeded();
-                            processingQueue.Push(new NodeVisitedEventArgs(node, currentVisitedEventInfo.VisitedNode, currentVisitedEventInfo.TraversedEdgeCount + 1));
+                            processingQueue.Push(new NodeVisitedEventArgs(childNodeWithWeight.Node,
+                                currentVisitedEventInfo.VisitedNode, 
+                                currentVisitedEventInfo.TraversedEdgeCount + 1,
+                                childNodeWithWeight.WeightOfEdgeToNode));
 				        }
 			        }
 		        }

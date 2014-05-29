@@ -50,7 +50,7 @@ namespace Voron.Graph.Tests
             using (var tx = graph.NewTransaction(TransactionFlags.Read))
             {
                 var adjacentNodes = graph.Queries.GetAdjacentOf(tx, node3).ToList();
-                adjacentNodes.Select(x => x.Key).Should().Contain(new[] { node1.Key, node2.Key });
+                adjacentNodes.Select(x => x.Node.Key).Should().Contain(new[] { node1.Key, node2.Key });
             }
         }
 
@@ -86,7 +86,7 @@ namespace Voron.Graph.Tests
             using (var tx = graph.NewTransaction(TransactionFlags.Read))
             {
                 var adjacentNodes = graph.Queries.GetAdjacentOf(tx, node2);
-                adjacentNodes.Select(x => x.Key).Should().Contain(new []{ node1.Key, node2.Key, node3.Key});
+                adjacentNodes.Select(x => x.Node.Key).Should().Contain(new []{ node1.Key, node2.Key, node3.Key});
             }
         }
      
@@ -148,7 +148,7 @@ namespace Voron.Graph.Tests
                 var centerNode = graph.Queries.LoadNode(tx, centerNodeKey);
                 var nodeValues = new Dictionary<string, string>();
 
-	            foreach (var curNode in graph.Queries.GetAdjacentOf(tx, centerNode))
+	            foreach (var curNode in graph.Queries.GetAdjacentOf(tx, centerNode).Select(x => x.Node))
                 {
                     var curEdge = graph.Queries.GetEdgesBetween(tx, centerNode, curNode).FirstOrDefault();              
                     Assert.IsNotNull(curEdge);

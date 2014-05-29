@@ -49,14 +49,14 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Algorithms\Search\IVisitor.cs" />
     <Compile Include="Algorithms\Search\NodeVisitedEventArgs.cs" />
-    <Compile Include="Algorithms\Search\TraversalAlgorithm.cs" />
+    <Compile Include="Algorithms\Search\SearchAlgorithm.cs" />
+    <Compile Include="Algorithms\Search\TraversalNodeInfo.cs" />
+    <Compile Include="Algorithms\ShortestPath\DijkstraShortestPath.cs" />
     <Compile Include="Extensions\AlgorithmExtensions.cs" />
     <Compile Include="Algorithms\AlgorithmState.cs" />
     <Compile Include="Algorithms\BaseAlgorithm.cs" />
-    <Compile Include="Algorithms\BaseRootedAlgorithm.cs" />
-    <Compile Include="Algorithms\Search\BreadthFirstSearch.cs" />
-    <Compile Include="Algorithms\Search\DepthFirstSearch.cs" />
     <Compile Include="Algorithms\Search\ISearchAlgorithm.cs" />
     <Compile Include="DisposableAction.cs" />
     <Compile Include="Extensions\UtilityExtensions.cs" />
@@ -71,6 +71,7 @@
     <Compile Include="Misc\NativeMethods.cs" />
     <Compile Include="Primitives\Edge.cs" />
     <Compile Include="Primitives\Node.cs" />
+    <Compile Include="Primitives\NodeWithEdgeWeight.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Impl\GraphQueries.cs" />
     <Compile Include="Transaction.cs" />

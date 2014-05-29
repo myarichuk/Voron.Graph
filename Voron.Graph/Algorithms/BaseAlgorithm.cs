@@ -7,7 +7,6 @@ namespace Voron.Graph.Algorithms
     public abstract class BaseAlgorithm
     {
         protected readonly object _syncObject = new object();
-        protected readonly CancellationToken _cancelToken;
         private int _state;
 
         protected AlgorithmState State
@@ -17,11 +16,6 @@ namespace Voron.Graph.Algorithms
                 Debug.Assert(Enum.IsDefined(typeof(AlgorithmState), _state));
                 return (AlgorithmState)_state;
             }
-        }
-
-	    protected BaseAlgorithm(CancellationToken cancelToken)
-        {
-            _cancelToken = cancelToken;
         }
 
         public event Action Finished;
@@ -46,14 +40,6 @@ namespace Voron.Graph.Algorithms
             var finished = Finished;
             if (finished != null)
                 finished();
-        }
-
-        protected void AbortExecutionIfNeeded()
-        {
-            if (_cancelToken.IsCancellationRequested)
-                OnStateChange(AlgorithmState.Aborted);
-
-            _cancelToken.ThrowIfCancellationRequested();
         }
 
         protected IDisposable Lock(bool isWriteLock = false, int timeout = 10000)
