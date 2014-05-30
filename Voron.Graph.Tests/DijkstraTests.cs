@@ -164,7 +164,7 @@ namespace Voron.Graph.Tests
                 var shortestPathsData = shortestPathAlgorithm.Execute();
 
                 var shortestNodePath = shortestPathsData.GetShortestPathToNode(node4);
-                shortestNodePath.Should().ContainInOrder(1L, 2L, 3L, 4L);
+                shortestNodePath.Should().ContainInOrder(node1.Key, node2.Key, node3.Key, node4.Key);
             }
         }
     }

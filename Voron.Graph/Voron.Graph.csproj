@@ -55,6 +55,7 @@
     <Compile Include="Algorithms\Traversal\TraversalAlgorithm.cs" />
     <Compile Include="Algorithms\Traversal\TraversalNodeInfo.cs" />
     <Compile Include="Algorithms\ShortestPath\DijkstraShortestPath.cs" />
+    <Compile Include="Exceptions\AlgorithmConstraintException.cs" />
     <Compile Include="Extensions\AlgorithmExtensions.cs" />
     <Compile Include="Algorithms\AlgorithmState.cs" />
     <Compile Include="Algorithms\BaseAlgorithm.cs" />

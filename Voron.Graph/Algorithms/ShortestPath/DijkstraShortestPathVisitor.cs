@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using Voron.Graph.Algorithms.Traversal;
+using Voron.Graph.Exceptions;
 using Voron.Graph.Primitives;
 
 namespace Voron.Graph.Algorithms.ShortestPath
@@ -19,6 +20,10 @@ namespace Voron.Graph.Algorithms.ShortestPath
 
         public void DiscoverAdjacent(NodeWithEdge neighboorNode)
         {
+            if (neighboorNode.EdgeTo.Weight < 0)
+                throw new AlgorithmConstraintException(string.Format(@"Encountered a node with negative weight
+                    between key = {0}, key = {1}. Dijkstra's algorithm for shortest path does not support edges with negative weights", 
+                        neighboorNode.EdgeTo.Key.NodeKeyFrom, neighboorNode.EdgeTo.Key.NodeKeyTo));
             //ignore loops
             if (neighboorNode.EdgeTo.Key.NodeKeyFrom == neighboorNode.EdgeTo.Key.NodeKeyTo)
                 return;
