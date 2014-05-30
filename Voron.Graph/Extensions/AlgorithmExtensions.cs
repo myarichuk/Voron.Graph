@@ -18,15 +18,24 @@ namespace Voron.Graph.Extensions
             int? take = null)
         {
             using(var tx = storage.NewTransaction(TransactionFlags.Read))
-            {
-                var searchAlgorithm = new SearchAlgorithm(tx, storage, rootNode, algorithmType, cancelToken)
-                {
-                    SearchPredicate = searchPredicate,
-                    ShouldStopSearch = results => take.HasValue ? results.Count() >= take : false
-                };
+                return storage.Find(tx, rootNode, searchPredicate, algorithmType, cancelToken, take);
+        }
 
-                return searchAlgorithm.Search();
-            }
+        public static IEnumerable<Node> Find(this GraphStorage storage,
+            Transaction tx,
+            Node rootNode,
+            Func<JObject, bool> searchPredicate,
+            TraversalType algorithmType,
+            CancellationToken cancelToken,
+            int? take = null)
+        {
+            var searchAlgorithm = new SearchAlgorithm(tx, storage, rootNode, algorithmType, cancelToken)
+            {
+                SearchPredicate = searchPredicate,
+                ShouldStopSearch = results => take.HasValue ? results.Count() >= take : false
+            };
+
+            return searchAlgorithm.Search();
         }
 
         public static async Task<IEnumerable<Node>> FindAsync(this GraphStorage storage,
@@ -37,15 +46,24 @@ namespace Voron.Graph.Extensions
             int? take = null)
         {
             using (var tx = storage.NewTransaction(TransactionFlags.Read))
-            {
-                var searchAlgorithm = new SearchAlgorithm(tx, storage, rootNode, algorithmType, cancelToken)
-                {
-                    SearchPredicate = searchPredicate,
-                    ShouldStopSearch = results => take.HasValue ? results.Count() >= take : false
-                };
+                return await storage.FindAsync(tx, rootNode, searchPredicate, algorithmType, cancelToken, take);
+        }
 
-                return await searchAlgorithm.SearchAsync();
-            }
+        public static async Task<IEnumerable<Node>> FindAsync(this GraphStorage storage,
+                 Transaction tx,
+                 Node rootNode,
+                 Func<JObject, bool> searchPredicate,
+                 TraversalType algorithmType,
+                 CancellationToken cancelToken,
+                 int? take = null)
+        {
+            var searchAlgorithm = new SearchAlgorithm(tx, storage, rootNode, algorithmType, cancelToken)
+            {
+                SearchPredicate = searchPredicate,
+                ShouldStopSearch = results => take.HasValue ? results.Count() >= take : false
+            };
+
+            return await searchAlgorithm.SearchAsync();
         }
     }
 }

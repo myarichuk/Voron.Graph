@@ -101,6 +101,40 @@ namespace Voron.Graph.Tests
                                                                     .And.HaveCount(2);
         }
 
+        [TestMethod]
+        public async Task SearchAsync_with_multiple_graph_path_should_return_unique_results()
+        {
+            var graph = new GraphStorage("TestGraph", Env);
+
+            Node node1, node2, node3, node4, node5, node6;
+            using (var tx = graph.NewTransaction(TransactionFlags.ReadWrite))
+            {
+                node1 = graph.Commands.CreateNode(tx, JsonFromValue(1));
+                node2 = graph.Commands.CreateNode(tx, JsonFromValue(2));
+                node3 = graph.Commands.CreateNode(tx, JsonFromValue(3));
+                node4 = graph.Commands.CreateNode(tx, JsonFromValue(4));
+                node5 = graph.Commands.CreateNode(tx, JsonFromValue(5));
+                node6 = graph.Commands.CreateNode(tx, JsonFromValue(6));
+
+                node1.ConnectWith(tx, node2, graph);
+                node1.ConnectWith(tx, node3, graph);
+                node3.ConnectWith(tx, node4, graph);
+                node2.ConnectWith(tx, node5, graph);
+                node4.ConnectWith(tx, node5, graph);
+                node5.ConnectWith(tx, node6, graph);
+
+                tx.Commit();
+            }
+
+            var resultsBfs = await graph.FindAsync(node1, data => ValueFromJson<int>(data) >= 5, TraversalType.BFS, CancelTokenSource.Token);
+            var resultsDfs = await graph.FindAsync(node1, data => ValueFromJson<int>(data) >= 5, TraversalType.DFS, CancelTokenSource.Token);
+
+            resultsBfs.Select(x => ValueFromJson<int>(x.Data)).Should().OnlyContain(x => x >= 5)
+                                                                    .And.HaveCount(2);
+            resultsDfs.Select(x => ValueFromJson<int>(x.Data)).Should().OnlyContain(x => x >= 5)
+                                                                    .And.HaveCount(2);
+        }
+
         /* 
          *  node1 -> node2
          *   |
