@@ -50,35 +50,35 @@ using (var storage = new StorageEnvironment(StorageEnvironmentOptions.CreateMemo
 <br/>
 #### Algorithms
 Using algorithm implementations in Voron.Graph is also simple.<br/>
-In this code snippet a graph with hierarchy is created, and then with BFS find all nodes that contain either test2 or test4 in their data<br/>
+In this code snippet a graph with hierarchy is created, and then with shortest & cheapest path is found between node1 and node4<br/>
 *Assume that Env is StorageEnvironment of the Voron that was initialized earlier.*<br/>
 ```C#
 var graph = new GraphStorage("TestGraph", Env);
+
+Node node1, node2, node3, node4;
 using (var tx = graph.NewTransaction(TransactionFlags.ReadWrite))
 {
-  var node1 = graph.Commands.CreateNode(tx, JsonFromValue("test1"));
-  var node2 = graph.Commands.CreateNode(tx, JsonFromValue("test2"));
-  var node3 = graph.Commands.CreateNode(tx, JsonFromValue("test3"));
-  var node4 = graph.Commands.CreateNode(tx, JsonFromValue("test4"));
+  node1 = graph.Commands.CreateNode(tx, JsonFromValue(1));
+  node2 = graph.Commands.CreateNode(tx, JsonFromValue(2));
+  node3 = graph.Commands.CreateNode(tx, JsonFromValue(3));
+  node4 = graph.Commands.CreateNode(tx, JsonFromValue(4));
 
-  graph.Commands.CreateEdgeBetween(tx, node3, node1);
-  graph.Commands.CreateEdgeBetween(tx, node3, node2);
-  
-  graph.Commands.CreateEdgeBetween(tx, node3, node4);
-  graph.Commands.CreateEdgeBetween(tx, node2, node2);
-  graph.Commands.CreateEdgeBetween(tx, node2, node4);
-  graph.Commands.CreateEdgeBetween(tx, node1, node3);
+  node1.ConnectWith(tx, node2, graph, 1);
+  node2.ConnectWith(tx, node3, graph, 1);
+  node3.ConnectWith(tx, node4, graph, 1);
+
+  node1.ConnectWith(tx, node4, graph, 10);
 
   tx.Commit();
 }
 
 using (var tx = graph.NewTransaction(TransactionFlags.Read))
 {
-  var bfs = new BreadthFirstSearch(graph, CancelTokenSource.Token);
-  var nodes = await bfs.FindMany(tx, data => ValueFromJson<string>(data).Contains("2") ||
-                                             ValueFromJson<string>(data).Contains("4"));
+  var shortestPathAlgorithm = new DijkstraShortestPath(tx, graph, node1, cancelTokenSource.Token);
+  var shortestPathsData = shortestPathAlgorithm.Execute();
 
-  nodes.Select(x => ValueFromJson<string>(x.Data)).Should().Contain("test2", "test4");
+  var shortestNodePath = shortestPathsData.GetShortestPathToNode(node4);
+  shortestNodePath.Should().ContainInOrder(node1.Key, node2.Key, node3.Key, node4.Key);
 }
 ```
 
