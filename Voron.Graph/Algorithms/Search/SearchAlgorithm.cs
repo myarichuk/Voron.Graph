@@ -27,6 +27,8 @@ namespace Voron.Graph.Algorithms.Search
 
         public Func<JObject, bool> SearchPredicate { get; set; }
 
+        public Func<IEnumerable<Node>, bool> ShouldStopSearch;
+
         public ushort? EdgeTypeFilter { get; set; }
 
         public uint? TraverseDepthLimit { get; set; }
@@ -65,6 +67,8 @@ namespace Voron.Graph.Algorithms.Search
             if (State == AlgorithmState.Running)
                 throw new InvalidOperationException("The algorithm is already running");
 
+            OnStateChange(AlgorithmState.Running);
+
             if (Visitor != null && _rootNode != null) //precaution
                 Visitor.DiscoverNode(_rootNode);
 
@@ -77,8 +81,15 @@ namespace Voron.Graph.Algorithms.Search
                 if (Visitor != null)
                     Visitor.ExamineTraversal(traversalInfo);
 
+                VisitedNodes.Add(traversalInfo.CurrentNode.Key);
                 if (SearchPredicate != null && SearchPredicate(traversalInfo.CurrentNode.Data))
                     results.Add(traversalInfo.CurrentNode);
+
+                if(ShouldStopSearch != null && ShouldStopSearch(results))
+                {
+                    OnStateChange(AlgorithmState.Aborted);
+                    break;
+                }
 
                 foreach (var childNodeWithEdge in
                     _graphStorage.Queries.GetAdjacentOf(_tx, traversalInfo.CurrentNode, EdgeTypeFilter ?? 0)
@@ -103,10 +114,11 @@ namespace Voron.Graph.Algorithms.Search
                 }
             }
 
+            OnStateChange(AlgorithmState.Finished);
             return results;
         }
 
-        public Task<IEnumerable<Node>> TraverseAsync()
+        public Task<IEnumerable<Node>> SearchAsync()
         {
             return Task.Run(() => Search(), _cancelToken);
         }       
