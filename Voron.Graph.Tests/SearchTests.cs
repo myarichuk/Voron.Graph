@@ -6,6 +6,7 @@ using Voron.Graph.Algorithms.Search;
 using FluentAssertions;
 using System.Threading;
 using Voron.Graph.Extensions;
+using System.Collections.Generic;
 
 namespace Voron.Graph.Tests
 {
@@ -15,10 +16,124 @@ namespace Voron.Graph.Tests
     {
         public CancellationTokenSource CancelTokenSource;
 
+        private class NodeRecordingVisitor : IVisitor
+        {
+            public readonly List<long> DiscoveredNodeKeys;
+
+            public NodeRecordingVisitor()
+            {
+                DiscoveredNodeKeys = new List<long>();
+            }
+
+            public void DiscoverNode(Node node)
+            {
+            }
+
+            public void DiscoverEdge(Edge edge)
+            {
+            }
+
+            public void ExamineTraversal(TraversalNodeInfo traversalNodeInfo)
+            {
+                DiscoveredNodeKeys.Add(traversalNodeInfo.CurrentNode.Key);
+            }
+        }
+
         [TestInitialize]
         public void InitTest()
         {
             CancelTokenSource = new CancellationTokenSource();
+        }
+
+        /*
+         * node1 <-> node2 (with loop edge) <-> node3 
+         *   |                                    ^
+         *   |                                    |
+         *   L -----------------------------------
+         */
+        [TestMethod]
+        public void Search_with_undirected_graph_with_loops_should_traverse_nodes_only_once()
+        {
+            var graph = new GraphStorage("TestGraph", Env);
+
+            Node node1, node2, node3;
+            using (var tx = graph.NewTransaction(TransactionFlags.ReadWrite))
+            {
+                node1 = graph.Commands.CreateNode(tx, JsonFromValue(1));
+                node2 = graph.Commands.CreateNode(tx, JsonFromValue(2));
+                node3 = graph.Commands.CreateNode(tx, JsonFromValue(3));
+
+                node1.ConnectWith(tx, node2, graph);
+                node1.ConnectWith(tx, node3, graph);
+                node2.ConnectWith(tx, node1, graph);
+                node2.ConnectWith(tx, node2, graph); //loop edge
+                node2.ConnectWith(tx, node3, graph);
+                node3.ConnectWith(tx, node2, graph);
+
+                tx.Commit();
+            }
+
+            using (var tx = graph.NewTransaction(TransactionFlags.Read))
+            {
+                var nodeRecordingVisitor = new NodeRecordingVisitor();
+                var searchAlgorithm = new SearchAlgorithm(tx, graph, node1, TraversalType.BFS, CancelTokenSource.Token)
+                {
+                    Visitor = nodeRecordingVisitor
+                };
+
+                searchAlgorithm.Traverse();
+
+                nodeRecordingVisitor.DiscoveredNodeKeys.Should().OnlyHaveUniqueItems()
+                                                                .And.HaveCount(3);
+            }
+        }
+
+        
+        /*
+         *  node1 -> node2 -> node5 -> node6    node7 -> node8
+         *    |               ^                   |
+         *    |               |                   L -> node9
+         *    L -> node3 -> node4
+         *    
+         */
+        [TestMethod]
+        public void Search_with_multiple_disconnected_subgraph_should_only_traverse_reachable_nodes()
+        {
+            var graph = new GraphStorage("TestGraph", Env);
+
+            Node node1, node2, node3, node4, node5, node6, node7, node8, node9;
+            using (var tx = graph.NewTransaction(TransactionFlags.ReadWrite))
+            {
+                node1 = graph.Commands.CreateNode(tx, JsonFromValue(1));
+                node2 = graph.Commands.CreateNode(tx, JsonFromValue(2));
+                node3 = graph.Commands.CreateNode(tx, JsonFromValue(3));
+                node4 = graph.Commands.CreateNode(tx, JsonFromValue(4));
+                node5 = graph.Commands.CreateNode(tx, JsonFromValue(5));
+                node6 = graph.Commands.CreateNode(tx, JsonFromValue(6));
+                node7 = graph.Commands.CreateNode(tx, JsonFromValue(7));
+                node8 = graph.Commands.CreateNode(tx, JsonFromValue(8));
+                node9 = graph.Commands.CreateNode(tx, JsonFromValue(9));
+
+                node1.ConnectWith(tx, node2, graph);
+                node1.ConnectWith(tx, node3, graph);
+                node3.ConnectWith(tx, node4, graph);
+                node2.ConnectWith(tx, node5, graph);
+                node4.ConnectWith(tx, node5, graph);
+                node5.ConnectWith(tx, node6, graph);
+
+                node7.ConnectWith(tx, node8, graph);
+                node7.ConnectWith(tx, node9, graph);
+
+                tx.Commit();
+            }
+
+            var resultsBfs_subgraph1 = graph.Find(node1, data => ValueFromJson<int>(data) >= 5, TraversalType.BFS, CancelTokenSource.Token);
+            var resultsBfs_subgraph2 = graph.Find(node7, data => ValueFromJson<int>(data) >= 5, TraversalType.BFS, CancelTokenSource.Token);
+
+            resultsBfs_subgraph1.Select(x => ValueFromJson<int>(x.Data)).Should().OnlyContain(x => x >= 5 && x < 7)
+                                                                    .And.HaveCount(2);
+            resultsBfs_subgraph2.Select(x => ValueFromJson<int>(x.Data)).Should().OnlyContain(x => x >= 5 && x >=7)
+                                                                    .And.HaveCount(3);
         }
 
         /*

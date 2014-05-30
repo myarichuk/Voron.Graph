@@ -62,7 +62,7 @@ namespace Voron.Graph.Algorithms.Search
             VisitedNodes.Add(rootNode.Key);
         }       
 
-        public IEnumerable<Node> Search()
+        public IEnumerable<Node> Traverse()
         {
             if (State == AlgorithmState.Running)
                 throw new InvalidOperationException("The algorithm is already running");
@@ -81,7 +81,6 @@ namespace Voron.Graph.Algorithms.Search
                 if (Visitor != null)
                     Visitor.ExamineTraversal(traversalInfo);
 
-                VisitedNodes.Add(traversalInfo.CurrentNode.Key);
                 if (SearchPredicate != null && SearchPredicate(traversalInfo.CurrentNode.Data))
                     results.Add(traversalInfo.CurrentNode);
 
@@ -97,6 +96,7 @@ namespace Voron.Graph.Algorithms.Search
                 {
                     _cancelToken.ThrowIfCancellationRequested();
 
+                    VisitedNodes.Add(childNodeWithEdge.Node.Key);
                     if (Visitor != null)
                     {
                         Visitor.DiscoverEdge(childNodeWithEdge.EdgeTo);
@@ -118,9 +118,9 @@ namespace Voron.Graph.Algorithms.Search
             return results;
         }
 
-        public Task<IEnumerable<Node>> SearchAsync()
+        public Task<IEnumerable<Node>> TraverseAsync()
         {
-            return Task.Run(() => Search(), _cancelToken);
+            return Task.Run(() => Traverse(), _cancelToken);
         }       
 
         #region Traversal Storage Implementations

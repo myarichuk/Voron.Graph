@@ -35,7 +35,7 @@ namespace Voron.Graph.Extensions
                 ShouldStopSearch = results => take.HasValue ? results.Count() >= take : false
             };
 
-            return searchAlgorithm.Search();
+            return searchAlgorithm.Traverse();
         }
 
         public static async Task<IEnumerable<Node>> FindAsync(this GraphStorage storage,
@@ -63,7 +63,7 @@ namespace Voron.Graph.Extensions
                 ShouldStopSearch = results => take.HasValue ? results.Count() >= take : false
             };
 
-            return await searchAlgorithm.SearchAsync();
+            return await searchAlgorithm.TraverseAsync();
         }
     }
 }
