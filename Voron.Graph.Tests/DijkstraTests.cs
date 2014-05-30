@@ -163,7 +163,7 @@ namespace Voron.Graph.Tests
                 var shortestPathAlgorithm = new DijkstraShortestPath(tx, graph, node1, cancelTokenSource.Token);
                 var shortestPathsData = shortestPathAlgorithm.Execute();
 
-                var shortestNodePath = shortestPathsData.GetShortestPathToNode(node4).ToList();
+                var shortestNodePath = shortestPathsData.GetShortestPathToNode(node4);
                 shortestNodePath.Should().ContainInOrder(1L, 2L, 3L, 4L);
             }
         }

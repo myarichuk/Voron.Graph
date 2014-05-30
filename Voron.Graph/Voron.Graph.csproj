@@ -49,6 +49,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Algorithms\ShortestPath\ShortestPathVisitor.cs" />
     <Compile Include="Algorithms\Traversal\IVisitor.cs" />
     <Compile Include="Algorithms\Traversal\SearchVisitor.cs" />
     <Compile Include="Algorithms\Traversal\TraversalAlgorithm.cs" />
