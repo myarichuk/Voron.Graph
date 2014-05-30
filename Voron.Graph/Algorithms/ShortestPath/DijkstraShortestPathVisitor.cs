@@ -4,14 +4,14 @@ using Voron.Graph.Primitives;
 
 namespace Voron.Graph.Algorithms.ShortestPath
 {
-    public class ShortestPathVisitor : IVisitor
+    public class DijkstraShortestPathVisitor : IVisitor
     {
         public Dictionary<long, long> DistancesByNode;
         public Dictionary<long, long> PreviousNodeInOptimalPath;
 
         private TraversalNodeInfo currentTraversalNodeInfo;
 
-        public ShortestPathVisitor()
+        public DijkstraShortestPathVisitor()
         {
             DistancesByNode = new Dictionary<long, long>();
             PreviousNodeInOptimalPath = new Dictionary<long, long>();

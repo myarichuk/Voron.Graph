@@ -10,23 +10,17 @@ namespace Voron.Graph.Algorithms.ShortestPath
     public class DijkstraShortestPath : BaseAlgorithm
     {
         private readonly TraversalAlgorithm _bfs;
-        private readonly Dictionary<long, long> _distancesByNodeKey;
-        private readonly Dictionary<long, long> _previousOptimalNodeKey;
-        private readonly ShortestPathVisitor _shortestPathVisitor;
+        private readonly DijkstraShortestPathVisitor _shortestPathVisitor;
         private readonly Node _rootNode;
 
         public DijkstraShortestPath(Transaction tx, GraphStorage graphStorage, Node root, CancellationToken cancelToken)
         {
             _rootNode = root;
-            _shortestPathVisitor = new ShortestPathVisitor();
+            _shortestPathVisitor = new DijkstraShortestPathVisitor();
             _bfs = new TraversalAlgorithm(tx, graphStorage, root, TraversalType.BFS, cancelToken)
             {
                 Visitor = _shortestPathVisitor
             };
-            _distancesByNodeKey = new Dictionary<long, long>();
-            _previousOptimalNodeKey = new Dictionary<long, long>();
-
-            _distancesByNodeKey[root.Key] = 0;           
         }
 
         public Results Execute()
