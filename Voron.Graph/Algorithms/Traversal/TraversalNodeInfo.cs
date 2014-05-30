@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace Voron.Graph.Algorithms.Search
+namespace Voron.Graph.Algorithms.Traversal
 {
     //for each node during traversal holds information relevant to the process
     public class TraversalNodeInfo

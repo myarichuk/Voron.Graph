@@ -53,7 +53,7 @@ namespace Voron.Graph.Tests
                 var shortestPathsData = shortestPathAlgorithm.Execute();
 
                 var shortestNodePath = shortestPathsData.GetShortestPathToNode(node3).ToList();
-                shortestNodePath.Should().ContainInOrder(3, 1);
+                shortestNodePath.Should().ContainInOrder(1L, 3L);
             }
         }
 
@@ -75,9 +75,9 @@ namespace Voron.Graph.Tests
                 node2 = graph.Commands.CreateNode(tx, JsonFromValue(2));
                 node3 = graph.Commands.CreateNode(tx, JsonFromValue(3));
 
-                node1.ConnectWith(tx, node2, graph);
+                node1.ConnectWith(tx, node2, graph,2);
                 node1.ConnectWith(tx, node3, graph,10);
-                node2.ConnectWith(tx, node3, graph);
+                node2.ConnectWith(tx, node3, graph,2);
 
                 tx.Commit();
             }
@@ -88,7 +88,83 @@ namespace Voron.Graph.Tests
                 var shortestPathsData = shortestPathAlgorithm.Execute();
 
                 var shortestNodePath = shortestPathsData.GetShortestPathToNode(node3).ToList();
-                shortestNodePath.Should().ContainInOrder(3, 2, 1);
+                shortestNodePath.Should().ContainInOrder(1L, 2L, 3L);
+            }
+        }
+
+
+        /*
+         *       ^ node2 
+         *      /        \
+         * node1          > node4
+         *      \> node3 /
+         * 
+         */
+        [TestMethod]
+        public void Between_two_equivalent_paths_first_created_should_be_chosen()
+        {
+            var graph = new GraphStorage("TestGraph", Env);
+
+            Node node1, node2, node3, node4;
+            using (var tx = graph.NewTransaction(TransactionFlags.ReadWrite))
+            {
+                node1 = graph.Commands.CreateNode(tx, JsonFromValue(1));
+                node2 = graph.Commands.CreateNode(tx, JsonFromValue(2));
+                node3 = graph.Commands.CreateNode(tx, JsonFromValue(3));
+                node4 = graph.Commands.CreateNode(tx, JsonFromValue(4));
+
+                node1.ConnectWith(tx, node2, graph, 2);
+                node2.ConnectWith(tx, node4, graph, 1);
+                
+                node1.ConnectWith(tx, node3, graph, 1);
+                node3.ConnectWith(tx, node4, graph, 2);
+
+                tx.Commit();
+            }
+
+            using (var tx = graph.NewTransaction(TransactionFlags.Read))
+            {
+                var shortestPathAlgorithm = new DijkstraShortestPath(tx, graph, node1, cancelTokenSource.Token);
+                var shortestPathsData = shortestPathAlgorithm.Execute();
+
+                var shortestNodePath = shortestPathsData.GetShortestPathToNode(node4).ToList();
+                shortestNodePath.Should().ContainInOrder(1L, 2L, 4L);
+            }
+        }
+
+        /*       ^ node2 -> node3 
+         *      /                \
+         * node1 ---------------- > node4
+         */
+        [TestMethod]
+        public void Cheap_long_path_over_short_expensive_path_should_be_chosen()
+        {
+            var graph = new GraphStorage("TestGraph", Env);
+
+            Node node1, node2, node3, node4;
+            using (var tx = graph.NewTransaction(TransactionFlags.ReadWrite))
+            {
+                node1 = graph.Commands.CreateNode(tx, JsonFromValue(1));
+                node2 = graph.Commands.CreateNode(tx, JsonFromValue(2));
+                node3 = graph.Commands.CreateNode(tx, JsonFromValue(3));
+                node4 = graph.Commands.CreateNode(tx, JsonFromValue(4));
+
+                node1.ConnectWith(tx, node2, graph, 1);
+                node2.ConnectWith(tx, node3, graph, 1);
+                node3.ConnectWith(tx, node4, graph, 1);
+
+                node1.ConnectWith(tx, node4, graph, 10);
+
+                tx.Commit();
+            }
+
+            using (var tx = graph.NewTransaction(TransactionFlags.Read))
+            {
+                var shortestPathAlgorithm = new DijkstraShortestPath(tx, graph, node1, cancelTokenSource.Token);
+                var shortestPathsData = shortestPathAlgorithm.Execute();
+
+                var shortestNodePath = shortestPathsData.GetShortestPathToNode(node4).ToList();
+                shortestNodePath.Should().ContainInOrder(1L, 2L, 3L, 4L);
             }
         }
     }

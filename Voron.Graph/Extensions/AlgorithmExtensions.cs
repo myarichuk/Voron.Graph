@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using Voron.Graph.Algorithms.Search;
+using Voron.Graph.Algorithms.Traversal;
 using System.Linq;
 
 namespace Voron.Graph.Extensions
@@ -29,13 +29,14 @@ namespace Voron.Graph.Extensions
             CancellationToken cancelToken,
             int? take = null)
         {
-            var searchAlgorithm = new SearchAlgorithm(tx, storage, rootNode, algorithmType, cancelToken)
+            var searchVisitor = new SearchVisitor(searchPredicate, take ?? 0);
+            var traversalAlgorithm = new TraversalAlgorithm(tx, storage, rootNode, algorithmType, cancelToken)
             {
-                SearchPredicate = searchPredicate,
-                ShouldStopSearch = results => take.HasValue ? results.Count() >= take : false
+               Visitor = searchVisitor
             };
 
-            return searchAlgorithm.Traverse();
+            traversalAlgorithm.Traverse();
+            return searchVisitor.SearchResults;
         }
 
         public static async Task<IEnumerable<Node>> FindAsync(this GraphStorage storage,
@@ -57,13 +58,14 @@ namespace Voron.Graph.Extensions
                  CancellationToken cancelToken,
                  int? take = null)
         {
-            var searchAlgorithm = new SearchAlgorithm(tx, storage, rootNode, algorithmType, cancelToken)
+            var searchVisitor = new SearchVisitor(searchPredicate, take ?? 0);
+            var traversalAlgorithm = new TraversalAlgorithm(tx, storage, rootNode, algorithmType, cancelToken)
             {
-                SearchPredicate = searchPredicate,
-                ShouldStopSearch = results => take.HasValue ? results.Count() >= take : false
+                Visitor = searchVisitor
             };
 
-            return await searchAlgorithm.TraverseAsync();
+            await traversalAlgorithm.TraverseAsync();
+            return searchVisitor.SearchResults;
         }
     }
 }

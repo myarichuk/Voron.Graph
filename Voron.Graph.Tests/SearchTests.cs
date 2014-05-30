@@ -2,7 +2,7 @@
 using System;
 using System.Linq;
 using System.Threading.Tasks;
-using Voron.Graph.Algorithms.Search;
+using Voron.Graph.Algorithms.Traversal;
 using FluentAssertions;
 using System.Threading;
 using Voron.Graph.Extensions;
@@ -14,7 +14,7 @@ namespace Voron.Graph.Tests
     [TestClass]
     public class SearchTests : BaseGraphTest
     {
-        public CancellationTokenSource CancelTokenSource;
+        public CancellationTokenSource cancelTokenSource;
 
         private class NodeRecordingVisitor : IVisitor
         {
@@ -25,7 +25,7 @@ namespace Voron.Graph.Tests
                 DiscoveredNodeKeys = new List<long>();
             }
 
-            public void ExamineTraversal(TraversalNodeInfo traversalNodeInfo)
+            public void ExamineTraversalInfo(TraversalNodeInfo traversalNodeInfo)
             {
                 DiscoveredNodeKeys.Add(traversalNodeInfo.CurrentNode.Key);
             }
@@ -33,57 +33,19 @@ namespace Voron.Graph.Tests
             public void DiscoverAdjacent(Primitives.NodeWithEdge neighboorNode)
             {
             }
+
+
+            public bool ShouldStopTraversal
+            {
+                get { return false; }
+            }
         }
 
         [TestInitialize]
         public void InitTest()
         {
-            CancelTokenSource = new CancellationTokenSource();
-        }
-
-        /*
-         * node1 <-> node2 (with loop edge) <-> node3 
-         *   |                                    ^
-         *   |                                    |
-         *   L -----------------------------------
-         */
-        [TestMethod]
-        public void Search_with_undirected_graph_with_loops_should_traverse_nodes_only_once()
-        {
-            var graph = new GraphStorage("TestGraph", Env);
-
-            Node node1, node2, node3;
-            using (var tx = graph.NewTransaction(TransactionFlags.ReadWrite))
-            {
-                node1 = graph.Commands.CreateNode(tx, JsonFromValue(1));
-                node2 = graph.Commands.CreateNode(tx, JsonFromValue(2));
-                node3 = graph.Commands.CreateNode(tx, JsonFromValue(3));
-
-                node1.ConnectWith(tx, node2, graph);
-                node1.ConnectWith(tx, node3, graph);
-                node2.ConnectWith(tx, node1, graph);
-                node2.ConnectWith(tx, node2, graph); //loop edge
-                node2.ConnectWith(tx, node3, graph);
-                node3.ConnectWith(tx, node2, graph);
-
-                tx.Commit();
-            }
-
-            using (var tx = graph.NewTransaction(TransactionFlags.Read))
-            {
-                var nodeRecordingVisitor = new NodeRecordingVisitor();
-                var searchAlgorithm = new SearchAlgorithm(tx, graph, node1, TraversalType.BFS, CancelTokenSource.Token)
-                {
-                    Visitor = nodeRecordingVisitor
-                };
-
-                searchAlgorithm.Traverse();
-
-                nodeRecordingVisitor.DiscoveredNodeKeys.Should().OnlyHaveUniqueItems()
-                                                                .And.HaveCount(3);
-            }
-        }
-
+            cancelTokenSource = new CancellationTokenSource();
+        }       
         
         /*
          *  node1 -> node2 -> node5 -> node6    node7 -> node8
@@ -123,8 +85,8 @@ namespace Voron.Graph.Tests
                 tx.Commit();
             }
 
-            var resultsBfs_subgraph1 = graph.Find(node1, data => ValueFromJson<int>(data) >= 5, TraversalType.BFS, CancelTokenSource.Token);
-            var resultsBfs_subgraph2 = graph.Find(node7, data => ValueFromJson<int>(data) >= 5, TraversalType.BFS, CancelTokenSource.Token);
+            var resultsBfs_subgraph1 = graph.Find(node1, data => ValueFromJson<int>(data) >= 5, TraversalType.BFS, cancelTokenSource.Token);
+            var resultsBfs_subgraph2 = graph.Find(node7, data => ValueFromJson<int>(data) >= 5, TraversalType.BFS, cancelTokenSource.Token);
 
             resultsBfs_subgraph1.Select(x => ValueFromJson<int>(x.Data)).Should().OnlyContain(x => x >= 5 && x < 7)
                                                                     .And.HaveCount(2);
@@ -164,7 +126,7 @@ namespace Voron.Graph.Tests
                 tx.Commit();
             }
 
-            var results = graph.Find(node1, data => ValueFromJson<int>(data) >= 5, TraversalType.BFS, CancelTokenSource.Token,1);
+            var results = graph.Find(node1, data => ValueFromJson<int>(data) >= 5, TraversalType.BFS, cancelTokenSource.Token,1);
             results.Select(x => ValueFromJson<int>(x.Data)).Should().OnlyContain(x => x == 5)
                                                                     .And.HaveCount(1);
         }
@@ -203,8 +165,8 @@ namespace Voron.Graph.Tests
                 tx.Commit();
             }
 
-            var resultsBfs = graph.Find(node1, data => ValueFromJson<int>(data) >= 5, TraversalType.BFS, CancelTokenSource.Token);
-            var resultsDfs = graph.Find(node1, data => ValueFromJson<int>(data) >= 5, TraversalType.DFS, CancelTokenSource.Token);
+            var resultsBfs = graph.Find(node1, data => ValueFromJson<int>(data) >= 5, TraversalType.BFS, cancelTokenSource.Token);
+            var resultsDfs = graph.Find(node1, data => ValueFromJson<int>(data) >= 5, TraversalType.DFS, cancelTokenSource.Token);
 
             resultsBfs.Select(x => ValueFromJson<int>(x.Data)).Should().OnlyContain(x => x >= 5)
                                                                     .And.HaveCount(2);
@@ -237,8 +199,8 @@ namespace Voron.Graph.Tests
                 tx.Commit();
             }
 
-            var resultsBfs = await graph.FindAsync(node1, data => ValueFromJson<int>(data) >= 5, TraversalType.BFS, CancelTokenSource.Token);
-            var resultsDfs = await graph.FindAsync(node1, data => ValueFromJson<int>(data) >= 5, TraversalType.DFS, CancelTokenSource.Token);
+            var resultsBfs = await graph.FindAsync(node1, data => ValueFromJson<int>(data) >= 5, TraversalType.BFS, cancelTokenSource.Token);
+            var resultsDfs = await graph.FindAsync(node1, data => ValueFromJson<int>(data) >= 5, TraversalType.DFS, cancelTokenSource.Token);
 
             resultsBfs.Select(x => ValueFromJson<int>(x.Data)).Should().OnlyContain(x => x >= 5)
                                                                     .And.HaveCount(2);
@@ -273,8 +235,8 @@ namespace Voron.Graph.Tests
                 tx.Commit();
             }
 
-            var resultsBfs = graph.Find(node1, data => ValueFromJson<int>(data) >= 3, TraversalType.BFS, CancelTokenSource.Token);
-            var resultsDfs = graph.Find(node1, data => ValueFromJson<int>(data) >= 3, TraversalType.DFS, CancelTokenSource.Token);
+            var resultsBfs = graph.Find(node1, data => ValueFromJson<int>(data) >= 3, TraversalType.BFS, cancelTokenSource.Token);
+            var resultsDfs = graph.Find(node1, data => ValueFromJson<int>(data) >= 3, TraversalType.DFS, cancelTokenSource.Token);
 
             resultsBfs.Select(x => ValueFromJson<int>(x.Data)).Should().OnlyContain(x => x >= 3)
                                                                     .And.HaveCount(2);
@@ -295,8 +257,8 @@ namespace Voron.Graph.Tests
                 tx.Commit();
             }
 
-            var resultsBfs = graph.Find(node1, data => ValueFromJson<int>(data) == 1, TraversalType.BFS, CancelTokenSource.Token);
-            var resultsDfs = graph.Find(node1, data => ValueFromJson<int>(data) == 1, TraversalType.DFS, CancelTokenSource.Token);
+            var resultsBfs = graph.Find(node1, data => ValueFromJson<int>(data) == 1, TraversalType.BFS, cancelTokenSource.Token);
+            var resultsDfs = graph.Find(node1, data => ValueFromJson<int>(data) == 1, TraversalType.DFS, cancelTokenSource.Token);
             resultsBfs.Select(x => ValueFromJson<int>(x.Data)).Should().OnlyContain(x => x == 1)
                                                                     .And.HaveCount(1);
             resultsDfs.Select(x => ValueFromJson<int>(x.Data)).Should().OnlyContain(x => x == 1)

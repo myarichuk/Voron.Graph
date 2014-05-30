@@ -49,10 +49,10 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Algorithms\Search\IVisitor.cs" />
-    <Compile Include="Algorithms\Search\NodeVisitedEventArgs.cs" />
-    <Compile Include="Algorithms\Search\SearchAlgorithm.cs" />
-    <Compile Include="Algorithms\Search\TraversalNodeInfo.cs" />
+    <Compile Include="Algorithms\Traversal\IVisitor.cs" />
+    <Compile Include="Algorithms\Traversal\SearchVisitor.cs" />
+    <Compile Include="Algorithms\Traversal\TraversalAlgorithm.cs" />
+    <Compile Include="Algorithms\Traversal\TraversalNodeInfo.cs" />
     <Compile Include="Algorithms\ShortestPath\DijkstraShortestPath.cs" />
     <Compile Include="Extensions\AlgorithmExtensions.cs" />
     <Compile Include="Algorithms\AlgorithmState.cs" />

@@ -7,14 +7,14 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using Voron.Graph.Algorithms.Search;
+using Voron.Graph.Algorithms.Traversal;
 using Voron.Graph.Primitives;
 
 namespace Voron.Graph.Algorithms.ShortestPath
 {
     public class DijkstraShortestPath : BaseAlgorithm
     {
-        private readonly SearchAlgorithm _bfs;
+        private readonly TraversalAlgorithm _bfs;
         private readonly Dictionary<long, long> _distancesByNodeKey;
         private readonly Dictionary<long, long> _previousOptimalNodeKey;
         private readonly ShortestPathVisitor _shortestPathVisitor;
@@ -24,7 +24,7 @@ namespace Voron.Graph.Algorithms.ShortestPath
         {
             _rootNode = root;
             _shortestPathVisitor = new ShortestPathVisitor();
-            _bfs = new SearchAlgorithm(tx, graphStorage, root, TraversalType.BFS, cancelToken)
+            _bfs = new TraversalAlgorithm(tx, graphStorage, root, TraversalType.BFS, cancelToken)
             {
                 Visitor = _shortestPathVisitor
             };
@@ -66,21 +66,24 @@ namespace Voron.Graph.Algorithms.ShortestPath
 
             public IEnumerable<long> GetShortestPathToNode(Node node)
             {
+                var results = new Stack<long>();
                 Debug.Assert(RootNode != null);
                 if (node == null)
                     throw new ArgumentNullException("node");
 
                 if (!PreviousNodeInOptimalPath.ContainsKey(node.Key))
-                    yield break;
+                    return results;
 
                 long currentNodeKey = node.Key;
                 while (RootNode.Key != currentNodeKey)
                 {
-                    yield return currentNodeKey;
+                    results.Push(currentNodeKey);
                     currentNodeKey = PreviousNodeInOptimalPath[currentNodeKey];
                     if (currentNodeKey == RootNode.Key)
-                        yield return currentNodeKey;
+                        results.Push(currentNodeKey);
                 }
+
+                return results;
             }
         }
 
@@ -99,6 +102,10 @@ namespace Voron.Graph.Algorithms.ShortestPath
 
             public void DiscoverAdjacent(NodeWithEdge neighboorNode)
             {
+                //ignore loops
+                if (neighboorNode.EdgeTo.Key.NodeKeyFrom == neighboorNode.EdgeTo.Key.NodeKeyTo)
+                    return;
+
                 var alt = currentTraversalNodeInfo.TotalEdgeWeightUpToNow + neighboorNode.EdgeTo.Weight;
                 var currentNodeKey = neighboorNode.Node.Key;
 
@@ -118,9 +125,15 @@ namespace Voron.Graph.Algorithms.ShortestPath
                     PreviousNodeInOptimalPath[currentNodeKey] = currentTraversalNodeInfo.CurrentNode.Key;
             }
 
-            public void ExamineTraversal(TraversalNodeInfo traversalNodeInfo)
+            public void ExamineTraversalInfo(TraversalNodeInfo traversalNodeInfo)
             {
                 currentTraversalNodeInfo = traversalNodeInfo;
+            }
+
+
+            public bool ShouldStopTraversal
+            {
+                get { return false; }
             }
         }
     }
