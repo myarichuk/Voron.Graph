@@ -1,70 +1,127 @@
-﻿//using Newtonsoft.Json.Linq;
-//using System;
-//using System.Collections.Concurrent;
-//using System.Collections.Generic;
-//using System.Linq;
-//using System.Text;
-//using System.Threading;
-//using System.Threading.Tasks;
-//using Voron.Graph.Algorithms.Search;
+﻿using Newtonsoft.Json.Linq;
+using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+using Voron.Graph.Algorithms.Search;
+using Voron.Graph.Primitives;
 
-//namespace Voron.Graph.Algorithms.ShortestPath
-//{
-//    public class DijkstraShortestPath : BaseAlgorithm
-//    {
-//        private TraversalAlgorithm _traversal;
-//        private Dictionary<long, long> _distancesByNodeKey;
-//        private Dictionary<long, long> _previousOptimalNodeKey;
-        
+namespace Voron.Graph.Algorithms.ShortestPath
+{
+    public class DijkstraShortestPath : BaseAlgorithm
+    {
+        private readonly SearchAlgorithm _bfs;
+        private readonly Dictionary<long, long> _distancesByNodeKey;
+        private readonly Dictionary<long, long> _previousOptimalNodeKey;
+        private readonly ShortestPathVisitor _shortestPathVisitor;
+        private readonly Node _rootNode;
 
-//        public DijkstraShortestPath(GraphStorage graphStorage, Node root)
-//        {
-//            _traversal = new BreadthFirstSearch(graphStorage, cancelToken);
-//            _distancesByNodeKey = new Dictionary<long, long>();
-//            _previousOptimalNodeKey = new Dictionary<long, long>();
+        public DijkstraShortestPath(Transaction tx, GraphStorage graphStorage, Node root, CancellationToken cancelToken)
+        {
+            _rootNode = root;
+            _shortestPathVisitor = new ShortestPathVisitor();
+            _bfs = new SearchAlgorithm(tx, graphStorage, root, TraversalType.BFS, cancelToken)
+            {
+                Visitor = _shortestPathVisitor
+            };
+            _distancesByNodeKey = new Dictionary<long, long>();
+            _previousOptimalNodeKey = new Dictionary<long, long>();
 
-//            _distancesByNodeKey[root.Key] = 0;
+            _distancesByNodeKey[root.Key] = 0;           
+        }
 
-//            _traversal.NodeVisited += visitedEventArgs =>
-//            {
-//                if(_distancesByNodeKey.ContainsKey(visitedEventArgs.VisitedNode.Key) == false)
-//                {
-//                    _distancesByNodeKey.Add(visitedEventArgs.VisitedNode.Key, long.MaxValue); //as if long.MaxValue = infinity
-//                    _previousOptimalNodeKey.Add(visitedEventArgs.VisitedNode.Key, visitedEventArgs.PreviousNode.Key);
-//                }
-//                else
-//                {
-//                    var newWeight = _distancesByNodeKey[visitedEventArgs.VisitedNode.Key] + visitedEventArgs.Weight;
-//                }
-//            };
-//        }
+        public Results Execute()
+        {
+            _bfs.Traverse();
 
-//        public Task<Results> Start()
-//        {
-//            throw new NotImplementedException();
-//        }
+            return new Results
+            {
+                RootNode = _rootNode,
+                DistancesByNode = _shortestPathVisitor.DistancesByNode,
+                PreviousNodeInOptimalPath = _shortestPathVisitor.PreviousNodeInOptimalPath
+            };
+        }
 
-//        protected override Node GetDefaultRootNode(Transaction tx)
-//        {
-//            using (var iter = tx.NodeTree.Iterate())
-//            {
-//                if (!iter.Seek(Slice.BeforeAllKeys))
-//                    return null;
+        public async Task<Results> ExecuteAsync()
+        {
+            await _bfs.TraverseAsync();
 
-//                using (var resultStream = iter.CreateReaderForCurrent().AsStream())
-//                {
-//                    Etag etag;
-//                    JObject value;
-//                    Util.EtagAndValueFromStream(resultStream, out etag, out value);
-//                    return new Node(iter.CurrentKey.CreateReader().ReadBigEndianInt64(), value, etag);
-//                }
-//            }
-//        }
+            return new Results
+            {
+                RootNode = _rootNode,
+                DistancesByNode = _shortestPathVisitor.DistancesByNode,
+                PreviousNodeInOptimalPath = _shortestPathVisitor.PreviousNodeInOptimalPath
+            };
+        }
 
-//        public class Results
-//        {
-//            public Dictionary<long, long> DistancesByNode { get; internal set; }
-//            public Dictionary<long, long> PreviousNodeInOptimalPath { get; internal set; }
-//        }
-//    }
-//}
+        public class Results
+        {
+            public Node RootNode { get; internal set; }
+            public Dictionary<long, long> DistancesByNode { get; internal set; }
+            public Dictionary<long, long> PreviousNodeInOptimalPath { get; internal set; }
+
+            public IEnumerable<long> GetShortestPathToNode(Node node)
+            {
+                Debug.Assert(RootNode != null);
+                if (node == null)
+                    throw new ArgumentNullException("node");
+
+                if (!PreviousNodeInOptimalPath.ContainsKey(node.Key))
+                    yield break;
+
+                long currentNodeKey = node.Key;
+                while (RootNode.Key != currentNodeKey)
+                {
+                    yield return currentNodeKey;
+                    currentNodeKey = PreviousNodeInOptimalPath[currentNodeKey];
+                    if (currentNodeKey == RootNode.Key)
+                        yield return currentNodeKey;
+                }
+            }
+        }
+
+        private class ShortestPathVisitor : IVisitor
+        {
+            public Dictionary<long, long> DistancesByNode;
+            public Dictionary<long, long> PreviousNodeInOptimalPath;
+
+            private TraversalNodeInfo currentTraversalNodeInfo;
+
+            public ShortestPathVisitor()
+            {
+                DistancesByNode = new Dictionary<long, long>();
+                PreviousNodeInOptimalPath = new Dictionary<long, long>();
+            }
+
+            public void DiscoverAdjacent(NodeWithEdge neighboorNode)
+            {
+                var alt = currentTraversalNodeInfo.TotalEdgeWeightUpToNow + neighboorNode.EdgeTo.Weight;
+                var currentNodeKey = neighboorNode.Node.Key;
+
+                bool updateOptimalPath = false;
+                if (!DistancesByNode.ContainsKey(neighboorNode.Node.Key))
+                {
+                    DistancesByNode.Add(currentNodeKey, alt);
+                    updateOptimalPath = true;
+                }
+                else if (DistancesByNode[currentNodeKey] > alt)
+                {
+                    DistancesByNode[currentNodeKey] = alt;
+                    updateOptimalPath = true;
+                }
+
+                if(updateOptimalPath)
+                    PreviousNodeInOptimalPath[currentNodeKey] = currentTraversalNodeInfo.CurrentNode.Key;
+            }
+
+            public void ExamineTraversal(TraversalNodeInfo traversalNodeInfo)
+            {
+                currentTraversalNodeInfo = traversalNodeInfo;
+            }
+        }
+    }
+}

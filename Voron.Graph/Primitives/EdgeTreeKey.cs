@@ -11,7 +11,5 @@ namespace Voron.Graph
 
         //does not have a specific meaning, this field can be ignored or used as kind of metadata
         public ushort Type { get; set; }
-
-        public short Weight { get; set; }
     }
 }

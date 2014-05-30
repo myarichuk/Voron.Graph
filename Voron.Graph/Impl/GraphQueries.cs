@@ -48,9 +48,9 @@ namespace Voron.Graph.Impl
 					{
 						Etag etag;
 						JObject value;
-
-						Util.EtagAndValueFromStream(edgeEtagAndValueAsStream, out etag, out value);
-						var edge = new Edge(edgeKey, value, etag);
+                        short weight;
+						Util.EtagWeightAndValueFromStream(edgeEtagAndValueAsStream, out etag, out weight, out value);
+                        var edge = new Edge(edgeKey.NodeKeyFrom, edgeKey.NodeKeyTo, value, edgeKey.Type, etag, weight);
 
 						yield return edge;
 					}
@@ -87,9 +87,10 @@ namespace Voron.Graph.Impl
                         {
                             Etag etag;
                             JObject value;
+                            short weight;
 
-                            Util.EtagAndValueFromStream(edgeEtagAndValueAsStream, out etag, out value);
-                            var edge = new Edge(edgeKey, value, etag);
+                            Util.EtagWeightAndValueFromStream(edgeEtagAndValueAsStream, out etag, out weight, out value);
+                            var edge = new Edge(edgeKey.NodeKeyFrom, edgeKey.NodeKeyTo, value, edgeKey.Type, etag, weight);
 
                             yield return new NodeWithEdge
                             {
@@ -157,6 +158,11 @@ namespace Voron.Graph.Impl
 			}
 		}
 
+		public IEnumerable<Node> LoadMultipleNodes(Transaction tx, IEnumerable<long> nodeKeys)
+        {
+            foreach (var key in nodeKeys)
+                yield return LoadNode(tx, key);
+        }
 
 		public IEnumerable<Edge> GetEdgesBetween(Transaction tx, Node nodeFrom, Node nodeTo, ushort? type = null)
 		{
@@ -174,8 +180,8 @@ namespace Voron.Graph.Impl
 
 				do
 				{
-					EdgeTreeKey edgeTreeKey = edgeIterator.CurrentKey.ToEdgeTreeKey();
-					if (type.HasValue && edgeTreeKey.Type != type)
+					var edgeKey = edgeIterator.CurrentKey.ToEdgeTreeKey();
+					if (type.HasValue && edgeKey.Type != type)
 						continue;
 
 					ValueReader valueReader = edgeIterator.CreateReaderForCurrent();
@@ -183,10 +189,11 @@ namespace Voron.Graph.Impl
 					{
 						Etag etag;
 						JObject value;
-
-						Util.EtagAndValueFromStream(etagAndValueAsStream, out etag, out value);
-						yield return new Edge(edgeTreeKey, value, etag);
-					}
+                        short weight;
+						Util.EtagWeightAndValueFromStream(etagAndValueAsStream, out etag, out weight, out value);
+                        var edge = new Edge(edgeKey.NodeKeyFrom, edgeKey.NodeKeyTo, value, edgeKey.Type, etag, weight);
+                        yield return edge;
+                    }
 				} while (edgeIterator.MoveNext());
 			}
 		}

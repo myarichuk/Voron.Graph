@@ -11,28 +11,20 @@ namespace Voron.Graph
 
         public Etag Etag { get; internal set; }
 
-        public Edge(EdgeTreeKey key, JObject data, Etag etag = null)
+        public short Weight { get; internal set; }
+
+        public Edge(long nodeKeyFrom, long nodeKeyTo, JObject data, ushort type = 0, Etag etag = null,short weight = 1)           
         {
             Key = new EdgeTreeKey
             {
-                NodeKeyFrom = key.NodeKeyFrom,
-                NodeKeyTo = key.NodeKeyTo,
-                Type = key.Type
+                NodeKeyFrom = nodeKeyFrom,
+                NodeKeyTo = nodeKeyTo,
+                Type = type,
             };
 
             Data = data;
             Etag = etag ?? Etag.Empty;
-        }
-
-        public Edge(long nodeKeyFrom, long nodeKeyTo, JObject data, ushort type = 0, Etag etag = null)
-            : this(new EdgeTreeKey
-            {
-                NodeKeyFrom = nodeKeyFrom,
-                NodeKeyTo = nodeKeyTo,
-                Type = type
-            }, data, etag)
-        {
-
+            Weight = weight;
         }
     }
 }

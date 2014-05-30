@@ -79,9 +79,10 @@ namespace Voron.Graph.Impl
                     {
                         Etag etag;
                         JObject value;
-
-                        Util.EtagAndValueFromStream(readResultAsStream, out etag, out value);
-                        results.Add(new Edge(edgesIterator.CurrentKey.ToEdgeTreeKey(), value, etag));
+                        var edgeTreeKey = edgesIterator.CurrentKey.ToEdgeTreeKey();
+                        short weight;
+                        Util.EtagWeightAndValueFromStream(readResultAsStream, out etag, out weight, out value);
+                        results.Add(new Edge(edgeTreeKey.NodeKeyFrom, edgeTreeKey.NodeKeyTo, value, edgeTreeKey.Type, etag, weight));
                     }
 
                 } while (edgesIterator.MoveNext());

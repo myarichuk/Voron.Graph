@@ -74,7 +74,7 @@ namespace Voron.Graph.Impl
             return true;
         }
 
-        public Edge CreateEdgeBetween(Transaction tx, Node nodeFrom, Node nodeTo, JObject value = null, ushort type = 0)
+        public Edge CreateEdgeBetween(Transaction tx, Node nodeFrom, Node nodeTo, JObject value = null, ushort type = 0,short edgeWeight = 1)
         {
 	        if (tx == null) throw new ArgumentNullException("tx");
 
@@ -87,12 +87,12 @@ namespace Voron.Graph.Impl
                 throw new ArgumentException("nodeTo does not exist in the tree", "nodeTo");
             
             var newEtag = Etag.Generate();
-            var edge = new Edge(nodeFrom.Key, nodeTo.Key, value, type, newEtag);
+            var edge = new Edge(nodeFrom.Key, nodeTo.Key, value,type,newEtag,edgeWeight);
             
             tx.DisconnectedNodeTree.Delete(nodeFrom.Key.ToSlice());
             tx.KeyByEtagTree.Add(edge.Etag.ToSlice(), edge.Key.ToSlice());
 
-            tx.EdgeTree.Add(edge.Key.ToSlice(), Util.EtagAndValueToStream(newEtag,value ?? new JObject()));
+            tx.EdgeTree.Add(edge.Key.ToSlice(), Util.EtagWeightAndValueToStream(newEtag,value ?? new JObject(), edgeWeight));
 
             return edge;
         }

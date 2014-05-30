@@ -63,7 +63,6 @@ namespace Voron.Graph.Extensions
             sliceWriter.WriteBigEndian(edgeKey.NodeKeyFrom);
             sliceWriter.WriteBigEndian(edgeKey.NodeKeyTo);
             sliceWriter.WriteBigEndian(edgeKey.Type);
-            sliceWriter.WriteBigEndian(edgeKey.Weight);
 
             return sliceWriter.CreateSlice();
         }
@@ -77,8 +76,7 @@ namespace Voron.Graph.Extensions
             {
                 NodeKeyFrom = EndianBitConverter.Big.ToInt64(keyData, 0),
                 NodeKeyTo = EndianBitConverter.Big.ToInt64(keyData, SizeOfLong),
-                Type = EndianBitConverter.Big.ToUInt16(keyData, SizeOfLong + SizeOfUShort),
-                Weight = EndianBitConverter.Big.ToInt16(keyData, SizeOfLong + SizeOfUShort + SizeOfShort)
+                Type = EndianBitConverter.Big.ToUInt16(keyData, SizeOfLong * 2)
             };
 
             return edgeTreeKey;

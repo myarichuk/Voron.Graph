@@ -25,17 +25,13 @@ namespace Voron.Graph.Tests
                 DiscoveredNodeKeys = new List<long>();
             }
 
-            public void DiscoverNode(Node node)
-            {
-            }
-
-            public void DiscoverEdge(Edge edge)
-            {
-            }
-
             public void ExamineTraversal(TraversalNodeInfo traversalNodeInfo)
             {
                 DiscoveredNodeKeys.Add(traversalNodeInfo.CurrentNode.Key);
+            }
+
+            public void DiscoverAdjacent(Primitives.NodeWithEdge neighboorNode)
+            {
             }
         }
 

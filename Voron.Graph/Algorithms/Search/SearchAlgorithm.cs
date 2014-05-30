@@ -69,13 +69,11 @@ namespace Voron.Graph.Algorithms.Search
 
             OnStateChange(AlgorithmState.Running);
 
-            if (Visitor != null && _rootNode != null) //precaution
-                Visitor.DiscoverNode(_rootNode);
-
             var results = new List<Node>();
             while (_processingQueue.Count > 0)
             {
-                _cancelToken.ThrowIfCancellationRequested();
+                if (_cancelToken != null)
+                    _cancelToken.ThrowIfCancellationRequested();
 
                 var traversalInfo = _processingQueue.GetNext();
                 if (Visitor != null)
@@ -94,22 +92,20 @@ namespace Voron.Graph.Algorithms.Search
                     _graphStorage.Queries.GetAdjacentOf(_tx, traversalInfo.CurrentNode, EdgeTypeFilter ?? 0)
                                          .Where(nodeWithEdge => !VisitedNodes.Contains(nodeWithEdge.Node.Key)))
                 {
-                    _cancelToken.ThrowIfCancellationRequested();
+                    if (_cancelToken != null)
+                        _cancelToken.ThrowIfCancellationRequested();
 
                     VisitedNodes.Add(childNodeWithEdge.Node.Key);
                     if (Visitor != null)
-                    {
-                        Visitor.DiscoverEdge(childNodeWithEdge.EdgeTo);
-                        Visitor.DiscoverNode(childNodeWithEdge.Node);
-                    }
+                        Visitor.DiscoverAdjacent(childNodeWithEdge);
 
                     _processingQueue.Put(new TraversalNodeInfo
                     {
                         CurrentNode = childNodeWithEdge.Node,
-                        LastEdgeWeight = childNodeWithEdge.EdgeTo.Key.Weight,
+                        LastEdgeWeight = childNodeWithEdge.EdgeTo.Weight,
                         ParentNode = traversalInfo.CurrentNode,
                         TraversalDepth = traversalInfo.TraversalDepth + 1,
-                        TotalEdgeWeightUpToNow = traversalInfo.TotalEdgeWeightUpToNow + childNodeWithEdge.EdgeTo.Key.Weight                        
+                        TotalEdgeWeightUpToNow = traversalInfo.TotalEdgeWeightUpToNow + childNodeWithEdge.EdgeTo.Weight                        
                     });
                 }
             }
