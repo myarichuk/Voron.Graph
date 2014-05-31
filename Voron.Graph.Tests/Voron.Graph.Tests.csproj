@@ -67,6 +67,7 @@
   </Choose>
   <ItemGroup>
     <Compile Include="BaseGraphTest.cs" />
+    <Compile Include="BaseShortestPathTests.cs" />
     <Compile Include="BasicTests.cs" />
     <Compile Include="BellmanFordTests.cs" />
     <Compile Include="DijkstraTests.cs" />
