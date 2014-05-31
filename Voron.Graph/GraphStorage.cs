@@ -43,7 +43,8 @@ namespace Voron.Graph
                 _edgeTreeName, 
                 _disconnectedNodesTreeName, 
                 _keyByEtagTreeName, 
-                _graphMetadataKey);
+                _graphMetadataKey,
+                _nextId);
         }
 
         private long GetLatestStoredNodeKey()

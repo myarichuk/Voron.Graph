@@ -13,6 +13,7 @@ namespace Voron.Graph
     public class Transaction : IDisposable
     {
         private bool _isDisposed;
+        private readonly long _nodeCount;
 
         public bool IsDisposed
         {
@@ -30,6 +31,14 @@ namespace Voron.Graph
             }
         }
 
+        public long NodeCount
+        {
+            get
+            {
+                return _nodeCount;
+            }
+        }
+
         internal Voron.Impl.Transaction VoronTransaction { get; private set; }
 
         public Transaction(Voron.Impl.Transaction voronTransaction, 
@@ -37,13 +46,14 @@ namespace Voron.Graph
             string edgesTreeName, 
             string disconnectedNodesTreeName,
             string keyByEtagTreeName,
-            string graphMetadataKey)
+            string graphMetadataKey,
+            long nodeCount)
         {
             _isDisposed = false;
             if (voronTransaction == null)
                 throw new ArgumentNullException("voronTransaction");
             VoronTransaction = voronTransaction;
-
+            _nodeCount = nodeCount;
             NodeTree = voronTransaction.ReadTree(nodeTreeName);
             EdgeTree = voronTransaction.ReadTree(edgesTreeName);
             DisconnectedNodeTree = voronTransaction.ReadTree(disconnectedNodesTreeName);

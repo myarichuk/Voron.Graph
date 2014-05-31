@@ -70,6 +70,7 @@ namespace Voron.Graph.Algorithms.Traversal
                     _cancelToken.ThrowIfCancellationRequested();
 
                 var traversalInfo = _processingQueue.GetNext();
+                
                 if (Visitor != null)
                 {
                     Visitor.ExamineTraversalInfo(traversalInfo);
@@ -86,6 +87,9 @@ namespace Voron.Graph.Algorithms.Traversal
                 {
                     if (_cancelToken != null)
                         _cancelToken.ThrowIfCancellationRequested();
+
+                    if (TraverseDepthLimit.HasValue && traversalInfo.TraversalDepth == TraverseDepthLimit)
+                        continue;
 
                     TraversedEdges.Add(childNodeWithEdge.EdgeTo.Key);
                     if (Visitor != null)

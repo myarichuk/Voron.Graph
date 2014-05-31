@@ -7,7 +7,7 @@ using Voron.Graph.Algorithms.Traversal;
 
 namespace Voron.Graph.Algorithms.ShortestPath
 {
-    public class DijkstraShortestPath : BaseAlgorithm
+    public class DijkstraShortestPath : BaseAlgorithm, IShortestPathAlgorithm
     {
         private readonly TraversalAlgorithm _bfs;
         private readonly DijkstraShortestPathVisitor _shortestPathVisitor;
@@ -23,11 +23,11 @@ namespace Voron.Graph.Algorithms.ShortestPath
             };
         }
 
-        public Results Execute()
+        public IShortestPathResults Execute()
         {
             _bfs.Traverse();
 
-            return new Results
+            return new ShortestPathResults
             {
                 RootNode = _rootNode,
                 DistancesByNode = _shortestPathVisitor.DistancesByNode,
@@ -35,11 +35,11 @@ namespace Voron.Graph.Algorithms.ShortestPath
             };
         }
 
-        public async Task<Results> ExecuteAsync()
+        public async Task<IShortestPathResults> ExecuteAsync()
         {
             await _bfs.TraverseAsync();
 
-            return new Results
+            return new ShortestPathResults
             {
                 RootNode = _rootNode,
                 DistancesByNode = _shortestPathVisitor.DistancesByNode,
@@ -47,11 +47,17 @@ namespace Voron.Graph.Algorithms.ShortestPath
             };
         }
 
-        public class Results
+        public class ShortestPathResults : IShortestPathResults
         {
             public Node RootNode { get; internal set; }
             public Dictionary<long, long> DistancesByNode { get; internal set; }
             public Dictionary<long, long> PreviousNodeInOptimalPath { get; internal set; }
+
+            public ShortestPathResults()
+            {
+                DistancesByNode = new Dictionary<long, long>();
+                PreviousNodeInOptimalPath = new Dictionary<long, long>();
+            }
 
             public IEnumerable<long> GetShortestPathToNode(Node node)
             {
@@ -75,7 +81,5 @@ namespace Voron.Graph.Algorithms.ShortestPath
                 return results;
             }
         }
-
-       
     }
 }

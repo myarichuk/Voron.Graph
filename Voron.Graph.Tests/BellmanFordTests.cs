@@ -12,9 +12,9 @@ using Voron.Graph.Exceptions;
 
 namespace Voron.Graph.Tests
 {
-    //TODO: add more tests
+    //TODO : add more tests
     [TestClass]
-    public class DijkstraTests : BaseGraphTest
+    public class BellmanFordTests : BaseGraphTest
     {
         private CancellationTokenSource cancelTokenSource;
 
@@ -49,9 +49,9 @@ namespace Voron.Graph.Tests
                 tx.Commit();
             }
 
-            using(var tx = graph.NewTransaction(TransactionFlags.Read))
+            using (var tx = graph.NewTransaction(TransactionFlags.Read))
             {
-                var shortestPathAlgorithm = new DijkstraShortestPath(tx, graph, node1, cancelTokenSource.Token);
+                var shortestPathAlgorithm = new BellmanFordShortestPath(tx, graph, node1, cancelTokenSource.Token);
                 var shortestPathsData = shortestPathAlgorithm.Execute();
 
                 var shortestNodePath = shortestPathsData.GetShortestPathToNode(node3).ToList();
@@ -59,33 +59,6 @@ namespace Voron.Graph.Tests
             }
         }
 
-        [TestMethod]
-        public void Simple_shortest_path_with_negative_edge_weight_should_throw()
-        {
-            var graph = new GraphStorage("TestGraph", Env);
-
-            Node node1, node2, node3;
-            using (var tx = graph.NewTransaction(TransactionFlags.ReadWrite))
-            {
-                node1 = graph.Commands.CreateNode(tx, JsonFromValue(1));
-                node2 = graph.Commands.CreateNode(tx, JsonFromValue(2));
-                node3 = graph.Commands.CreateNode(tx, JsonFromValue(3));
-
-                node1.ConnectWith(tx, node2, graph,-1);
-                node1.ConnectWith(tx, node3, graph,-1);
-                node2.ConnectWith(tx, node3, graph,-1);
-
-                tx.Commit();
-            }
-
-            using (var tx = graph.NewTransaction(TransactionFlags.Read))
-            {
-                var shortestPathAlgorithm = new DijkstraShortestPath(tx, graph, node1, cancelTokenSource.Token);
-                var shortestPathsData = shortestPathAlgorithm.Invoking(x => x.Execute())
-                                                             .ShouldThrow<AlgorithmConstraintException>();
-
-            }
-        }
 
         /*
                *   node1 ----> node3
@@ -105,16 +78,16 @@ namespace Voron.Graph.Tests
                 node2 = graph.Commands.CreateNode(tx, JsonFromValue(2));
                 node3 = graph.Commands.CreateNode(tx, JsonFromValue(3));
 
-                node1.ConnectWith(tx, node2, graph,2);
-                node1.ConnectWith(tx, node3, graph,10);
-                node2.ConnectWith(tx, node3, graph,2);
+                node1.ConnectWith(tx, node2, graph, 2);
+                node1.ConnectWith(tx, node3, graph, 10);
+                node2.ConnectWith(tx, node3, graph, 2);
 
                 tx.Commit();
             }
 
             using (var tx = graph.NewTransaction(TransactionFlags.Read))
             {
-                var shortestPathAlgorithm = new DijkstraShortestPath(tx, graph, node1, cancelTokenSource.Token);
+                var shortestPathAlgorithm = new BellmanFordShortestPath(tx, graph, node1, cancelTokenSource.Token);
                 var shortestPathsData = shortestPathAlgorithm.Execute();
 
                 var shortestNodePath = shortestPathsData.GetShortestPathToNode(node3).ToList();
@@ -145,7 +118,7 @@ namespace Voron.Graph.Tests
 
                 node1.ConnectWith(tx, node2, graph, 2);
                 node2.ConnectWith(tx, node4, graph, 1);
-                
+
                 node1.ConnectWith(tx, node3, graph, 1);
                 node3.ConnectWith(tx, node4, graph, 2);
 
@@ -154,7 +127,7 @@ namespace Voron.Graph.Tests
 
             using (var tx = graph.NewTransaction(TransactionFlags.Read))
             {
-                var shortestPathAlgorithm = new DijkstraShortestPath(tx, graph, node1, cancelTokenSource.Token);
+                var shortestPathAlgorithm = new BellmanFordShortestPath(tx, graph, node1, cancelTokenSource.Token);
                 var shortestPathsData = shortestPathAlgorithm.Execute();
 
                 var shortestNodePath = shortestPathsData.GetShortestPathToNode(node4).ToList();
@@ -190,7 +163,7 @@ namespace Voron.Graph.Tests
 
             using (var tx = graph.NewTransaction(TransactionFlags.Read))
             {
-                var shortestPathAlgorithm = new DijkstraShortestPath(tx, graph, node1, cancelTokenSource.Token);
+                var shortestPathAlgorithm = new BellmanFordShortestPath(tx, graph, node1, cancelTokenSource.Token);
                 var shortestPathsData = shortestPathAlgorithm.Execute();
 
                 var shortestNodePath = shortestPathsData.GetShortestPathToNode(node4);
