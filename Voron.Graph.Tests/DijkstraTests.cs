@@ -55,7 +55,7 @@ namespace Voron.Graph.Tests
                 var shortestPathsData = shortestPathAlgorithm.Execute();
 
                 var shortestNodePath = shortestPathsData.GetShortestPathToNode(node3).ToList();
-                shortestNodePath.Should().ContainInOrder(1L, 3L);
+                shortestNodePath.Should().ContainInOrder(node1.Key, node3.Key);
             }
         }
 
@@ -118,7 +118,7 @@ namespace Voron.Graph.Tests
                 var shortestPathsData = shortestPathAlgorithm.Execute();
 
                 var shortestNodePath = shortestPathsData.GetShortestPathToNode(node3).ToList();
-                shortestNodePath.Should().ContainInOrder(1L, 2L, 3L);
+                shortestNodePath.Should().ContainInOrder(node1.Key, node2.Key, node3.Key);
             }
         }
 
@@ -158,7 +158,7 @@ namespace Voron.Graph.Tests
                 var shortestPathsData = shortestPathAlgorithm.Execute();
 
                 var shortestNodePath = shortestPathsData.GetShortestPathToNode(node4).ToList();
-                shortestNodePath.Should().ContainInOrder(1L, 2L, 4L);
+                shortestNodePath.Should().ContainInOrder(node1.Key, node2.Key, node4.Key);
             }
         }
 
