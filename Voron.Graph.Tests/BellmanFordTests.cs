@@ -13,9 +13,9 @@ using Voron.Graph.Exceptions;
 namespace Voron.Graph.Tests
 {
     [TestClass]
-    public class BellmanFordTests : BaseShortestPathTests
+    public class BellmanFordTests : BaseSingleSourceShortestPathTests
     {     
-        protected override IShortestPathAlgorithm GetAlgorithm(Transaction tx, GraphStorage graph, Node rootNode)
+        protected override ISingleSourceShortestPath GetAlgorithm(Transaction tx, GraphStorage graph, Node rootNode)
         {
             return new BellmanFordShortestPath(tx, graph, rootNode, cancelTokenSource.Token);
         }

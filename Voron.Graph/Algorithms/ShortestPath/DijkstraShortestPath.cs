@@ -7,7 +7,7 @@ using Voron.Graph.Algorithms.Traversal;
 
 namespace Voron.Graph.Algorithms.ShortestPath
 {
-    public class DijkstraShortestPath : BaseAlgorithm, IShortestPathAlgorithm
+    public class DijkstraShortestPath : BaseAlgorithm, ISingleSourceShortestPath
     {
         private readonly TraversalAlgorithm _bfs;
         private readonly DijkstraShortestPathVisitor _shortestPathVisitor;
@@ -23,7 +23,7 @@ namespace Voron.Graph.Algorithms.ShortestPath
             };
         }
 
-        public IShortestPathResults Execute()
+        public ISingleSourceShortestPathResults Execute()
         {
             _bfs.Traverse();
 
@@ -35,7 +35,7 @@ namespace Voron.Graph.Algorithms.ShortestPath
             };
         }
 
-        public async Task<IShortestPathResults> ExecuteAsync()
+        public async Task<ISingleSourceShortestPathResults> ExecuteAsync()
         {
             await _bfs.TraverseAsync();
 
@@ -47,7 +47,7 @@ namespace Voron.Graph.Algorithms.ShortestPath
             };
         }
 
-        public class ShortestPathResults : IShortestPathResults
+        public class ShortestPathResults : ISingleSourceShortestPathResults
         {
             public Node RootNode { get; internal set; }
             public Dictionary<long, long> DistancesByNode { get; internal set; }

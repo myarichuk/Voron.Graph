@@ -39,6 +39,12 @@ namespace Voron.Graph.Tests
             {
                 get { return false; }
             }
+
+
+            public bool ShouldSkip(TraversalNodeInfo traversalNodeInfo)
+            {
+                return false;
+            }
         }
 
         [TestInitialize]

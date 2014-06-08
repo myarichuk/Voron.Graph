@@ -9,16 +9,15 @@ using Voron.Graph.Algorithms.ShortestPath;
 using Voron.Graph.Extensions;
 using FluentAssertions;
 using Voron.Graph.Exceptions;
-using Voron.Graph.Algorithms.ShortestPath;
 
 namespace Voron.Graph.Tests
 {
     [TestClass]
-    public abstract class BaseShortestPathTests : BaseGraphTest
+    public abstract class BaseSingleSourceShortestPathTests : BaseGraphTest
     {
         protected CancellationTokenSource cancelTokenSource;
 
-        protected abstract IShortestPathAlgorithm GetAlgorithm(Transaction tx, GraphStorage graph, Node rootNode);
+        protected abstract ISingleSourceShortestPath GetAlgorithm(Transaction tx, GraphStorage graph, Node rootNode);
 
         [TestInitialize]
         public void InitTest()

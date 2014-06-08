@@ -24,9 +24,6 @@ namespace Voron.Graph.Algorithms.ShortestPath
                 throw new AlgorithmConstraintException(string.Format(@"Encountered a node with negative weight
                     between key = {0}, key = {1}. Dijkstra's algorithm for shortest path does not support edges with negative weights", 
                         neighboorNode.EdgeTo.Key.NodeKeyFrom, neighboorNode.EdgeTo.Key.NodeKeyTo));
-            //ignore loops
-            if (neighboorNode.EdgeTo.Key.NodeKeyFrom == neighboorNode.EdgeTo.Key.NodeKeyTo)
-                return;
 
             var alt = currentTraversalNodeInfo.TotalEdgeWeightUpToNow + neighboorNode.EdgeTo.Weight;
             var currentNodeKey = neighboorNode.Node.Key;
@@ -56,6 +53,14 @@ namespace Voron.Graph.Algorithms.ShortestPath
         public bool ShouldStopTraversal
         {
             get { return false; }
+        }
+
+
+        public bool ShouldSkip(TraversalNodeInfo traversalNodeInfo)
+        {
+            //ignore loops
+            return traversalNodeInfo.ParentNode != null && 
+                traversalNodeInfo.CurrentNode.Key == traversalNodeInfo.ParentNode.Key;
         }
     }
 }

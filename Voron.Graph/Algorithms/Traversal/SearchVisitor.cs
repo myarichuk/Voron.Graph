@@ -11,7 +11,10 @@ namespace Voron.Graph.Algorithms.Traversal
         private readonly int _take;
         private readonly HashSet<Node> _results;
 
-        public IEnumerable<Node> SearchResults
+        /// <summary>
+        /// Search Results
+        /// </summary>
+        public IEnumerable<Node> Results
         {
             get
             {
@@ -53,6 +56,12 @@ namespace Voron.Graph.Algorithms.Traversal
                 else
                     return _results.Count >= _take;
             }
+        }
+
+
+        public bool ShouldSkip(TraversalNodeInfo traversalNodeInfo)
+        {
+            return false;
         }
     }
 }

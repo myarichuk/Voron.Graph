@@ -17,8 +17,7 @@ namespace Voron.Graph.Algorithms.Traversal
 
     public class TraversalAlgorithm : BaseAlgorithm
     {
-        private readonly TraversalType _traversalType;
-        private readonly ITraversalStorage<TraversalNodeInfo> _processingQueue;
+        private readonly INodeTraversalStore<TraversalNodeInfo> _processingQueue;
         private readonly HashSet<EdgeTreeKey> TraversedEdges;
         private readonly Transaction _tx;
         private readonly GraphStorage _graphStorage;
@@ -36,11 +35,24 @@ namespace Voron.Graph.Algorithms.Traversal
             Node rootNode, 
             TraversalType traversalType,
             CancellationToken cancelToken)
+            : this(tx,
+            graphStorage,
+            rootNode,
+            (traversalType == TraversalType.BFS) ?
+                (INodeTraversalStore<TraversalNodeInfo>)(new BfsTraversalStore<TraversalNodeInfo>()) : new DfsTraversalStore<TraversalNodeInfo>(),
+            cancelToken)
         {
-            _traversalType = traversalType;
-            _processingQueue = (_traversalType == TraversalType.BFS) ?
-                (ITraversalStorage<TraversalNodeInfo>)(new BfsTraversalStorage<TraversalNodeInfo>()) : new DfsTraversalStorage<TraversalNodeInfo>();
-            
+           
+        }       
+
+        public TraversalAlgorithm(Transaction tx, 
+            GraphStorage graphStorage, 
+            Node rootNode, 
+            INodeTraversalStore<TraversalNodeInfo> processingQueue,
+            CancellationToken cancelToken)
+        {
+            _processingQueue = processingQueue;
+
             _cancelToken = cancelToken;
             TraversedEdges = new HashSet<EdgeTreeKey>();
             _graphStorage = graphStorage;
@@ -55,7 +67,8 @@ namespace Voron.Graph.Algorithms.Traversal
                 TotalEdgeWeightUpToNow = 0,
                 TraversalDepth = 1
             });
-        }       
+        }
+                    
 
         public void Traverse()
         {
@@ -79,6 +92,9 @@ namespace Voron.Graph.Algorithms.Traversal
                         OnStateChange(AlgorithmState.Aborted);
                         break;
                     }
+
+                    if (Visitor.ShouldSkip(traversalInfo))
+                        continue;
                 }
 
                 foreach (var childNodeWithEdge in
@@ -116,19 +132,11 @@ namespace Voron.Graph.Algorithms.Traversal
 
         #region Traversal Storage Implementations
 
-        private interface ITraversalStorage<T> : IEnumerable<T>
-        {
-            T GetNext();
-            void Put(T item);
-
-            int Count { get; }
-        }
-
-        private class BfsTraversalStorage<T> : ITraversalStorage<T>
+        private class BfsTraversalStore<T> : INodeTraversalStore<T>
         {
             private readonly Queue<T> _traversalStorage;
 
-            public BfsTraversalStorage()
+            public BfsTraversalStore()
             {
                 _traversalStorage = new Queue<T>();
             }
@@ -160,11 +168,11 @@ namespace Voron.Graph.Algorithms.Traversal
             }
         }
 
-        private class DfsTraversalStorage<T> : ITraversalStorage<T>
+        private class DfsTraversalStore<T> : INodeTraversalStore<T>
         {
             private readonly Stack<T> _traversalStorage;
 
-            public DfsTraversalStorage()
+            public DfsTraversalStore()
             {
                 _traversalStorage = new Stack<T>();
             }

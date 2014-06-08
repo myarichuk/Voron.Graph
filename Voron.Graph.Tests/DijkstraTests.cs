@@ -14,7 +14,7 @@ namespace Voron.Graph.Tests
 {
     //TODO: add more tests
     [TestClass]
-    public class DijkstraTests : BaseShortestPathTests
+    public class DijkstraTests : BaseSingleSourceShortestPathTests
     {
 
         [TestMethod]
@@ -45,7 +45,7 @@ namespace Voron.Graph.Tests
             }
         }
 
-        protected override IShortestPathAlgorithm GetAlgorithm(Transaction tx, GraphStorage graph, Node rootNode)
+        protected override ISingleSourceShortestPath GetAlgorithm(Transaction tx, GraphStorage graph, Node rootNode)
         {
             return new DijkstraShortestPath(tx, graph, rootNode, cancelTokenSource.Token);
         }

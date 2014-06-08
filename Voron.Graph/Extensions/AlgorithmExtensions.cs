@@ -36,7 +36,7 @@ namespace Voron.Graph.Extensions
             };
 
             traversalAlgorithm.Traverse();
-            return searchVisitor.SearchResults;
+            return searchVisitor.Results;
         }
 
         public static async Task<IEnumerable<Node>> FindAsync(this GraphStorage storage,
@@ -65,7 +65,7 @@ namespace Voron.Graph.Extensions
             };
 
             await traversalAlgorithm.TraverseAsync();
-            return searchVisitor.SearchResults;
+            return searchVisitor.Results;
         }
     }
 }
