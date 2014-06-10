@@ -51,19 +51,31 @@ namespace Voron.Graph.Algorithms.ShortestPath
             results.WeightsByNodeKey.Add(_rootNode.Key, 0);
 
             for (long i = 1; i < _tx.NodeCount - 1; i++)
+            {
+                bool hasMadeChange = false;
                 edges.ForEach(edge =>
                 {
                     if (!results.WeightsByNodeKey.ContainsKey(edge.Key.NodeKeyFrom))
+                    {
                         results.WeightsByNodeKey.Add(edge.Key.NodeKeyFrom, long.MaxValue);
+                        hasMadeChange = true;
+                    }
                     if (!results.WeightsByNodeKey.ContainsKey(edge.Key.NodeKeyTo))
+                    {
                         results.WeightsByNodeKey.Add(edge.Key.NodeKeyTo, long.MaxValue);
-
+                        hasMadeChange = true;
+                    }
                     if (results.WeightsByNodeKey[edge.Key.NodeKeyFrom] + edge.Weight < results.WeightsByNodeKey[edge.Key.NodeKeyTo])
                     {
                         results.WeightsByNodeKey[edge.Key.NodeKeyTo] = results.WeightsByNodeKey[edge.Key.NodeKeyFrom] + edge.Weight;
                         results.PreviousNodeInOptimizedPath[edge.Key.NodeKeyTo] = edge.Key.NodeKeyFrom;
+                        hasMadeChange = true;
                     }
                 });
+
+                if (hasMadeChange)
+                    break;
+            }
 
             //detect all negative cycles
             edges.ForEach(edge =>
