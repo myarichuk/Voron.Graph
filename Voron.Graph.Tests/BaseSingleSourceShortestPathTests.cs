@@ -114,17 +114,17 @@ namespace Voron.Graph.Tests
             {
                 node1 = graph.Commands.CreateNode(tx, JsonFromValue(1));
                 node2 = graph.Commands.CreateNode(tx, JsonFromValue(1));
-                node3 = graph.Commands.CreateNode(tx, JsonFromValue(15));
+                node3 = graph.Commands.CreateNode(tx, JsonFromValue(1));
                 node4 = graph.Commands.CreateNode(tx, JsonFromValue(1));
                 node5 = graph.Commands.CreateNode(tx, JsonFromValue(1));
                 node6 = graph.Commands.CreateNode(tx, JsonFromValue(1));
 
-                node1.ConnectWith(tx, node2, graph);
-                node1.ConnectWith(tx, node3, graph);
-                node3.ConnectWith(tx, node6, graph);
-                node2.ConnectWith(tx, node4, graph);
-                node4.ConnectWith(tx, node5, graph);
-                node5.ConnectWith(tx, node6, graph);
+                node1.ConnectWith(tx, node2, graph,1);
+                node1.ConnectWith(tx, node3, graph,15);
+                node3.ConnectWith(tx, node6, graph,1);
+                node2.ConnectWith(tx, node4, graph,1);
+                node4.ConnectWith(tx, node5, graph,1);
+                node5.ConnectWith(tx, node6, graph,1);
                 
                 tx.Commit();
             }
