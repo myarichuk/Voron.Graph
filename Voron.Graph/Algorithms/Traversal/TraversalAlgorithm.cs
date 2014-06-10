@@ -91,10 +91,7 @@ namespace Voron.Graph.Algorithms.Traversal
                     {
                         OnStateChange(AlgorithmState.Aborted);
                         break;
-                    }
-
-                    if (Visitor.ShouldSkipCurrentNode(traversalInfo))
-                        continue;
+                    }                   
                 }
 
                 foreach (var childNodeWithEdge in

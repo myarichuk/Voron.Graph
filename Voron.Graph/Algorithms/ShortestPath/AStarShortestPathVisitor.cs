@@ -48,10 +48,5 @@ namespace Voron.Graph.Algorithms.ShortestPath
         {
             return _closedList.Contains(adjacentNode.Node.Key);
         }
-
-        public bool ShouldSkipCurrentNode(TraversalNodeInfo traversalNodeInfo)
-        {
-            return false;
-        }
     }
 }
