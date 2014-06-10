@@ -56,11 +56,16 @@ namespace Voron.Graph.Algorithms.ShortestPath
         }
 
 
-        public bool ShouldSkip(TraversalNodeInfo traversalNodeInfo)
+        public bool ShouldSkipCurrentNode(TraversalNodeInfo traversalNodeInfo)
+        {
+            return false;
+        }
+
+
+        public bool ShouldSkipAdjacentNode(NodeWithEdge adjacentNode)
         {
             //ignore loops
-            return traversalNodeInfo.ParentNode != null && 
-                traversalNodeInfo.CurrentNode.Key == traversalNodeInfo.ParentNode.Key;
+            return adjacentNode.EdgeTo.Key.NodeKeyFrom == adjacentNode.EdgeTo.Key.NodeKeyTo;
         }
     }
 }

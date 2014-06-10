@@ -93,7 +93,7 @@ namespace Voron.Graph.Algorithms.Traversal
                         break;
                     }
 
-                    if (Visitor.ShouldSkip(traversalInfo))
+                    if (Visitor.ShouldSkipCurrentNode(traversalInfo))
                         continue;
                 }
 
@@ -109,7 +109,12 @@ namespace Voron.Graph.Algorithms.Traversal
 
                     TraversedEdges.Add(childNodeWithEdge.EdgeTo.Key);
                     if (Visitor != null)
+                    {
+                        if (Visitor.ShouldSkipAdjacentNode(childNodeWithEdge))
+                            continue;
+
                         Visitor.DiscoverAdjacent(childNodeWithEdge);
+                    }
 
                     _processingQueue.Put(new TraversalNodeInfo
                     {

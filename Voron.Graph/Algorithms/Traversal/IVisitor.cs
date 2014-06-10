@@ -14,7 +14,9 @@ namespace Voron.Graph.Algorithms.Traversal
         //this is invoked when the node is popped/dequeued from processing queue
         void ExamineTraversalInfo(TraversalNodeInfo traversalNodeInfo);
 
-        bool ShouldSkip(TraversalNodeInfo traversalNodeInfo);
+        bool ShouldSkipCurrentNode(TraversalNodeInfo traversalNodeInfo);
+
+        bool ShouldSkipAdjacentNode(Primitives.NodeWithEdge adjacentNode);
 
         bool ShouldStopTraversal { get; }
     }

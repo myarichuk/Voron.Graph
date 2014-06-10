@@ -41,7 +41,13 @@ namespace Voron.Graph.Tests
             }
 
 
-            public bool ShouldSkip(TraversalNodeInfo traversalNodeInfo)
+            public bool ShouldSkipCurrentNode(TraversalNodeInfo traversalNodeInfo)
+            {
+                return false;
+            }
+
+
+            public bool ShouldSkipAdjacentNode(Primitives.NodeWithEdge adjacentNode)
             {
                 return false;
             }

@@ -59,7 +59,13 @@ namespace Voron.Graph.Algorithms.Traversal
         }
 
 
-        public bool ShouldSkip(TraversalNodeInfo traversalNodeInfo)
+        public bool ShouldSkipCurrentNode(TraversalNodeInfo traversalNodeInfo)
+        {
+            return false;
+        }
+
+
+        public bool ShouldSkipAdjacentNode(NodeWithEdge adjacentNode)
         {
             return false;
         }

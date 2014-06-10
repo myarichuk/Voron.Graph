@@ -18,7 +18,7 @@ namespace Voron.Graph.Algorithms.Traversal
 
         public TraversalNodeInfo GetNext()
         {
-            return _store.DeleteMax();
+            return _store.DeleteMin();
         }
 
         public void Put(TraversalNodeInfo item)

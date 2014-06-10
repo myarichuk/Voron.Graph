@@ -54,6 +54,7 @@
   <ItemGroup>
     <Compile Include="Algorithms\ShortestPath\AStarShortestPath.cs" />
     <Compile Include="Algorithms\ShortestPath\AStarShortestPathVisitor.cs" />
+    <Compile Include="Algorithms\ShortestPath\BaseShortestPath.cs" />
     <Compile Include="Algorithms\ShortestPath\BellmanFordShortestPath.cs" />
     <Compile Include="Algorithms\ShortestPath\DijkstraShortestPathVisitor.cs" />
     <Compile Include="Algorithms\ShortestPath\ISingleSourceShortestPath.cs" />
