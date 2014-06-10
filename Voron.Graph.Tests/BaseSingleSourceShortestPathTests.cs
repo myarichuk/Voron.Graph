@@ -61,6 +61,86 @@ namespace Voron.Graph.Tests
 
 
         /*
+         *   node1 ----> node3 <----------
+         *     |                         |
+         *     L-> node2  --> node4 --> node5
+         */
+        [TestMethod]
+        public void Simple_shortest_path_with_equal_weights_and_alternative_path ()
+        {
+            var graph = new GraphStorage("TestGraph", Env);
+
+            Node node1, node2, node3,node4,node5;
+            using (var tx = graph.NewTransaction(TransactionFlags.ReadWrite))
+            {
+                node1 = graph.Commands.CreateNode(tx, JsonFromValue(1));
+                node2 = graph.Commands.CreateNode(tx, JsonFromValue(1));
+                node3 = graph.Commands.CreateNode(tx, JsonFromValue(1));
+                node4 = graph.Commands.CreateNode(tx, JsonFromValue(1));
+                node5 = graph.Commands.CreateNode(tx, JsonFromValue(1));
+
+                node1.ConnectWith(tx, node2, graph);
+                node1.ConnectWith(tx, node3, graph);
+                node2.ConnectWith(tx, node4, graph);
+                node4.ConnectWith(tx, node5, graph);
+                node5.ConnectWith(tx, node3, graph);
+
+                tx.Commit();
+            }
+
+            using (var tx = graph.NewTransaction(TransactionFlags.Read))
+            {
+                var shortestPathsData = GetAlgorithm(tx, graph, node1).Execute();
+
+                var shortestNodePath = shortestPathsData.GetShortestPathToNode(node3).ToList();
+                shortestNodePath.Should().ContainInOrder(node1.Key, node3.Key);
+            }
+        }
+
+
+        /*
+        *   node1 ----> node3 -----> node6 <---
+        *     |                               ^
+         *    |                               |
+        *     L---> node2 -----> node4 --> node5
+        */
+        [TestMethod]
+        public void Simple_shortest_path_with_equal_weights_and_alternative_path2()
+        {
+            var graph = new GraphStorage("TestGraph", Env);
+
+            Node node1, node2, node3, node4, node5, node6;
+            using (var tx = graph.NewTransaction(TransactionFlags.ReadWrite))
+            {
+                node1 = graph.Commands.CreateNode(tx, JsonFromValue(1));
+                node2 = graph.Commands.CreateNode(tx, JsonFromValue(1));
+                node3 = graph.Commands.CreateNode(tx, JsonFromValue(15));
+                node4 = graph.Commands.CreateNode(tx, JsonFromValue(1));
+                node5 = graph.Commands.CreateNode(tx, JsonFromValue(1));
+                node6 = graph.Commands.CreateNode(tx, JsonFromValue(1));
+
+                node1.ConnectWith(tx, node2, graph);
+                node1.ConnectWith(tx, node3, graph);
+                node3.ConnectWith(tx, node6, graph);
+                node2.ConnectWith(tx, node4, graph);
+                node4.ConnectWith(tx, node5, graph);
+                node5.ConnectWith(tx, node6, graph);
+                
+                tx.Commit();
+            }
+
+            using (var tx = graph.NewTransaction(TransactionFlags.Read))
+            {
+                var shortestPathsData = GetAlgorithm(tx, graph, node1).Execute();
+
+                var shortestNodePath = shortestPathsData.GetShortestPathToNode(node6).ToList();
+                shortestNodePath.Should().ContainInOrder(node1.Key,node2.Key, node4.Key, node5.Key);
+            }
+        }
+
+
+
+        /*
                *   node1 ----> node3
                *     |          /|\
                *     L-> node2 --|
