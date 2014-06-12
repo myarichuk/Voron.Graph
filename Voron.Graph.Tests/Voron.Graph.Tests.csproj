@@ -66,8 +66,10 @@
     </Otherwise>
   </Choose>
   <ItemGroup>
+    <Compile Include="AStarShortestPathTests.cs" />
     <Compile Include="BaseGraphTest.cs" />
-    <Compile Include="BaseSingleSourceShortestPathTests.cs" />
+    <Compile Include="BaseMultiDestinationShortestPathTests.cs" />
+    <Compile Include="BaseSingleDestinationShortestPathTests.cs" />
     <Compile Include="BasicTests.cs" />
     <Compile Include="BellmanFordTests.cs" />
     <Compile Include="DijkstraTests.cs" />

@@ -14,7 +14,7 @@ namespace Voron.Graph.Tests
 {
     //TODO: add more tests
     [TestClass]
-    public class DijkstraTests : BaseSingleSourceShortestPathTests
+    public class DijkstraTests : BaseMultiDestinationShortestPathTests
     {
 
         [TestMethod]

@@ -13,7 +13,7 @@ using Voron.Graph.Exceptions;
 namespace Voron.Graph.Tests
 {
     [TestClass]
-    public abstract class BaseSingleSourceShortestPathTests : BaseGraphTest
+    public abstract class BaseMultiDestinationShortestPathTests : BaseGraphTest
     {
         protected CancellationTokenSource cancelTokenSource;
 

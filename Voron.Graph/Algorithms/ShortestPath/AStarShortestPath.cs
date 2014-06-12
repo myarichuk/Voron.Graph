@@ -12,19 +12,23 @@ namespace Voron.Graph.Algorithms.ShortestPath
     {
         private readonly TraversalAlgorithm _traversal;
 
-        private readonly AStarShortestPathVisitor _shortestPathVisitor;
+        private readonly SingleDestinationShortestPathVisitor _shortestPathVisitor;
         private readonly Node _rootNode;
-        private Func<Node,Node, int> _heuristic;
+        private readonly Node _targetNode;
+        private Func<Node,Node,double> _heuristic;
 
         public AStarShortestPath(Transaction tx, 
             GraphStorage graphStorage, 
             Node root, 
             Node targetNode,
-            Func<Node,Node, int> heuristic,
+            Func<Node,Node,double> heuristic,
             CancellationToken cancelToken)
         {
             _rootNode = root;
-            _shortestPathVisitor = new AStarShortestPathVisitor(root, targetNode, heuristic);
+            _targetNode = targetNode;
+            _shortestPathVisitor = new SingleDestinationShortestPathVisitor(root, targetNode,
+                heuristic,
+                (traversalInfo, adjacentNode) => adjacentNode.EdgeTo.Weight + traversalInfo.TotalEdgeWeightUpToNow);
             _heuristic = heuristic;
             var traversalStore = new PriorityQueueTraversalStore(new TraversalNodeInfoComparer(root, heuristic));
             _traversal = new TraversalAlgorithm(tx, 
@@ -37,22 +41,22 @@ namespace Voron.Graph.Algorithms.ShortestPath
             };
         }
 
-        public IEnumerable<long> Execute(Node targetNode)
+        public IEnumerable<long> Execute()
         {
             _traversal.Traverse();
             if (_shortestPathVisitor.HasDiscoveredDestination == false)
                 return null;
 
-            return GetShortestPathToNode(_shortestPathVisitor.PreviousNodeInOptimalPath, targetNode);
+            return GetShortestPathToNode(_shortestPathVisitor.PreviousNodeInOptimalPath, _targetNode);
         }
 
-        public async Task<IEnumerable<long>> ExecuteAsync(Node targetNode)
+        public async Task<IEnumerable<long>> ExecuteAsync()
         {
             await _traversal.TraverseAsync();
             if (_shortestPathVisitor.HasDiscoveredDestination == false)
                 return null;
 
-            return GetShortestPathToNode(_shortestPathVisitor.PreviousNodeInOptimalPath, targetNode);
+            return GetShortestPathToNode(_shortestPathVisitor.PreviousNodeInOptimalPath, _targetNode);
         }
 
         private IEnumerable<long> GetShortestPathToNode(Dictionary<long, long> previousNodeInOptimalPath, Node targetNode)
@@ -78,9 +82,9 @@ namespace Voron.Graph.Algorithms.ShortestPath
 
         private class TraversalNodeInfoComparer : IComparer<TraversalNodeInfo>
         {
-            private Func<Node, Node, int> _heuristic;
+            private Func<Node, Node, double> _heuristic;
             private Node _rootNode;
-            public TraversalNodeInfoComparer(Node rootNode,Func<Node, Node, int> heuristic)
+            public TraversalNodeInfoComparer(Node rootNode,Func<Node, Node, double> heuristic)
             {
                 _heuristic = heuristic;
                 _rootNode = rootNode;

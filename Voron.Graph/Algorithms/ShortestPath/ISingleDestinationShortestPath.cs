@@ -8,7 +8,7 @@ namespace Voron.Graph.Algorithms.ShortestPath
 {
     public interface ISingleDestinationShortestPath
     {
-        IEnumerable<long> Execute(Node targetNode);
-        Task<IEnumerable<long>> ExecuteAsync(Node targetNode);
+        IEnumerable<long> Execute();
+        Task<IEnumerable<long>> ExecuteAsync();
     }
 }

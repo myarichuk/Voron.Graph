@@ -10,13 +10,15 @@ namespace Voron.Graph.Algorithms.ShortestPath
     public class DijkstraShortestPath : BaseAlgorithm, IMultiDestinationShortestPath
     {
         private readonly TraversalAlgorithm _bfs;
-        private readonly DijkstraShortestPathVisitor _shortestPathVisitor;
+        private readonly MultiDestinationShortestPathVisitor _shortestPathVisitor;
         private readonly Node _rootNode;
 
         public DijkstraShortestPath(Transaction tx, GraphStorage graphStorage, Node root, CancellationToken cancelToken)
         {
             _rootNode = root;
-            _shortestPathVisitor = new DijkstraShortestPathVisitor();
+            _shortestPathVisitor = new DijkstraMultiDestinationShortestPathVisitor(root, 
+                (nodeFrom, nodeTo) => 0, 
+                (traversalInfo, adjacentNode) => adjacentNode.EdgeTo.Weight + traversalInfo.TotalEdgeWeightUpToNow);
             _bfs = new TraversalAlgorithm(tx, graphStorage, root, TraversalType.BFS, cancelToken)
             {
                 Visitor = _shortestPathVisitor
@@ -50,12 +52,12 @@ namespace Voron.Graph.Algorithms.ShortestPath
         public class ShortestPathResults : IMultiDestinationShortestPathResults
         {
             public Node RootNode { get; internal set; }
-            public Dictionary<long, long> DistancesByNode { get; internal set; }
+            public Dictionary<long, double> DistancesByNode { get; internal set; }
             public Dictionary<long, long> PreviousNodeInOptimalPath { get; internal set; }
 
             public ShortestPathResults()
             {
-                DistancesByNode = new Dictionary<long, long>();
+                DistancesByNode = new Dictionary<long, double>();
                 PreviousNodeInOptimalPath = new Dictionary<long, long>();
             }
 

@@ -53,12 +53,13 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Algorithms\ShortestPath\AStarShortestPath.cs" />
-    <Compile Include="Algorithms\ShortestPath\AStarShortestPathVisitor.cs" />
     <Compile Include="Algorithms\ShortestPath\BellmanFordShortestPath.cs" />
-    <Compile Include="Algorithms\ShortestPath\DijkstraShortestPathVisitor.cs" />
+    <Compile Include="Algorithms\ShortestPath\DijkstraMultiDestinationShortestPathVisitor.cs" />
     <Compile Include="Algorithms\ShortestPath\IMultiDestinationShortestPath.cs" />
     <Compile Include="Algorithms\ShortestPath\IMultiDestinationShortestPathResults.cs" />
     <Compile Include="Algorithms\ShortestPath\ISingleDestinationShortestPath.cs" />
+    <Compile Include="Algorithms\ShortestPath\MultiDestinationShortestPathVisitor.cs" />
+    <Compile Include="Algorithms\ShortestPath\SingleDestinationShortestPathVisitor.cs" />
     <Compile Include="Algorithms\Traversal\INodeTraversalStore.cs" />
     <Compile Include="Algorithms\Traversal\IVisitor.cs" />
     <Compile Include="Algorithms\Traversal\PriorityQueueTraversalStore.cs" />

@@ -13,7 +13,7 @@ using Voron.Graph.Exceptions;
 namespace Voron.Graph.Tests
 {
     [TestClass]
-    public class BellmanFordTests : BaseSingleSourceShortestPathTests
+    public class BellmanFordTests : BaseMultiDestinationShortestPathTests
     {     
         protected override IMultiDestinationShortestPath GetAlgorithm(Transaction tx, GraphStorage graph, Node rootNode)
         {
