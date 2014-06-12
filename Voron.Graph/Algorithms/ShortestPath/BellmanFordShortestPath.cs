@@ -11,7 +11,7 @@ using Voron.Graph.Impl;
 
 namespace Voron.Graph.Algorithms.ShortestPath
 {
-    public class BellmanFordShortestPath : BaseAlgorithm, ISingleSourceShortestPath
+    public class BellmanFordShortestPath : BaseAlgorithm, IMultiDestinationShortestPath
     {
         private readonly Node _rootNode;
         private readonly GraphAdminQueries _graphAdminQueries;
@@ -26,7 +26,7 @@ namespace Voron.Graph.Algorithms.ShortestPath
             _cancelToken = cancelToken;
         }
 
-        public ISingleSourceShortestPathResults Execute()
+        public IMultiDestinationShortestPathResults Execute()
         {
             var getAllEdgesTask = _graphAdminQueries.GetAllEdges(_tx, _cancelToken);
             getAllEdgesTask.Wait();
@@ -36,7 +36,7 @@ namespace Voron.Graph.Algorithms.ShortestPath
             return results;
         }
 
-        public async Task<ISingleSourceShortestPathResults> ExecuteAsync()
+        public async Task<IMultiDestinationShortestPathResults> ExecuteAsync()
         {
             var edges = await _graphAdminQueries.GetAllEdges(_tx, _cancelToken);
 
@@ -86,7 +86,7 @@ namespace Voron.Graph.Algorithms.ShortestPath
             return results;
         }
 
-        public class ShortestPathResults : ISingleSourceShortestPathResults
+        public class ShortestPathResults : IMultiDestinationShortestPathResults
         {
             public Node RootNode { get; internal set; }
             public Dictionary<long, long> WeightsByNodeKey { get; internal set; }

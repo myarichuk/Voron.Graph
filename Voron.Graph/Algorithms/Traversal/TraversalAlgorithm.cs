@@ -24,6 +24,7 @@ namespace Voron.Graph.Algorithms.Traversal
         private CancellationToken _cancelToken;
         private readonly Node _rootNode;
 
+        //TODO: change this into delegate so edges can be filtered by multiple types
         public ushort? EdgeTypeFilter { get; set; }
 
         public uint? TraverseDepthLimit { get; set; }

@@ -45,7 +45,7 @@ namespace Voron.Graph.Tests
             }
         }
 
-        protected override ISingleSourceShortestPath GetAlgorithm(Transaction tx, GraphStorage graph, Node rootNode)
+        protected override IMultiDestinationShortestPath GetAlgorithm(Transaction tx, GraphStorage graph, Node rootNode)
         {
             return new DijkstraShortestPath(tx, graph, rootNode, cancelTokenSource.Token);
         }

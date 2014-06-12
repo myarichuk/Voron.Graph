@@ -17,7 +17,7 @@ namespace Voron.Graph.Tests
     {
         protected CancellationTokenSource cancelTokenSource;
 
-        protected abstract ISingleSourceShortestPath GetAlgorithm(Transaction tx, GraphStorage graph, Node rootNode);
+        protected abstract IMultiDestinationShortestPath GetAlgorithm(Transaction tx, GraphStorage graph, Node rootNode);
 
         [TestInitialize]
         public void InitTest()

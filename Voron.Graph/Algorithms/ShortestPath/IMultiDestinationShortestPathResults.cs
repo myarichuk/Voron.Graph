@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Voron.Graph.Algorithms.ShortestPath
 {
-    public interface ISingleSourceShortestPathResults
+    public interface IMultiDestinationShortestPathResults
     {
         IEnumerable<long> GetShortestPathToNode(Node node);
     }
