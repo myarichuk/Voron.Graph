@@ -14,7 +14,7 @@ namespace Voron.Graph.Tests
 {
     //TODO: add more tests
     [TestClass]
-    public class DijkstraTests : BaseMultiDestinationShortestPathTests
+    public class DijkstraMultiDestinationTests : BaseMultiDestinationShortestPathTests
     {
 
         [TestMethod]
@@ -38,7 +38,7 @@ namespace Voron.Graph.Tests
 
             using (var tx = graph.NewTransaction(TransactionFlags.Read))
             {
-                var shortestPathAlgorithm = new DijkstraShortestPath(tx, graph, node1, cancelTokenSource.Token);
+                var shortestPathAlgorithm = new DijkstraMultiDestinationShortestPath(tx, graph, node1, cancelTokenSource.Token);
                 var shortestPathsData = shortestPathAlgorithm.Invoking(x => x.Execute())
                                                              .ShouldThrow<AlgorithmConstraintException>();
 
@@ -47,7 +47,7 @@ namespace Voron.Graph.Tests
 
         protected override IMultiDestinationShortestPath GetAlgorithm(Transaction tx, GraphStorage graph, Node rootNode)
         {
-            return new DijkstraShortestPath(tx, graph, rootNode, cancelTokenSource.Token);
+            return new DijkstraMultiDestinationShortestPath(tx, graph, rootNode, cancelTokenSource.Token);
         }
     }
 }

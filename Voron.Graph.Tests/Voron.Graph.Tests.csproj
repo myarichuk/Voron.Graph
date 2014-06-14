@@ -71,8 +71,9 @@
     <Compile Include="BaseMultiDestinationShortestPathTests.cs" />
     <Compile Include="BaseSingleDestinationShortestPathTests.cs" />
     <Compile Include="BasicTests.cs" />
-    <Compile Include="BellmanFordTests.cs" />
-    <Compile Include="DijkstraTests.cs" />
+    <Compile Include="BellmanFordMultiDestinationTests.cs" />
+    <Compile Include="DijkstraMultiDestinationTests.cs" />
+    <Compile Include="DijkstraShortestPathTests.cs" />
     <Compile Include="EtagTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SearchTests.cs" />
