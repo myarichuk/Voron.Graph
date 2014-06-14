@@ -53,6 +53,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Algorithms\ShortestPath\AStarShortestPath.cs" />
+    <Compile Include="Algorithms\ShortestPath\AStarShortestPathVisitor.cs" />
     <Compile Include="Algorithms\ShortestPath\BaseSingleDestinationShortestPath.cs" />
     <Compile Include="Algorithms\ShortestPath\BellmanFordMultiDestinationShortestPath.cs" />
     <Compile Include="Algorithms\ShortestPath\DijkstraMultiDestinationShortestPathVisitor.cs" />

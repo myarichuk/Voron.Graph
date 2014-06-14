@@ -35,7 +35,7 @@ namespace Voron.Graph.Algorithms.ShortestPath
             _g = g;
         }
 
-        public void DiscoverAdjacent(Primitives.NodeWithEdge neighboorNode)
+        public virtual void DiscoverAdjacent(Primitives.NodeWithEdge neighboorNode)
         {
             
             var estimation = _g(_currentTraversalNodeInfo,neighboorNode) + _h(_rootNode,neighboorNode.Node);
@@ -57,14 +57,14 @@ namespace Voron.Graph.Algorithms.ShortestPath
                 PreviousNodeInOptimalPath[currentNodeKey] = _currentTraversalNodeInfo.CurrentNode.Key;
         }
 
-        public void ExamineTraversalInfo(TraversalNodeInfo traversalNodeInfo)
+        public virtual void ExamineTraversalInfo(TraversalNodeInfo traversalNodeInfo)
         {
             _currentTraversalNodeInfo = traversalNodeInfo;
             if (_targetNode != null && _currentTraversalNodeInfo.CurrentNode.Key == _targetNode.Key)
                 _hasDiscoveredDestination = true;
         }
 
-        public bool ShouldStopTraversal
+        public virtual bool ShouldStopTraversal
         {
             get 
             {
@@ -80,7 +80,7 @@ namespace Voron.Graph.Algorithms.ShortestPath
             }
         }
 
-        public bool ShouldSkipAdjacentNode(Primitives.NodeWithEdge adjacentNode)
+        public virtual bool ShouldSkipAdjacentNode(Primitives.NodeWithEdge adjacentNode)
         {
             return false;
         }

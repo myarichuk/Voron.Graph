@@ -18,7 +18,11 @@ namespace Voron.Graph.Algorithms.ShortestPath
         {
             var firstScore = _heuristic(first.CurrentNode, _rootNode);
             var secondScore = _heuristic(second.CurrentNode, _rootNode);
-            return firstScore.CompareTo(secondScore);
+            
+            if (firstScore == secondScore)
+                return 0;
+
+            return (firstScore < secondScore) ? 1 : -1;
         }
     }
 

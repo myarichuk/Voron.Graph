@@ -17,7 +17,7 @@ namespace Voron.Graph.Algorithms.ShortestPath
             Func<Node,Node,double> heuristic,
             CancellationToken cancelToken)
             :base(tx,graphStorage,root,targetNode,
-            new SingleDestinationShortestPathVisitor(root, targetNode,
+            new AStarShortestPathVisitor(root, targetNode,
                 heuristic,
                 (traversalInfo, adjacentNode) => adjacentNode.EdgeTo.Weight + traversalInfo.TotalEdgeWeightUpToNow),
             new TraversalAlgorithm(tx,

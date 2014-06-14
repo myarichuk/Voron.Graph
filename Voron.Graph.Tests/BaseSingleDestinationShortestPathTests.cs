@@ -32,7 +32,7 @@ namespace Voron.Graph.Tests
         /*
                *   node1 (0,0) ----> node3 (3,3)
                *     |                  /|\
-               *     L-> node2 (-2,-2) --|
+               *     L-> node2 (-12,-12) --|
                * 
                */
         [TestMethod]
@@ -55,8 +55,8 @@ namespace Voron.Graph.Tests
 
                 nodeLocations[node2.Key] = new Point
                 {
-                    x = -2,
-                    y = -2
+                    x = -12,
+                    y = -12
                 };
                 
                 nodeLocations[node3.Key] = new Point
@@ -66,7 +66,7 @@ namespace Voron.Graph.Tests
                 };
 
                 node1.ConnectWith(tx, node2, graph, 2);
-                node1.ConnectWith(tx, node3, graph, 10);
+                node1.ConnectWith(tx, node3, graph, 15);
                 node2.ConnectWith(tx, node3, graph, 2);
 
                 tx.Commit();
