@@ -25,15 +25,16 @@ namespace Voron.Graph.Algorithms.ShortestPath
 
         public override void DiscoverAdjacent(NodeWithEdge neighboorNode)
         {
-            _openSet.Add(neighboorNode.Node.Key);
+            if (_closedSet.Contains(neighboorNode.Node.Key))
+                _openSet.Add(neighboorNode.Node.Key);
             base.DiscoverAdjacent(neighboorNode);
         }
 
         public override void ExamineTraversalInfo(TraversalNodeInfo traversalNodeInfo)
         {
+            base.ExamineTraversalInfo(traversalNodeInfo);
             _openSet.Remove(traversalNodeInfo.CurrentNode.Key);
             _closedSet.Add(traversalNodeInfo.CurrentNode.Key);
-            base.ExamineTraversalInfo(traversalNodeInfo);
         }
 
         public override bool ShouldSkipAdjacentNode(NodeWithEdge adjacentNode)
