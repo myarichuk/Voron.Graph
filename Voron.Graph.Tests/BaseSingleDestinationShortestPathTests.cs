@@ -80,10 +80,10 @@ namespace Voron.Graph.Tests
             }
         }
 
-        /*       ^ node2 (1,1) -> node3 (2,1)
-                     *      /                     \
-                     * node1(0,0) ---------------- > node4 (20,0)
-                     */
+        /*       ^ node2 (1,10) -> node3 (2,10)
+              *      /                     \
+              * node1(0,0) ---------------- > node4 (4,0)
+              */
         [TestMethod]
         public void Cheaper_and_shortest_path_should_be_preferred()
         {
@@ -138,9 +138,9 @@ namespace Voron.Graph.Tests
             }
         }
 
-        /*       ^ node2 (1,1) -> node3 (2,1)
+        /*       ^ node2 (1,10) -> node3 (2,10)
               *      /                     \
-              * node1(0,0) ---------------- > node4 (20,0)
+              * node1(0,0) ---------------- > node4 (4,0)
               */
         [TestMethod]
         public void Cheaper_but_farther_path_should_be_preferred2()
