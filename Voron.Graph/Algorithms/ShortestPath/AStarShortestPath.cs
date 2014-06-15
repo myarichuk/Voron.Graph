@@ -27,6 +27,7 @@ namespace Voron.Graph.Algorithms.ShortestPath
                 cancelToken),
             cancelToken)
         {
+            _shortestPathVisitor.IsProcessingQueueEmpty = () => _traversal.ProcessingQueueCount == 0;
         }      
     }
 }

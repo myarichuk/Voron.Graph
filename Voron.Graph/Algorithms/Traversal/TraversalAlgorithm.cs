@@ -83,16 +83,9 @@ namespace Voron.Graph.Algorithms.Traversal
                     _cancelToken.ThrowIfCancellationRequested();
 
                 var traversalInfo = _processingQueue.GetNext();
-                
+
                 if (Visitor != null)
-                {
                     Visitor.ExamineTraversalInfo(traversalInfo);
-                    if(Visitor.ShouldStopTraversal)
-                    {
-                        OnStateChange(AlgorithmState.Aborted);
-                        break;
-                    }                   
-                }
 
                 foreach (var childNodeWithEdge in
                     _graphStorage.Queries.GetAdjacentOf(_tx, traversalInfo.CurrentNode, EdgeTypePredicate)
@@ -119,9 +112,16 @@ namespace Voron.Graph.Algorithms.Traversal
                         LastEdgeWeight = childNodeWithEdge.EdgeTo.Weight,
                         ParentNode = traversalInfo.CurrentNode,
                         TraversalDepth = traversalInfo.TraversalDepth + 1,
-                        TotalEdgeWeightUpToNow = traversalInfo.TotalEdgeWeightUpToNow + childNodeWithEdge.EdgeTo.Weight                        
+                        TotalEdgeWeightUpToNow = traversalInfo.TotalEdgeWeightUpToNow + childNodeWithEdge.EdgeTo.Weight
                     });
                 }
+
+                if (Visitor != null && Visitor.ShouldStopTraversal)
+                {
+                    OnStateChange(AlgorithmState.Aborted);
+                    break;
+                }
+
             }
 
             OnStateChange(AlgorithmState.Finished);
@@ -206,5 +206,13 @@ namespace Voron.Graph.Algorithms.Traversal
         }
 
         #endregion
+
+        public int ProcessingQueueCount
+        {
+            get
+            {
+                return _processingQueue.Count;
+            }
+        }
     }
 }

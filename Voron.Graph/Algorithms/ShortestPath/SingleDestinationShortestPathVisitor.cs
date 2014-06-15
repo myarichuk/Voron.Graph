@@ -21,6 +21,8 @@ namespace Voron.Graph.Algorithms.ShortestPath
         private readonly Node _rootNode;
         private readonly Node _targetNode;
 
+        public Func<bool> IsProcessingQueueEmpty { get; set; }
+
         public SingleDestinationShortestPathVisitor(Node rootNode,
             Node targetNode, 
             Func<Node, Node, double> h,
@@ -67,7 +69,8 @@ namespace Voron.Graph.Algorithms.ShortestPath
         {
             get 
             {
-                return _hasDiscoveredDestination;
+                return (IsProcessingQueueEmpty == null) ? _hasDiscoveredDestination :
+                                    _hasDiscoveredDestination && IsProcessingQueueEmpty();
             }
         }
 

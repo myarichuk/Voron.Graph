@@ -137,5 +137,56 @@ namespace Voron.Graph.Tests
                 shortestPath.Should().ContainInOrder(node1.Key, node4.Key);
             }
         }
+
+        /*
+               *   node1 ----> node3
+               *     |          /|\
+               *     L-> node2 --|
+               * 
+               */
+        //in this test the actual distances are small enough so only the weights actually matter
+        [TestMethod]
+        public void Simple_shortest_path_with_varying_edge_weight_should_work()
+        {
+            var graph = new GraphStorage("TestGraph", Env);
+
+            Node node1, node2, node3;
+            using (var tx = graph.NewTransaction(TransactionFlags.ReadWrite))
+            {
+                node1 = graph.Commands.CreateNode(tx, JsonFromValue(1));
+                node2 = graph.Commands.CreateNode(tx, JsonFromValue(2));
+                node3 = graph.Commands.CreateNode(tx, JsonFromValue(3));
+
+                node1.ConnectWith(tx, node2, graph, 1);
+                node1.ConnectWith(tx, node3, graph, 10);
+                node2.ConnectWith(tx, node3, graph, 1);
+
+                tx.Commit();
+            }
+
+            nodeLocations[node1.Key] = new Point
+            {
+                x = 0,
+                y = 0
+            };
+
+            nodeLocations[node2.Key] = new Point
+            {
+                x = 1,
+                y = 1
+            };
+
+            nodeLocations[node3.Key] = new Point
+            {
+                x = 2,
+                y = 1
+            };
+
+            using (var tx = graph.NewTransaction(TransactionFlags.Read))
+            {
+                var shortestPaths = GetAlgorithm(tx, graph, node1, node3).Execute();
+                shortestPaths.Should().ContainInOrder(node1.Key, node2.Key, node3.Key);
+            }
+        }
     }
 }

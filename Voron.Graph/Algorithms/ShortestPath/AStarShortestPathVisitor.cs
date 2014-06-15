@@ -11,7 +11,6 @@ namespace Voron.Graph.Algorithms.ShortestPath
     public class AStarShortestPathVisitor : SingleDestinationShortestPathVisitor
     {
         private readonly HashSet<long> _openSet;
-        private readonly HashSet<long> _closedSet;
         public AStarShortestPathVisitor(Node rootNode,
             Node targetNode,
             Func<Node, Node, double> h,
@@ -19,27 +18,19 @@ namespace Voron.Graph.Algorithms.ShortestPath
             :base(rootNode,targetNode,h,g)
         {
             _openSet = new HashSet<long>();
-            _closedSet = new HashSet<long>();
             _openSet.Add(rootNode.Key);
         }
 
         public override void DiscoverAdjacent(NodeWithEdge neighboorNode)
         {
-            if (_closedSet.Contains(neighboorNode.Node.Key))
-                _openSet.Add(neighboorNode.Node.Key);
             base.DiscoverAdjacent(neighboorNode);
+            _openSet.Add(neighboorNode.Node.Key);
         }
 
         public override void ExamineTraversalInfo(TraversalNodeInfo traversalNodeInfo)
         {
             base.ExamineTraversalInfo(traversalNodeInfo);
             _openSet.Remove(traversalNodeInfo.CurrentNode.Key);
-            _closedSet.Add(traversalNodeInfo.CurrentNode.Key);
-        }
-
-        public override bool ShouldSkipAdjacentNode(NodeWithEdge adjacentNode)
-        {
-            return _closedSet.Contains(adjacentNode.Node.Key);
         }
 
         public override bool ShouldStopTraversal

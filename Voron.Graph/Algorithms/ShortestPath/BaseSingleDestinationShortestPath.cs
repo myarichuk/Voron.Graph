@@ -10,11 +10,11 @@ namespace Voron.Graph.Algorithms.ShortestPath
 {
     public abstract class BaseSingleDestinationShortestPath : BaseAlgorithm, ISingleDestinationShortestPath
     {
-        private readonly TraversalAlgorithm _traversal;
+        protected readonly TraversalAlgorithm _traversal;
 
-        private readonly SingleDestinationShortestPathVisitor _shortestPathVisitor;
-        private readonly Node _rootNode;
-        private readonly Node _targetNode;
+        protected readonly SingleDestinationShortestPathVisitor _shortestPathVisitor;
+        protected readonly Node _rootNode;
+        protected readonly Node _targetNode;
 
         protected BaseSingleDestinationShortestPath(Transaction tx,
             GraphStorage graphStorage,
