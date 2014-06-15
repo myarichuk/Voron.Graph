@@ -188,5 +188,70 @@ namespace Voron.Graph.Tests
                 shortestPaths.Should().ContainInOrder(node1.Key, node2.Key, node3.Key);
             }
         }
+
+        /*
+         *   node1 ----> node3 <----------
+         *     |                         |
+         *     L-> node2  --> node4 --> node5
+         */
+        [TestMethod]
+        public void Simple_shortest_path_with_equal_weights_and_alternative_path()
+        {
+            var graph = new GraphStorage("TestGraph", Env);
+
+            Node node1, node2, node3, node4, node5;
+            using (var tx = graph.NewTransaction(TransactionFlags.ReadWrite))
+            {
+                node1 = graph.Commands.CreateNode(tx, JsonFromValue(1));
+                node2 = graph.Commands.CreateNode(tx, JsonFromValue(1));
+                node3 = graph.Commands.CreateNode(tx, JsonFromValue(1));
+                node4 = graph.Commands.CreateNode(tx, JsonFromValue(1));
+                node5 = graph.Commands.CreateNode(tx, JsonFromValue(1));
+
+                node1.ConnectWith(tx, node2, graph);
+                node1.ConnectWith(tx, node3, graph);
+                node2.ConnectWith(tx, node4, graph);
+                node4.ConnectWith(tx, node5, graph);
+                node5.ConnectWith(tx, node3, graph);
+
+                tx.Commit();
+            }
+
+            nodeLocations[node1.Key] = new Point
+            {
+                x = 0,
+                y = 0
+            };
+
+            nodeLocations[node2.Key] = new Point
+            {
+                x = 1,
+                y = 0
+            };
+
+            nodeLocations[node3.Key] = new Point
+            {
+                x = 1,
+                y = 0
+            };
+           
+            nodeLocations[node4.Key] = new Point
+            {
+                x = 1,
+                y = 1
+            };
+            
+            nodeLocations[node5.Key] = new Point
+            {
+                x = 1,
+                y = 2
+            };
+
+            using (var tx = graph.NewTransaction(TransactionFlags.Read))
+            {
+                var shortestPath = GetAlgorithm(tx, graph, node1, node3).Execute();
+                shortestPath.Should().ContainInOrder(node1.Key, node3.Key);
+            }
+        }
     }
 }
