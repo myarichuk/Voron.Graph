@@ -31,7 +31,7 @@ namespace Voron.Graph.Tests
 
         /*
                *   node1 (0,0) ----> node3 (3,3)
-               *     |                  /|\
+               *     |                    /|\
                *     L-> node2 (-12,-12) --|
                * 
                */
@@ -82,7 +82,7 @@ namespace Voron.Graph.Tests
 
         /*       ^ node2 (1,1) -> node3 (2,1)
               *      /                     \
-              * node1(0,0) ---------------- > node4 (4,0)
+              * node1(0,0) ---------------- > node4 (20,0)
               */
         [TestMethod]
         public void Cheaper_but_farther_path_should_be_preferred2()
@@ -115,13 +115,13 @@ namespace Voron.Graph.Tests
             nodeLocations[node2.Key] = new Point
             {
                 x = 1,
-                y = 1
+                y = 10
             };
             
             nodeLocations[node3.Key] = new Point
             {
                 x = 2,
-                y = 1
+                y = 10
             };
             
             nodeLocations[node4.Key] = new Point

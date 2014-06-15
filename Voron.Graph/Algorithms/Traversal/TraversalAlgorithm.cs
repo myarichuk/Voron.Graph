@@ -24,8 +24,7 @@ namespace Voron.Graph.Algorithms.Traversal
         private CancellationToken _cancelToken;
         private readonly Node _rootNode;
 
-        //TODO: change this into delegate so edges can be filtered by multiple types
-        public ushort? EdgeTypeFilter { get; set; }
+        public Func<ushort,bool> EdgeTypePredicate { get; set; }
 
         public uint? TraverseDepthLimit { get; set; }
 
@@ -96,7 +95,7 @@ namespace Voron.Graph.Algorithms.Traversal
                 }
 
                 foreach (var childNodeWithEdge in
-                    _graphStorage.Queries.GetAdjacentOf(_tx, traversalInfo.CurrentNode, EdgeTypeFilter ?? 0)
+                    _graphStorage.Queries.GetAdjacentOf(_tx, traversalInfo.CurrentNode, EdgeTypePredicate)
                                          .Where(nodeWithEdge => !TraversedEdges.Contains(nodeWithEdge.EdgeTo.Key)))
                 {
                     if (_cancelToken != null)

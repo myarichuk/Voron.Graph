@@ -37,7 +37,6 @@ namespace Voron.Graph.Algorithms.ShortestPath
 
         public virtual void DiscoverAdjacent(Primitives.NodeWithEdge neighboorNode)
         {
-            
             var estimation = _g(_currentTraversalNodeInfo,neighboorNode) + _h(_rootNode,neighboorNode.Node);
             var currentNodeKey = neighboorNode.Node.Key;
 

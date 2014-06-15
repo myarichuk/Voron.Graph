@@ -89,7 +89,38 @@ namespace Voron.Graph.Tests
                 adjacentNodes.Select(x => x.Node.Key).Should().Contain(new []{ node1.Key, node2.Key, node3.Key});
             }
         }
-     
+
+        [TestMethod]
+        public void Edge_predicate_should_filter_edge_types_correctly()
+        {
+            var graph = new GraphStorage("TestGraph", Env);
+            Node node1, node2, node3, node4, node5;
+            using (var tx = graph.NewTransaction(TransactionFlags.ReadWrite))
+            {
+                node1 = graph.Commands.CreateNode(tx, JsonFromValue("test1"));
+                node2 = graph.Commands.CreateNode(tx, JsonFromValue("test2"));
+                node3 = graph.Commands.CreateNode(tx, JsonFromValue("test3"));
+                node4 = graph.Commands.CreateNode(tx, JsonFromValue("test4"));
+                node5 = graph.Commands.CreateNode(tx, JsonFromValue("test5"));
+                tx.Commit();
+            }
+
+            using (var tx = graph.NewTransaction(TransactionFlags.ReadWrite))
+            {
+                graph.Commands.CreateEdgeBetween(tx, node1, node2,type: 1);
+                graph.Commands.CreateEdgeBetween(tx, node1, node3, type: 2);
+                graph.Commands.CreateEdgeBetween(tx, node1, node4, type: 3);
+                graph.Commands.CreateEdgeBetween(tx, node1, node5, type: 2);
+
+                tx.Commit();
+            }
+
+            using (var tx = graph.NewTransaction(TransactionFlags.Read))
+            {
+                var adjacentNodes = graph.Queries.GetAdjacentOf(tx, node1, type => type == 2);
+                adjacentNodes.Select(x => x.Node.Key).Should().Contain(new[] { node3.Key, node5.Key });
+            }
+        }
 
         [TestMethod]
         public async Task Can_Avoid_Duplicate_Nodes_InParallel_Adds()

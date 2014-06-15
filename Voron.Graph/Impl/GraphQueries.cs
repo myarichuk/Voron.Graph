@@ -58,7 +58,7 @@ namespace Voron.Graph.Impl
 			}
 		}
 
-        public IEnumerable<NodeWithEdge> GetAdjacentOf(Transaction tx, Node node, ushort type = 0)
+        public IEnumerable<NodeWithEdge> GetAdjacentOf(Transaction tx, Node node, Func<ushort,bool> typePredicate = null)
 		{
 			if (tx == null) throw new ArgumentNullException("tx");
 			if (node == null) throw new ArgumentNullException("node");
@@ -74,7 +74,7 @@ namespace Voron.Graph.Impl
 				do
 				{
 					var edgeKey = edgeIterator.CurrentKey.ToEdgeTreeKey();
-					if (edgeKey.Type != type)
+                    if (typePredicate != null && typePredicate(edgeKey.Type))
 						continue;
 
                     if (!alreadyRetrievedKeys.Contains(edgeKey.NodeKeyTo))
