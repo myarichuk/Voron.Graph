@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
@@ -69,7 +70,7 @@ namespace Voron.Graph.Algorithms.ShortestPath
                     throw new ArgumentNullException("node");
 
                 if (!PreviousNodeInOptimalPath.ContainsKey(node.Key))
-                    return results;
+                    return null;
 
                 long currentNodeKey = node.Key;
                 while (RootNode.Key != currentNodeKey)

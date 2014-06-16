@@ -80,6 +80,41 @@ namespace Voron.Graph.Tests
             }
         }
 
+        [TestMethod]
+        public void No_path_between_nodes_should_result_in_null()
+        {
+            var graph = new GraphStorage("TestGraph", Env);
+
+            Node node1, node2;
+            using (var tx = graph.NewTransaction(TransactionFlags.ReadWrite))
+            {
+                node1 = graph.Commands.CreateNode(tx, JsonFromValue(1));
+                node2 = graph.Commands.CreateNode(tx, JsonFromValue(2));
+
+                nodeLocations[node1.Key] = new Point
+                {
+                    x = 0,
+                    y = 0
+                };
+
+                nodeLocations[node2.Key] = new Point
+                {
+                    x = -12,
+                    y = -12
+                };
+
+              
+                tx.Commit();
+            }
+
+            using (var tx = graph.NewTransaction(TransactionFlags.Read))
+            {
+                var shortestPath = GetAlgorithm(tx, graph, node1, node2).Execute();
+
+                shortestPath.Should().BeNull();
+            }
+        }
+
         /*       ^ node2 (1,10) -> node3 (2,10)
               *      /                     \
               * node1(0,0) ---------------- > node4 (4,0)

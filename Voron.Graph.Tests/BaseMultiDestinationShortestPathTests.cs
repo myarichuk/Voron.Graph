@@ -97,6 +97,29 @@ namespace Voron.Graph.Tests
             }
         }
 
+        [TestMethod]
+        public void No_path_between_nodes_should_result_in_null()
+        {
+            var graph = new GraphStorage("TestGraph", Env);
+
+            Node node1, node2;
+            using (var tx = graph.NewTransaction(TransactionFlags.ReadWrite))
+            {
+                node1 = graph.Commands.CreateNode(tx, JsonFromValue(1));
+                node2 = graph.Commands.CreateNode(tx, JsonFromValue(2));
+
+             
+                tx.Commit();
+            }
+
+            using (var tx = graph.NewTransaction(TransactionFlags.Read))
+            {
+                var shortestPathsData = GetAlgorithm(tx, graph, node1).Execute();
+
+                var shortestNodePath = shortestPathsData.GetShortestPathToNode(node2);
+                shortestNodePath.Should().BeNull();
+            }
+        }
 
         /*
         *   node1 ----> node3 -----> node6 <---
