@@ -21,7 +21,7 @@ namespace Voron.Graph.Algorithms.Traversal
         private readonly HashSet<EdgeTreeKey> TraversedEdges;
         private readonly Transaction _tx;
         private readonly GraphStorage _graphStorage;
-        private CancellationToken _cancelToken;
+        private CancellationToken? _cancelToken;
         private readonly Node _rootNode;
 
         public Func<ushort,bool> EdgeTypePredicate { get; set; }
@@ -34,7 +34,7 @@ namespace Voron.Graph.Algorithms.Traversal
             GraphStorage graphStorage, 
             Node rootNode, 
             TraversalType traversalType,
-            CancellationToken cancelToken)
+            CancellationToken? cancelToken)
             : this(tx,
             graphStorage,
             rootNode,
@@ -49,7 +49,7 @@ namespace Voron.Graph.Algorithms.Traversal
             GraphStorage graphStorage, 
             Node rootNode, 
             INodeTraversalStore<TraversalNodeInfo> processingQueue,
-            CancellationToken cancelToken)
+            CancellationToken? cancelToken)
         {
             _processingQueue = processingQueue;
 
@@ -80,7 +80,7 @@ namespace Voron.Graph.Algorithms.Traversal
             while (_processingQueue.Count > 0)
             {
                 if (_cancelToken != null)
-                    _cancelToken.ThrowIfCancellationRequested();
+                    _cancelToken.Value.ThrowIfCancellationRequested();
 
                 var traversalInfo = _processingQueue.GetNext();
 
@@ -92,7 +92,7 @@ namespace Voron.Graph.Algorithms.Traversal
                                          .Where(nodeWithEdge => !TraversedEdges.Contains(nodeWithEdge.EdgeTo.Key)))
                 {
                     if (_cancelToken != null)
-                        _cancelToken.ThrowIfCancellationRequested();
+                        _cancelToken.Value.ThrowIfCancellationRequested();
 
                     if (TraverseDepthLimit.HasValue && traversalInfo.TraversalDepth == TraverseDepthLimit)
                         continue;
@@ -128,8 +128,8 @@ namespace Voron.Graph.Algorithms.Traversal
         }
 
         public Task TraverseAsync()
-        {
-            return Task.Run(() => Traverse(), _cancelToken);
+        {            
+            return (_cancelToken != null) ? Task.Run(() => Traverse(), _cancelToken.Value) : Task.Run(() => Traverse());
         }       
 
         #region Traversal Storage Implementations

@@ -58,6 +58,16 @@ namespace Voron.Graph.Impl
 			}
 		}
 
+        public bool IsSink(Transaction tx, Node node)
+        {
+            using (var edgeIterator = tx.EdgeTree.Iterate())
+            {
+                var nodeKey = node.Key.ToSlice();
+                edgeIterator.RequiredPrefix = nodeKey;
+                return !edgeIterator.Seek(nodeKey);
+            }
+        }
+
         public IEnumerable<NodeWithEdge> GetAdjacentOf(Transaction tx, Node node, Func<ushort,bool> typePredicate = null)
 		{
 			if (tx == null) throw new ArgumentNullException("tx");
