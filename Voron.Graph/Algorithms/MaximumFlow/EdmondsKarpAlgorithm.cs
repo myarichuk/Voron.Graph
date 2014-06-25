@@ -31,7 +31,7 @@ namespace Voron.Graph.Algorithms.MaximumFlow
             _tx = tx;
         }
 
-        public override long MaximumFlow(long startNodeKey, long endNodeKey)
+        public override long MaximumFlow()
         {
             OnStateChange(AlgorithmState.Running);
             long maximumFlow = 0;
@@ -55,7 +55,7 @@ namespace Voron.Graph.Algorithms.MaximumFlow
             return maximumFlow;
         }
 
-        public override Task<long> MaximumFlowAsync(long startNodeKey, long endNodeKey)
+        public override Task<long> MaximumFlowAsync()
         {
             throw new NotImplementedException();
         }
@@ -90,22 +90,36 @@ namespace Voron.Graph.Algorithms.MaximumFlow
             public void ExamineTraversalInfo(TraversalNodeInfo traversalNodeInfo)
             {
                 _currentTraversalNodeInfo = traversalNodeInfo;
-                _previousNodeInPath[traversalNodeInfo.CurrentNode.Key] = traversalNodeInfo.ParentNode.Key;
 
-                if (_targetNode != null && _currentTraversalNodeInfo.CurrentNode.Key == _targetNode.Key)
+                if (traversalNodeInfo.ParentNode != null)
                 {
-                    UpdateFlowCosts();
-                    _hasDiscoveredDestination = true;
+                    _previousNodeInPath[traversalNodeInfo.CurrentNode.Key] = traversalNodeInfo.ParentNode.Key;
+
+                    if (_targetNode != null && _currentTraversalNodeInfo.CurrentNode.Key == _targetNode.Key)
+                    {
+                        UpdateFlowCosts();
+                        _hasDiscoveredDestination = true;
+                    }
                 }
             }
 
             private void UpdateFlowCosts()
             {
                 var currentKey = _targetNode.Key;
+                long bottleneckCapacity = long.MaxValue; 
                 do
                 {
                     var capacityKey = Tuple.Create(_previousNodeInPath[currentKey], currentKey);
-                    _flow[capacityKey] += _pathCapacity[capacityKey];
+                    bottleneckCapacity = Math.Min(bottleneckCapacity, _pathCapacity[capacityKey]);
+
+                    currentKey = _previousNodeInPath[currentKey];
+                } while (currentKey != _sourceNode.Key);
+
+                currentKey = _targetNode.Key;
+                do
+                {
+                    var capacityKey = Tuple.Create(_previousNodeInPath[currentKey], currentKey);
+                    _flow[capacityKey] += bottleneckCapacity;
 
                     currentKey = _previousNodeInPath[currentKey];
                 } while (currentKey != _sourceNode.Key);

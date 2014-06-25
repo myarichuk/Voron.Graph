@@ -74,6 +74,7 @@
     <Compile Include="BellmanFordMultiDestinationTests.cs" />
     <Compile Include="DijkstraMultiDestinationTests.cs" />
     <Compile Include="DijkstraShortestPathTests.cs" />
+    <Compile Include="EdmondsKarpMaximumFlowTests.cs" />
     <Compile Include="EtagTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SearchTests.cs" />

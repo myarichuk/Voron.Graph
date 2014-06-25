@@ -15,8 +15,8 @@ namespace Voron.Graph.Algorithms.MaximumFlow
             _capacity = capacity;
         }
 
-        public abstract long MaximumFlow(long startNodeKey, long endNodeKey);
+        public abstract long MaximumFlow();
 
-        public abstract Task<long> MaximumFlowAsync(long startNodeKey, long endNodeKey);
+        public abstract Task<long> MaximumFlowAsync();
     }
 }

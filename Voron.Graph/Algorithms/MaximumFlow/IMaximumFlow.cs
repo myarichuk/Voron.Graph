@@ -8,8 +8,8 @@ namespace Voron.Graph.Algorithms.MaximumFlow
 {
     public interface IMaximumFlow
     {
-        long MaximumFlow(long startNodeKey, long endNodeKey);
+        long MaximumFlow();
 
-        Task<long> MaximumFlowAsync(long startNodeKey, long endNodeKey);
+        Task<long> MaximumFlowAsync();
     }
 }
