@@ -65,12 +65,12 @@ namespace Voron.Graph.Algorithms.MaximumFlow
                     Visitor = flowPathVisitor
                 }.TraverseAsync();
 
-                if (flowPathVisitor.HasPath)
+                if (flowPathVisitor.FoundPath)
                 {
                     maximumFlow += flowPathVisitor.BottleneckCapacity;
                 }
 
-            } while (flowPathVisitor.HasPath);
+            } while (flowPathVisitor.FoundPath);
             return maximumFlow;
         }
 
@@ -153,7 +153,7 @@ namespace Voron.Graph.Algorithms.MaximumFlow
                        capacity - _flow[key] <= 0;
             }
 
-            public bool HasPath
+            public bool FoundPath
             {
                 get
                 {
@@ -183,7 +183,7 @@ namespace Voron.Graph.Algorithms.MaximumFlow
             {
                 get
                 {
-                    if (!HasPath)
+                    if (!FoundPath)
                         throw new InvalidOperationException("When there is no path, bottleneck capacity is irrelevant");
 
                     var currentKey = _targetNode.Key;
