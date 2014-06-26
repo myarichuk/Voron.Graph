@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Voron.Graph.Algorithms.MaximumFlow
 {
-    public abstract class BaseMaximumFlow : BaseAlgorithm,IMaximumFlow
+    public abstract class BaseMaximumFlow : BaseAlgorithm
     {
         protected Func<Edge, long> _capacity;
 

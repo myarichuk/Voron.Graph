@@ -8,6 +8,7 @@ using Voron.Graph.Algorithms.Traversal;
 
 namespace Voron.Graph.Algorithms.MaximumFlow
 {
+    //implementation of Ford–Fulkerson algorithm
     public class EdmondsKarpAlgorithm : BaseMaximumFlow
     {
         private readonly Node _sourceNode;
@@ -15,7 +16,8 @@ namespace Voron.Graph.Algorithms.MaximumFlow
         private readonly GraphStorage _storage;
         private readonly Dictionary<Tuple<long,long>, long> _flow;
         private readonly Transaction _tx;
-       
+        private readonly CancellationToken? _cancelToken;
+
         public EdmondsKarpAlgorithm(Transaction tx, 
             GraphStorage graphStorage, 
             Node sourceNode, 
@@ -27,6 +29,7 @@ namespace Voron.Graph.Algorithms.MaximumFlow
             _sourceNode = sourceNode;
             _targetNode = targetNode;
             _storage = graphStorage;
+            _cancelToken = cancelToken;
             _flow = new Dictionary<Tuple<long, long>, long>();
             _tx = tx;
         }
@@ -34,30 +37,41 @@ namespace Voron.Graph.Algorithms.MaximumFlow
         public override long MaximumFlow()
         {
             OnStateChange(AlgorithmState.Running);
-            long maximumFlow = 0;
-            EdmondsKarpBFSVisitor flowPathVisitor;
-            do
-            {
-                flowPathVisitor = new EdmondsKarpBFSVisitor(_sourceNode, _targetNode, _capacity, _flow);
-                new TraversalAlgorithm(_tx, _storage, _sourceNode, TraversalType.BFS, null)
-                {
-                    Visitor = flowPathVisitor
-                }.Traverse();
-                
-                if(flowPathVisitor.HasPath)
-                {
-                    maximumFlow += flowPathVisitor.BottleneckCapacity;
-                }
+            var algorithmTask = ExecuteAlgorithmAsync();
+            algorithmTask.Wait();
 
-            } while (flowPathVisitor.HasPath);
+            OnStateChange(AlgorithmState.Finished);
+            return algorithmTask.Result;
+        }        
+
+        public override async Task<long> MaximumFlowAsync()
+        {
+            OnStateChange(AlgorithmState.Running);
+            var maximumFlow = await ExecuteAlgorithmAsync();
 
             OnStateChange(AlgorithmState.Finished);
             return maximumFlow;
         }
 
-        public override Task<long> MaximumFlowAsync()
+        private async Task<long> ExecuteAlgorithmAsync()
         {
-            throw new NotImplementedException();
+            long maximumFlow = 0;
+            EdmondsKarpBFSVisitor flowPathVisitor;
+            do
+            {
+                flowPathVisitor = new EdmondsKarpBFSVisitor(_sourceNode, _targetNode, _capacity, _flow);
+                await new TraversalAlgorithm(_tx, _storage, _sourceNode, TraversalType.BFS, null)
+                {
+                    Visitor = flowPathVisitor
+                }.TraverseAsync();
+
+                if (flowPathVisitor.HasPath)
+                {
+                    maximumFlow += flowPathVisitor.BottleneckCapacity;
+                }
+
+            } while (flowPathVisitor.HasPath);
+            return maximumFlow;
         }
 
         private class EdmondsKarpBFSVisitor : IVisitor

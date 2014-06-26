@@ -54,7 +54,6 @@
   <ItemGroup>
     <Compile Include="Algorithms\MaximumFlow\BaseMaximumFlow.cs" />
     <Compile Include="Algorithms\MaximumFlow\EdmondsKarpAlgorithm.cs" />
-    <Compile Include="Algorithms\MaximumFlow\IMaximumFlow.cs" />
     <Compile Include="Algorithms\ShortestPath\AStarShortestPath.cs" />
     <Compile Include="Algorithms\ShortestPath\AStarShortestPathVisitor.cs" />
     <Compile Include="Algorithms\ShortestPath\BaseSingleDestinationShortestPath.cs" />
