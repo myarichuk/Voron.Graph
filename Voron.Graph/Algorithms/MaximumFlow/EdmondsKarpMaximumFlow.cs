@@ -9,7 +9,7 @@ using Voron.Graph.Algorithms.Traversal;
 namespace Voron.Graph.Algorithms.MaximumFlow
 {
     //implementation of Ford–Fulkerson algorithm
-    public class EdmondsKarpAlgorithm : BaseMaximumFlow
+    public class EdmondsKarpMaximumFlow : BaseMaximumFlow
     {
         private readonly Node _sourceNode;
         private readonly Node _targetNode;
@@ -18,7 +18,7 @@ namespace Voron.Graph.Algorithms.MaximumFlow
         private readonly Transaction _tx;
         private readonly CancellationToken? _cancelToken;
 
-        public EdmondsKarpAlgorithm(Transaction tx, 
+        public EdmondsKarpMaximumFlow(Transaction tx, 
             GraphStorage graphStorage, 
             Node sourceNode, 
             Node targetNode,

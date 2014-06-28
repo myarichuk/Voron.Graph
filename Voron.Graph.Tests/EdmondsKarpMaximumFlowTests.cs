@@ -42,7 +42,7 @@ namespace Voron.Graph.Tests
 
             using (var tx = graph.NewTransaction(TransactionFlags.Read))
             {
-                var algorithm = new EdmondsKarpAlgorithm(tx, graph, s, t, e => e.Weight);
+                var algorithm = new EdmondsKarpMaximumFlow(tx, graph, s, t, e => e.Weight);
                 var maximumFlow = algorithm.MaximumFlow();
                 Assert.AreEqual(20, maximumFlow);
             }
@@ -79,7 +79,7 @@ namespace Voron.Graph.Tests
             
             using (var tx = graph.NewTransaction(TransactionFlags.Read))
             {
-                var algorithm = new EdmondsKarpAlgorithm(tx, graph, s, t, e => e.Weight);
+                var algorithm = new EdmondsKarpMaximumFlow(tx, graph, s, t, e => e.Weight);
                 var maximumFlow = algorithm.MaximumFlow();
                 Assert.AreEqual(30, maximumFlow);
             }
@@ -116,12 +116,75 @@ namespace Voron.Graph.Tests
 
             using (var tx = graph.NewTransaction(TransactionFlags.Read))
             {
-                var algorithm = new EdmondsKarpAlgorithm(tx, graph, s, t, e => e.Weight);
+                var algorithm = new EdmondsKarpMaximumFlow(tx, graph, s, t, e => e.Weight);
                 var maximumFlow = algorithm.MaximumFlow();
                 Assert.AreEqual(20, maximumFlow);
             }
         }
 
+        [TestMethod]
+        public void SimpleNetworkFlow4()
+        {
+            var graph = new GraphStorage("TestGraph", Env);
+            Node a, b;
+            using (var tx = graph.NewTransaction(TransactionFlags.ReadWrite))
+            {
+                a = graph.Commands.CreateNode(tx, JsonFromValue("a"));
+                b = graph.Commands.CreateNode(tx, JsonFromValue("b"));
+
+                a.ConnectWith(tx, b, graph, 25);
+                tx.Commit();
+            }
+
+            using (var tx = graph.NewTransaction(TransactionFlags.Read))
+            {
+                var algorithm = new EdmondsKarpMaximumFlow(tx, graph, a, b, edge => edge.Weight);
+                var maximumFlow = algorithm.MaximumFlow();
+                Assert.AreEqual(25, maximumFlow);
+            }
+        }
+
+        [TestMethod]
+        public void In_disconnected_network_should_return_zero_max_flow()
+        {
+            var graph = new GraphStorage("TestGraph", Env);
+            Node a, b;
+            using (var tx = graph.NewTransaction(TransactionFlags.ReadWrite))
+            {
+                a = graph.Commands.CreateNode(tx, JsonFromValue("a"));
+                b = graph.Commands.CreateNode(tx, JsonFromValue("b"));
+                tx.Commit();
+            }
+
+            using (var tx = graph.NewTransaction(TransactionFlags.Read))
+            {
+                var algorithm = new EdmondsKarpMaximumFlow(tx, graph, a, b, edge => edge.Weight);
+                var maximumFlow = algorithm.MaximumFlow();
+                Assert.AreEqual(0, maximumFlow);
+            }
+        }
+
+        [TestMethod]
+        public void In_network_with_zero_flow_should_return_zero_max_flow()
+        {
+            var graph = new GraphStorage("TestGraph", Env);
+            Node a, b;
+            using (var tx = graph.NewTransaction(TransactionFlags.ReadWrite))
+            {
+                a = graph.Commands.CreateNode(tx, JsonFromValue("a"));
+                b = graph.Commands.CreateNode(tx, JsonFromValue("b"));
+
+                a.ConnectWith(tx, b, graph, 0);
+                tx.Commit();
+            }
+
+            using (var tx = graph.NewTransaction(TransactionFlags.Read))
+            {
+                var algorithm = new EdmondsKarpMaximumFlow(tx, graph, a, b, edge => edge.Weight);
+                var maximumFlow = algorithm.MaximumFlow();
+                Assert.AreEqual(0, maximumFlow);
+            }
+        }
 
         [TestMethod]
         public void ComplexNetworkFlow1()
@@ -156,7 +219,7 @@ namespace Voron.Graph.Tests
 
             using (var tx = graph.NewTransaction(TransactionFlags.Read))
             {
-                var algorithm = new EdmondsKarpAlgorithm(tx, graph, a, g, edge => edge.Weight);
+                var algorithm = new EdmondsKarpMaximumFlow(tx, graph, a, g, edge => edge.Weight);
                 var maximumFlow = algorithm.MaximumFlow();
                 Assert.AreEqual(5, maximumFlow);
             }
