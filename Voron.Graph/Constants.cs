@@ -12,6 +12,7 @@
 
         public const string GraphMetadataKeySuffix = "_GraphMetadata";
 
-        public const string SubgraphIndexKey = "SubgraphIndex";
+        public const string IndexedPropertyListKey = "IndexedProperties_SystemMetadata";
+
     }
 }

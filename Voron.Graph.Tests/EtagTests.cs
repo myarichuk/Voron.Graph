@@ -1,10 +1,12 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿using System;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using FluentAssertions;
 using System.Threading;
+using Newtonsoft.Json.Linq;
 using Voron.Graph.Extensions;
 
 namespace Voron.Graph.Tests
@@ -15,6 +17,17 @@ namespace Voron.Graph.Tests
         [TestMethod]
         public void Concurrent_etag_creations_should_result_in_unique_etags()
         {
+            var test = JObject.FromObject(new
+            {
+                Num = 123,
+                Str = "A",
+                Obj = new Dictionary<string, DateTime?>
+                {
+                    {"AAA", null}
+                }
+            });
+            var teststr = test.ToString();
+
             var etags = new ConcurrentBag<Etag>();
 
             Parallel.For(0, 1000, i =>

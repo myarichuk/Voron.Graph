@@ -59,6 +59,8 @@ namespace Voron.Graph.Algorithms.MaximumFlow
             EdmondsKarpBFSVisitor flowPathVisitor;
             do
             {
+                if(_cancelToken.HasValue)
+                    _cancelToken.Value.ThrowIfCancellationRequested();
                 flowPathVisitor = new EdmondsKarpBFSVisitor(_sourceNode, _targetNode, _capacity, _flow);
                 await new TraversalAlgorithm(_tx, _storage, _sourceNode, TraversalType.BFS, null)
                 {

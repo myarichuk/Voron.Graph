@@ -10,7 +10,7 @@ namespace Voron.Graph.Algorithms.MaximumFlow
     {
         protected Func<Edge, long> _capacity;
 
-        public BaseMaximumFlow(Func<Edge, long> capacity)
+        protected BaseMaximumFlow(Func<Edge, long> capacity)
         {
             _capacity = capacity;
         }
