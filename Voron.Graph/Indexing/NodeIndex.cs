@@ -46,6 +46,11 @@ namespace Voron.Graph.Indexing
 			_storage.Writer.Write(writeBatch);
 	    }
 
+	    public void RemoveFromIndex(long nodeKey)
+	    {
+		    
+	    }
+
 	    public Dictionary<string,JToken> FieldsToIndex(JObject data)
 	    {
 		    var dataProperties = data.Properties();
@@ -63,7 +68,7 @@ namespace Voron.Graph.Indexing
 		    var nodeKeys = new HashSet<long>();
 		    using (var snapshot = _storage.CreateSnapshot())
 		    {
-			    var valueTerms = _termsParser.GetTerms(value);
+			    var valueTerms = _termsParser.GetTerms(value.Replace(" ",""));
 
 			    foreach (var term in valueTerms)
 			    {

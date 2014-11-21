@@ -31,7 +31,7 @@ namespace Voron.Graph.Indexing
 			if (String.IsNullOrWhiteSpace(value))
 				yield break;
 
-			int currentIndex = 0;
+			var currentIndex = 0;
 			value = value.ToLower();
 			
 			//ignore numbers and booleans -> treat them as single term

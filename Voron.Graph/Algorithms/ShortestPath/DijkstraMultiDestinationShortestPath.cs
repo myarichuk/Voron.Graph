@@ -72,7 +72,7 @@ namespace Voron.Graph.Algorithms.ShortestPath
                 if (!PreviousNodeInOptimalPath.ContainsKey(node.Key))
                     return null;
 
-                long currentNodeKey = node.Key;
+                var currentNodeKey = node.Key;
                 while (RootNode.Key != currentNodeKey)
                 {
                     results.Push(currentNodeKey);

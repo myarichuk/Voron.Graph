@@ -32,7 +32,7 @@ namespace Voron.Graph.Tests
 
             Parallel.For(0, 1000, i =>
             {
-                for (int j = 0; j < 1000; j++)
+                for (var j = 0; j < 1000; j++)
                     etags.Add(Etag.Generate());
             });
 
@@ -73,7 +73,7 @@ namespace Voron.Graph.Tests
 
             using (var tx = graph.NewTransaction(TransactionFlags.ReadWrite))
             {
-                for (int i = 0; i < 100; i++)
+                for (var i = 0; i < 100; i++)
                     nodes.Add(graph.Commands.CreateNode(tx, JsonFromValue("test1")));
                 tx.Commit();
             }
@@ -93,7 +93,7 @@ namespace Voron.Graph.Tests
             {
                 using (var tx = graph.NewTransaction(TransactionFlags.ReadWrite))
                 {
-                    for (int j = 0; j < 10; j++)
+                    for (var j = 0; j < 10; j++)
                         nodes.Add(graph.Commands.CreateNode(tx, JsonFromValue("test1")));
                     tx.Commit();
                 }
@@ -115,7 +115,7 @@ namespace Voron.Graph.Tests
                 var node1 = graph.Commands.CreateNode(tx, JsonFromValue("test1"));
                 var node2 = graph.Commands.CreateNode(tx, JsonFromValue("test1"));
 
-                for (int i = 0; i < 100; i++)
+                for (var i = 0; i < 100; i++)
                     edges.Add(node1.ConnectWith(tx, node2, graph));
                 tx.Commit();
             }
@@ -139,7 +139,7 @@ namespace Voron.Graph.Tests
                 tx.Commit();
             }
 
-            for(int i = 0; i < 100; i++)
+            for(var i = 0; i < 100; i++)
             {
                 using (var tx = graph.NewTransaction(TransactionFlags.ReadWrite))
                 {

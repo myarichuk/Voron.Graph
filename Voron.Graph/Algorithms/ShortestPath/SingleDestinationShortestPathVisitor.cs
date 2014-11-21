@@ -42,7 +42,7 @@ namespace Voron.Graph.Algorithms.ShortestPath
             var estimation = _g(_currentTraversalNodeInfo,neighboorNode) + _h(_rootNode,neighboorNode.Node);
             var currentNodeKey = neighboorNode.Node.Key;
 
-            bool updateOptimalPath = false;
+            var updateOptimalPath = false;
             if (!DistancesByNode.ContainsKey(neighboorNode.Node.Key))
             {
                 DistancesByNode.Add(currentNodeKey, estimation);

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using Newtonsoft.Json.Linq;
 using Voron.Graph.Extensions;
 using Voron.Trees;
@@ -13,15 +14,15 @@ namespace Voron.Graph.Impl
 	{
 	    public T GetFromSystemMetadata<T>(Transaction tx, string key)
 		{
-			ReadResult metadataReadResult = tx.SystemTree.Read(tx.GraphMetadataKey);
+			var metadataReadResult = tx.SystemTree.Read(tx.GraphMetadataKey);
 			Debug.Assert(metadataReadResult.Version > 0);
 
-			using (Stream metadataStream = metadataReadResult.Reader.AsStream())
+			using (var metadataStream = metadataReadResult.Reader.AsStream())
 			{
 				if (metadataStream == null)
 					return default(T);
 
-				JObject metadata = metadataStream.ToJObject();
+				var metadata = metadataStream.ToJObject();
 				return metadata.Value<T>(key);
 			}
 		}
@@ -31,19 +32,19 @@ namespace Voron.Graph.Impl
 			if (tx == null) throw new ArgumentNullException("tx");
 			if (node == null) throw new ArgumentNullException("node");
 
-			using (TreeIterator edgeIterator = tx.EdgeTree.Iterate())
+			using (var edgeIterator = tx.EdgeTree.Iterate())
 			{
-				Slice nodeKey = node.Key.ToSlice();
+				var nodeKey = node.Key.ToSlice();
 				edgeIterator.RequiredPrefix = nodeKey;
 				if (!edgeIterator.Seek(nodeKey))
 					yield break;
 
 				do
 				{
-					EdgeTreeKey edgeKey = edgeIterator.CurrentKey.ToEdgeTreeKey();
-					ValueReader edgeValueReader = edgeIterator.CreateReaderForCurrent();
+					var edgeKey = edgeIterator.CurrentKey.ToEdgeTreeKey();
+					var edgeValueReader = edgeIterator.CreateReaderForCurrent();
 
-					using (Stream edgeEtagAndValueAsStream = edgeValueReader.AsStream())
+					using (var edgeEtagAndValueAsStream = edgeValueReader.AsStream())
 					{
 						Etag etag;
 						JObject value;
@@ -90,9 +91,9 @@ namespace Voron.Graph.Impl
                     {
                         alreadyRetrievedKeys.Add(edgeKey.NodeKeyTo);
                         var adjacentNode = LoadNode(tx, edgeKey.NodeKeyTo);
-                        ValueReader edgeValueReader = edgeIterator.CreateReaderForCurrent();
+                        var edgeValueReader = edgeIterator.CreateReaderForCurrent();
 
-                        using (Stream edgeEtagAndValueAsStream = edgeValueReader.AsStream())
+                        using (var edgeEtagAndValueAsStream = edgeValueReader.AsStream())
                         {
                             Etag etag;
                             JObject value;
@@ -119,7 +120,7 @@ namespace Voron.Graph.Impl
 			if (tx == null) throw new ArgumentNullException("tx");
 			if (node == null) throw new ArgumentNullException("node");
 
-			using (TreeIterator edgeIterator = tx.EdgeTree.Iterate())
+			using (var edgeIterator = tx.EdgeTree.Iterate())
 			{
 				edgeIterator.RequiredPrefix = node.Key.ToSlice();
 				return edgeIterator.Seek(Slice.BeforeAllKeys);
@@ -153,11 +154,11 @@ namespace Voron.Graph.Impl
 		{
 			if (tx == null) throw new ArgumentNullException("tx");
 
-			ReadResult readResult = tx.NodeTree.Read(nodeKey.ToSlice());
+			var readResult = tx.NodeTree.Read(nodeKey.ToSlice());
 			if (readResult == null)
 				return null;
 
-			using (Stream etagAndValueAsStream = readResult.Reader.AsStream())
+			using (var etagAndValueAsStream = readResult.Reader.AsStream())
 			{
 				Etag etag;
 				JObject value;
@@ -168,10 +169,9 @@ namespace Voron.Graph.Impl
 		}
 
 		public IEnumerable<Node> LoadMultipleNodes(Transaction tx, IEnumerable<long> nodeKeys)
-        {
-            foreach (var key in nodeKeys)
-                yield return LoadNode(tx, key);
-        }
+		{
+			return nodeKeys.Select(key => LoadNode(tx, key));
+		}
 
 		public IEnumerable<Edge> GetEdgesBetween(Transaction tx, Node nodeFrom, Node nodeTo, ushort? type = null)
 		{
@@ -181,7 +181,7 @@ namespace Voron.Graph.Impl
 			if (nodeTo == null)
 				throw new ArgumentNullException("nodeTo");
 
-			using (TreeIterator edgeIterator = tx.EdgeTree.Iterate())
+			using (var edgeIterator = tx.EdgeTree.Iterate())
 			{
 				edgeIterator.RequiredPrefix = Util.EdgeKeyPrefix(nodeFrom, nodeTo);
 				if (!edgeIterator.Seek(edgeIterator.RequiredPrefix))
@@ -193,8 +193,8 @@ namespace Voron.Graph.Impl
 					if (type.HasValue && edgeKey.Type != type)
 						continue;
 
-					ValueReader valueReader = edgeIterator.CreateReaderForCurrent();
-					using (Stream etagAndValueAsStream = valueReader.AsStream())
+					var valueReader = edgeIterator.CreateReaderForCurrent();
+					using (var etagAndValueAsStream = valueReader.AsStream())
 					{
 						Etag etag;
 						JObject value;

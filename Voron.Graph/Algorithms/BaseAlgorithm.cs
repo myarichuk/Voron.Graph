@@ -44,7 +44,7 @@ namespace Voron.Graph.Algorithms
 
         protected IDisposable Lock(bool isWriteLock = false, int timeout = 10000)
         {
-            bool lockTaken = false;
+            var lockTaken = false;
 
             Monitor.TryEnter(_syncObject, timeout, ref lockTaken);
             if (!lockTaken)

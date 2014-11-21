@@ -122,7 +122,7 @@ namespace Voron.Graph.Algorithms.MaximumFlow
             private void UpdateFlowCosts()
             {
                 var currentKey = _targetNode.Key;
-                long bottleneckCapacity = long.MaxValue; 
+                var bottleneckCapacity = long.MaxValue; 
                 do
                 {
                     var capacityKey = Tuple.Create(_previousNodeInPath[currentKey], currentKey);

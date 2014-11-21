@@ -52,7 +52,7 @@ namespace Voron.Graph.Algorithms.ShortestPath
 
             for (long i = 1; i < _tx.NodeCount - 1; i++)
             {
-                bool hasMadeChange = false;
+                var hasMadeChange = false;
                 edges.ForEach(edge =>
                 {
                     if (!results.WeightsByNodeKey.ContainsKey(edge.Key.NodeKeyFrom))
@@ -110,7 +110,7 @@ namespace Voron.Graph.Algorithms.ShortestPath
                 if (!PreviousNodeInOptimizedPath.ContainsKey(node.Key))
                     return null;
 
-                long currentNodeKey = node.Key;
+                var currentNodeKey = node.Key;
                 while (RootNode.Key != currentNodeKey)
                 {
                     results.Push(currentNodeKey);
