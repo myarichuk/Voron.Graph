@@ -12,7 +12,7 @@ namespace Voron.Graph.Tests
 {
     //TODO : write more tests
     [TestClass]
-    public class SearchTests : BaseGraphTest
+	public class SearchTests : BaseGraphTest, IDisposable
     {
         public CancellationTokenSource cancelTokenSource;
 
@@ -276,5 +276,13 @@ namespace Voron.Graph.Tests
             resultsDfs.Select(x => ValueFromJson<int>(x.Data)).Should().OnlyContain(x => x == 1)
                                                                     .And.HaveCount(1);
         }
-    }
+		public void Dispose()
+		{
+			if (cancelTokenSource != null)
+			{
+				cancelTokenSource.Dispose();
+				cancelTokenSource = null;
+			}
+		}
+	}
 }

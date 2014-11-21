@@ -58,34 +58,10 @@ namespace Voron.Graph.Tests
         [TestMethod]
         public void SimpleNetworkFlow2()
         {
-            var graph = new GraphStorage("TestGraph", Env);
-
-            Node s, u, v, t;
-            using (var tx = graph.NewTransaction(TransactionFlags.ReadWrite))
-            {
-                s = graph.Commands.CreateNode(tx, JsonFromValue("s"));
-                u = graph.Commands.CreateNode(tx, JsonFromValue("u"));
-                v = graph.Commands.CreateNode(tx, JsonFromValue("v"));
-                t = graph.Commands.CreateNode(tx, JsonFromValue("t"));
-
-                s.ConnectWith(tx, u, graph, 20);
-                u.ConnectWith(tx, t, graph, 10);
-                s.ConnectWith(tx, v, graph, 10);
-                v.ConnectWith(tx, t, graph, 20);
-                u.ConnectWith(tx, v, graph, 30);
-
-                tx.Commit();
-            }
-            
-            using (var tx = graph.NewTransaction(TransactionFlags.Read))
-            {
-                var algorithm = new EdmondsKarpMaximumFlow(tx, graph, s, t, e => e.Weight);
-                var maximumFlow = algorithm.MaximumFlow();
-                Assert.AreEqual(30, maximumFlow);
-            }
+			SimpleNetworkFlowParametric(20, 30, 30);
         }
 
-        /*
+		/*
          *     > u >
          *   /   |  \
          *  s    |   >t
@@ -95,32 +71,33 @@ namespace Voron.Graph.Tests
         [TestMethod]
         public void SimpleNetworkFlow3()
         {
-            var graph = new GraphStorage("TestGraph", Env);
-
-            Node s, u, v, t;
-            using (var tx = graph.NewTransaction(TransactionFlags.ReadWrite))
-            {
-                s = graph.Commands.CreateNode(tx, JsonFromValue("s"));
-                u = graph.Commands.CreateNode(tx, JsonFromValue("u"));
-                v = graph.Commands.CreateNode(tx, JsonFromValue("v"));
-                t = graph.Commands.CreateNode(tx, JsonFromValue("t"));
-
-                s.ConnectWith(tx, u, graph, 20);
-                u.ConnectWith(tx, t, graph, 10);
-                s.ConnectWith(tx, v, graph, 10);
-                v.ConnectWith(tx, t, graph, 10);
-                u.ConnectWith(tx, v, graph, 60);
-
-                tx.Commit();
-            }
-
-            using (var tx = graph.NewTransaction(TransactionFlags.Read))
-            {
-                var algorithm = new EdmondsKarpMaximumFlow(tx, graph, s, t, e => e.Weight);
-                var maximumFlow = algorithm.MaximumFlow();
-                Assert.AreEqual(20, maximumFlow);
-            }
+			SimpleNetworkFlowParametric(10, 60, 20);
         }
+
+		private void SimpleNetworkFlowParametric(short weightOfVtoTEdge, short weightOfUtoVEdge, int expected)
+		{
+			var graph = new GraphStorage("TestGraph", Env);
+			Node s, u, v, t;
+			using (var tx = graph.NewTransaction(TransactionFlags.ReadWrite))
+			{
+				s = graph.Commands.CreateNode(tx, JsonFromValue("s"));
+				u = graph.Commands.CreateNode(tx, JsonFromValue("u"));
+				v = graph.Commands.CreateNode(tx, JsonFromValue("v"));
+				t = graph.Commands.CreateNode(tx, JsonFromValue("t"));
+				s.ConnectWith(tx, u, graph, 20);
+				u.ConnectWith(tx, t, graph, 10);
+				s.ConnectWith(tx, v, graph, 10);
+				v.ConnectWith(tx, t, graph, weightOfVtoTEdge);
+				u.ConnectWith(tx, v, graph, weightOfUtoVEdge);
+				tx.Commit();
+			}
+			using (var tx = graph.NewTransaction(TransactionFlags.Read))
+			{
+				var algorithm = new EdmondsKarpMaximumFlow(tx, graph, s, t, e => e.Weight);
+				var maximumFlow = algorithm.MaximumFlow();
+				Assert.AreEqual(expected, maximumFlow);
+			}
+		}
 
         [TestMethod]
         public void SimpleNetworkFlow4()

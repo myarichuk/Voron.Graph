@@ -10,8 +10,7 @@ namespace Voron.Graph.Exceptions
     {
         public AlgorithmConstraintException(string message)
             :base(message)
-        {
-
+        {			
         }
     }
 }

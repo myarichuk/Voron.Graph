@@ -70,6 +70,7 @@ namespace Voron.Graph.Algorithms.Traversal
         }
                     
 
+        #region Traverse
         public void Traverse()
         {
             if (State == AlgorithmState.Running)
@@ -126,6 +127,7 @@ namespace Voron.Graph.Algorithms.Traversal
 
             OnStateChange(AlgorithmState.Finished);
         }
+        #endregion
 
         public Task TraverseAsync()
         {            

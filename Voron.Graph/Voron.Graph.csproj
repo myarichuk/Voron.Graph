@@ -79,8 +79,11 @@
     <Compile Include="Algorithms\AlgorithmState.cs" />
     <Compile Include="Algorithms\BaseAlgorithm.cs" />
     <Compile Include="DisposableAction.cs" />
+    <Compile Include="Extensions\StringExtensions.cs" />
     <Compile Include="Extensions\UtilityExtensions.cs" />
-    <Compile Include="Impl\NodeIndex.cs" />
+    <Compile Include="Indexing\ITermsParser.cs" />
+    <Compile Include="Indexing\NodeIndex.cs" />
+    <Compile Include="Indexing\NgramTermsParser.cs" />
     <Compile Include="Primitives\Etag.cs" />
     <Compile Include="Impl\GraphAdminQueries.cs" />
     <Compile Include="Impl\GraphCommands.cs" />

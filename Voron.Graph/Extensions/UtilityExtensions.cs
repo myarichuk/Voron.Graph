@@ -67,6 +67,13 @@ namespace Voron.Graph.Extensions
             return sliceWriter.CreateSlice();
         }
 
+	    internal static long ToNodeKey(this Slice key)
+	    {
+		    var keyData = new byte[SizeOfLong];
+		    key.CopyTo(keyData);
+
+		    return EndianBitConverter.Big.ToInt64(keyData, 0);
+	    }
 
         internal static EdgeTreeKey ToEdgeTreeKey(this Slice edgeKey)
         {

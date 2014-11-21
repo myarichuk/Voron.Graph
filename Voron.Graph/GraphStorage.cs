@@ -33,13 +33,13 @@ namespace Voron.Graph
             _storageEnvironment = storageEnvironment;
             _graphMetadataKey = graphName + Constants.GraphMetadataKeySuffix;
 
-            _indexedProperties = new HashSet<string>();
-            CreateConventions();
+			CreateConventions();
             CreateSchema();
             CreateCommandAndQueryInstances();
 
-            using (var tx = NewTransaction(TransactionFlags.Read))
-                _indexedProperties = Queries.GetFromSystemMetadata<HashSet<string>>(tx, Constants.IndexedPropertyListKey);
+			using (var tx = NewTransaction(TransactionFlags.Read))
+				_indexedProperties = Queries.GetFromSystemMetadata<HashSet<string>>(tx, Constants.IndexedPropertyListKey) ?? new HashSet<string>();
+
             _nextId = GetLatestStoredNodeKey();
         }
 
@@ -109,7 +109,6 @@ namespace Voron.Graph
                 StorageEnvironment.CreateTree(tx, _edgeTreeName);
                 StorageEnvironment.CreateTree(tx, _disconnectedNodesTreeName);
                 StorageEnvironment.CreateTree(tx, _keyByEtagTreeName);
-                StorageEnvironment.CreateTree(tx, _metadataTreeName);
 
                 if (tx.State.Root.ReadVersion(_graphMetadataKey) == 0)
                     tx.State.Root.Add(_graphMetadataKey, (new JObject()).ToStream());
