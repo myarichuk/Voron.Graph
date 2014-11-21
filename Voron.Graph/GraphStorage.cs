@@ -5,6 +5,7 @@ using System;
 using System.Threading;
 using Voron.Graph.Extensions;
 using Voron.Graph.Impl;
+using Voron.Graph.Indexing;
 
 namespace Voron.Graph
 {
@@ -18,6 +19,7 @@ namespace Voron.Graph
         private readonly string _keyByEtagTreeName;
         private readonly string _graphMetadataKey;
         private readonly HashSet<string> _indexedProperties;
+	    private NodeIndex _nodeIndex;
         private long _nextId;
 
         public GraphStorage(string graphName, StorageEnvironment storageEnvironment)
@@ -142,9 +144,10 @@ namespace Voron.Graph
 
         public void CreateCommandAndQueryInstances()
         {
+			_nodeIndex = new NodeIndex(this, new NgramTermsParser(3));//by default use Trigram terms
             AdminQueries = new GraphAdminQueries();
             Queries = new GraphQueries();
-            Commands = new GraphCommands(Queries, Conventions);
+			Commands = new GraphCommands(Queries, Conventions, _nodeIndex);
         }
 
         public void Dispose()

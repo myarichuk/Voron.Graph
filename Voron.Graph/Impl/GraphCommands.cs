@@ -2,6 +2,7 @@
 using System;
 using System.Diagnostics;
 using Voron.Graph.Extensions;
+using Voron.Graph.Indexing;
 
 namespace Voron.Graph.Impl
 {
@@ -9,11 +10,13 @@ namespace Voron.Graph.Impl
     {
         private readonly Conventions _conventions;
         private readonly GraphQueries _graphQueries;
+	    private readonly NodeIndex _nodeIndex;
 
-        internal GraphCommands(GraphQueries graphQueries, Conventions conventions)
+        internal GraphCommands(GraphQueries graphQueries, Conventions conventions, NodeIndex nodeIndex)
         {
             _graphQueries = graphQueries;
             _conventions = conventions;
+	        _nodeIndex = nodeIndex;
         }      
 
         public void PutToSystemMetadata<T>(Transaction tx, string key, T value)
@@ -46,7 +49,10 @@ namespace Voron.Graph.Impl
             tx.KeyByEtagTree.Add(etag.ToSlice(), nodeKey);
             tx.DisconnectedNodeTree.Add(nodeKey, value.ToStream());
 
-            return new Node(key, value, etag);
+			var node = new Node(key, value, etag);
+			_nodeIndex.IndexIfRelevant(node);
+
+	        return node;
         }
 
 

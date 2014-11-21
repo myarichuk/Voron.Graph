@@ -25,7 +25,7 @@ namespace Voron.Graph.Tests
 		}
 
 		[TestMethod]
-		public void NodeIndexWillStoreData()
+		public void NodeIndexCanFulltextSearchData()
 		{
 			var graph = new GraphStorage("test", Env);
 			
@@ -37,13 +37,13 @@ namespace Voron.Graph.Tests
 			var node3 = new Node(3, JObject.FromObject(new { Data = "efghk" }));
 			var node4 = new Node(4, JObject.FromObject(new { Data = 1234 }));
 			
-			nodeIndex.IndexDataIfRelevant(node1);
-			nodeIndex.IndexDataIfRelevant(node2);
-			nodeIndex.IndexDataIfRelevant(node3);
-			nodeIndex.IndexDataIfRelevant(node4);
+			nodeIndex.IndexIfRelevant(node1);
+			nodeIndex.IndexIfRelevant(node2);
+			nodeIndex.IndexIfRelevant(node3);
+			nodeIndex.IndexIfRelevant(node4);
 
-			var results1 = nodeIndex.Query("efg").ToList();
-			var results2 = nodeIndex.Query("efg").ToList();
+			var results1 = nodeIndex.FulltextQuery("efg").ToList();
+			var results2 = nodeIndex.FulltextQuery("efg").ToList();
 
 			results1.Should().OnlyContain(id => id == 2 || id == 3)
 							 .And.HaveCount(2);
@@ -51,12 +51,12 @@ namespace Voron.Graph.Tests
 			results2.Should().OnlyContain(id => id == 2 || id == 3)
 							 .And.HaveCount(2);
 
-			var results3 = nodeIndex.Query("e").ToList(); //kind-of edge use-case
+			var results3 = nodeIndex.FulltextQuery("e").ToList(); //kind-of edge use-case
 
 			results3.Should().OnlyContain(id => id == 1 || id == 2 || id == 3)
 							 .And.HaveCount(3);
 
-			var results4 = nodeIndex.Query("fgh").ToList();
+			var results4 = nodeIndex.FulltextQuery("fgh").ToList();
 			results4.Should().OnlyContain(id => id == 2 || id == 3)
 							 .And.HaveCount(2);
 		}

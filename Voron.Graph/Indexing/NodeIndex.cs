@@ -35,7 +35,7 @@ namespace Voron.Graph.Indexing
 			CreateSchema();
         }
 
-	    public void IndexDataIfRelevant(Node node)
+	    public void IndexIfRelevant(Node node)
 	    {
 		    var writeBatch = new WriteBatch();
 			var fieldsToIndex = FieldsToIndex(node.Data);
@@ -58,7 +58,7 @@ namespace Voron.Graph.Indexing
 		    return fieldsToIndex;
 	    }
 
-	    public HashSet<long> Query(string value)
+	    public HashSet<long> FulltextQuery(string value)
 	    {
 		    var nodeKeys = new HashSet<long>();
 		    using (var snapshot = _storage.CreateSnapshot())
