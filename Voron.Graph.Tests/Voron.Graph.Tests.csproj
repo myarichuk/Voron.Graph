@@ -48,10 +48,6 @@
     <Reference Include="System" />
     <Reference Include="System.Xml" />
     <Reference Include="System.Xml.Linq" />
-    <Reference Include="Voron, Version=1.0.0.0, Culture=neutral, PublicKeyToken=37f41c7f99471593, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\Raven.Voron\Voron\bin\Debug\Voron.dll</HintPath>
-    </Reference>
   </ItemGroup>
   <Choose>
     <When Condition="('$(VisualStudioVersion)' == '10.0' or '$(VisualStudioVersion)' == '') and '$(TargetFrameworkVersion)' == 'v3.5'">
@@ -84,6 +80,14 @@
     <ProjectReference Include="..\Voron.Graph\Voron.Graph.csproj">
       <Project>{28fdb332-bce9-496d-bd6d-c910db4f1c1c}</Project>
       <Name>Voron.Graph</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\Work\Corax\Corax\Corax.csproj">
+      <Project>{725a2392-504f-4d52-ae69-d52395da0960}</Project>
+      <Name>Corax</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\Work\ravendb\Raven.Voron\Voron\Voron.csproj">
+      <Project>{ff83c7c2-bc7b-4dcc-a782-49ef9bbd9390}</Project>
+      <Name>Voron</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

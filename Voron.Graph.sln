@@ -1,11 +1,15 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2013
-VisualStudioVersion = 12.0.21005.1
+VisualStudioVersion = 12.0.31101.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Voron.Graph", "Voron.Graph\Voron.Graph.csproj", "{28FDB332-BCE9-496D-BD6D-C910DB4F1C1C}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Voron.Graph.Tests", "Voron.Graph.Tests\Voron.Graph.Tests.csproj", "{FADF6EC2-656F-4801-82A4-1CEC423E0C2F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Corax", "C:\Work\Corax\Corax\Corax.csproj", "{725A2392-504F-4D52-AE69-D52395DA0960}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Voron", "C:\Work\ravendb\Raven.Voron\Voron\Voron.csproj", "{FF83C7C2-BC7B-4DCC-A782-49EF9BBD9390}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,6 +25,14 @@ Global
 		{FADF6EC2-656F-4801-82A4-1CEC423E0C2F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{FADF6EC2-656F-4801-82A4-1CEC423E0C2F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{FADF6EC2-656F-4801-82A4-1CEC423E0C2F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{725A2392-504F-4D52-AE69-D52395DA0960}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{725A2392-504F-4D52-AE69-D52395DA0960}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{725A2392-504F-4D52-AE69-D52395DA0960}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{725A2392-504F-4D52-AE69-D52395DA0960}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FF83C7C2-BC7B-4DCC-A782-49EF9BBD9390}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FF83C7C2-BC7B-4DCC-A782-49EF9BBD9390}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FF83C7C2-BC7B-4DCC-A782-49EF9BBD9390}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FF83C7C2-BC7B-4DCC-A782-49EF9BBD9390}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
