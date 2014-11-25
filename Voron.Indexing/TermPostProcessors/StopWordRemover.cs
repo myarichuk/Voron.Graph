@@ -5,7 +5,7 @@ namespace Voron.Indexing.TermPostProcessors
 {
 	public class StopwordRemover : ITermPostProcessor
 	{
-		private readonly string[] _stopwords = new[]
+		private readonly string[] _stopwords =
 		{
 			"a",
 			"an",
