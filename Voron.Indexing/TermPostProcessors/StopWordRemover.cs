@@ -1,8 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Text.RegularExpressions;
+using System.Threading;
 
 namespace Voron.Indexing.TermPostProcessors
 {
@@ -45,9 +42,31 @@ namespace Voron.Indexing.TermPostProcessors
 			"with"
 		};
 
+		private Regex _stopWordMatchingRegex;
+
+		public int Order { get; private set; }
+
+		public StopwordRemover(int order)
+		{
+			Order = order;
+		}
+
 		public string ProcessTerm(string term)
 		{
-			
+			//regex taken from http://lotsacode.wordpress.com/2010/10/08/remove-google-stopwords-from-string/
+			//I suck at regexes, other than the most basic ones..
+
+			if (_stopWordMatchingRegex == null)
+			{
+				var stopwordRegex =
+					@"(?<=(\A|\s|\.|,|!|\?))(" +
+					string.Join("|", _stopwords) +
+					@")(?=(\s|\z|\.|,|!|\?))";
+
+				Interlocked.Exchange(ref _stopWordMatchingRegex,
+					new Regex(stopwordRegex, RegexOptions.Singleline | RegexOptions.IgnoreCase | RegexOptions.Compiled));
+			}
+			return _stopWordMatchingRegex.Replace(term, "");
 		}
 	}
 }

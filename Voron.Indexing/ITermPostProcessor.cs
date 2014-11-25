@@ -8,6 +8,7 @@ namespace Voron.Indexing
 {
 	public interface ITermPostProcessor
 	{
+		int Order { get; }
 		string ProcessTerm(string term);
 	}
 }
