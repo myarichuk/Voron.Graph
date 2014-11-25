@@ -10,11 +10,11 @@ namespace Voron.Indexing
 	public abstract class BaseTermExtractor<T>
 		where T : class
 	{
-		protected readonly ITermPostProcessor[] PostProcessors;
+		protected readonly ITermFilter[] Filters;
 
-		protected BaseTermExtractor(IEnumerable<ITermPostProcessor> postProcessors)
+		protected BaseTermExtractor(IEnumerable<ITermFilter> postProcessors)
 		{
-			PostProcessors = postProcessors.ToArray();
+			Filters = postProcessors.ToArray();
 		}
 
 		protected abstract IEnumerable<string> ExtractTermsFrom(T termsObject);
@@ -22,7 +22,7 @@ namespace Voron.Indexing
 		public IEnumerable<string> ExtractTerms(T termsObject)
 		{
 			var terms = ExtractTermsFrom(termsObject);
-			return terms.Select(term => PostProcessors.Aggregate(term, (current, postProcessor) => 
+			return terms.Select(term => Filters.Aggregate(term, (current, postProcessor) => 
 													postProcessor.ProcessTerm(current)));
 		}
 	}

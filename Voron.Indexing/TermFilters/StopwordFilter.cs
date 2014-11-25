@@ -1,9 +1,9 @@
 ﻿using System.Text.RegularExpressions;
 using System.Threading;
 
-namespace Voron.Indexing.TermPostProcessors
+namespace Voron.Indexing.TermFilters
 {
-	public class StopwordRemover : ITermPostProcessor
+	public class StopwordFilter : ITermFilter
 	{
 		private readonly string[] _stopwords =
 		{
@@ -46,7 +46,7 @@ namespace Voron.Indexing.TermPostProcessors
 
 		public int Order { get; private set; }
 
-		public StopwordRemover(int order)
+		public StopwordFilter(int order)
 		{
 			Order = order;
 		}
