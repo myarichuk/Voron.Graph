@@ -1,8 +1,8 @@
 ﻿namespace Voron.Indexing.TermFilters
 {
-	public class WhitespaceFilter : ITermFilter
+	public class WhitespaceValueFilter : ITermValueFilter
 	{
-		public WhitespaceFilter(int order)
+		public WhitespaceValueFilter(int order)
 		{
 			Order = order;
 		}

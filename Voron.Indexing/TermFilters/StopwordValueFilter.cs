@@ -3,7 +3,7 @@ using System.Threading;
 
 namespace Voron.Indexing.TermFilters
 {
-	public class StopwordFilter : ITermFilter
+	public class StopwordValueFilter : ITermValueFilter
 	{
 		private readonly string[] _stopwords =
 		{
@@ -46,7 +46,7 @@ namespace Voron.Indexing.TermFilters
 
 		public int Order { get; private set; }
 
-		public StopwordFilter(int order)
+		public StopwordValueFilter(int order)
 		{
 			Order = order;
 		}

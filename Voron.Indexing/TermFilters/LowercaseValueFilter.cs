@@ -1,10 +1,10 @@
 ﻿namespace Voron.Indexing.TermFilters
 {
-	public class LowercaseFilter : ITermFilter
+	public class LowercaseValueFilter : ITermValueFilter
 	{
 		public int Order { get; private set; }
 
-		public LowercaseFilter(int order)
+		public LowercaseValueFilter(int order)
 		{
 			Order = order;
 		}
