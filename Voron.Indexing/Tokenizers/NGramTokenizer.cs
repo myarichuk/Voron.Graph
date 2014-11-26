@@ -2,13 +2,13 @@
 using System.Linq;
 using Voron.Indexing.TermFilters;
 
-namespace Voron.Indexing.TermExtractors
+namespace Voron.Indexing.Tokenizers
 {
-	public class FulltextTermExtractor : BaseTermExtractor
+	public class NGramTokenizer : BaseTokenizer
 	{
-		private const int N = 3; //split the field values to trigrams
+		private readonly int _n = 3; //split the field values to trigrams
 
-		public FulltextTermExtractor()
+		public NGramTokenizer(int n = 3)
 			: base(new ITermValueFilter[]
 			{
 				new LowercaseValueFilter(1), 
@@ -17,6 +17,7 @@ namespace Voron.Indexing.TermExtractors
 				new DelimitersFilter(4), 
 			})
 		{
+			_n = n;
 		}
 
 		protected override IEnumerable<string> TermFromField(string fieldValue)
@@ -32,7 +33,7 @@ namespace Voron.Indexing.TermExtractors
 				var currentIndex = 0;
 				while (currentIndex < fieldValue.Length && fieldValue.Length - currentIndex >= 1)
 				{
-					var currentNgram = fieldValue.Skip(currentIndex).Take(FulltextTermExtractor.N);
+					var currentNgram = fieldValue.Skip(currentIndex).Take(_n);
 					yield return new string(currentNgram.ToArray());
 					currentIndex++;
 				}

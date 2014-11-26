@@ -4,13 +4,13 @@ using System.Diagnostics;
 using System.Linq;
 using Newtonsoft.Json.Linq;
 
-namespace Voron.Indexing.TermExtractors
+namespace Voron.Indexing.Tokenizers
 {
-	public abstract class BaseTermExtractor
+	public abstract class BaseTokenizer
 	{
 		protected IEnumerable<ITermValueFilter> TermFilters;
 
-		protected BaseTermExtractor(IEnumerable<ITermValueFilter> termFilters)
+		protected BaseTokenizer(IEnumerable<ITermValueFilter> termFilters)
 		{
 			if (termFilters == null) throw new ArgumentNullException("termFilters");
 			TermFilters = termFilters.ToList();
