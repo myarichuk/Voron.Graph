@@ -19,8 +19,6 @@ namespace Voron.Graph.Indexing
 			get { return n; }
 		}
 
-
-
 		public IEnumerable<string> GetTerms(JValue token)
 		{
 			return GetTerms(token.Value.ToString());

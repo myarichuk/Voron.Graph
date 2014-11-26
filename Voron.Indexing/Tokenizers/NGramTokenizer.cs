@@ -8,6 +8,10 @@ namespace Voron.Indexing.Tokenizers
 	{
 		private readonly int _n = 3; //split the field values to trigrams
 
+		/// <summary>
+		/// Initialize ngram tokenizer. By default split values into trigrams
+		/// </summary>
+		/// <param name="n"></param>
 		public NGramTokenizer(int n = 3)
 			: base(new ITermValueFilter[]
 			{
