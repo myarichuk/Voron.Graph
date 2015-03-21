@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using Newtonsoft.Json.Linq;
 
@@ -13,7 +12,7 @@ namespace Voron.Indexing.Tokenizers
 		protected BaseTokenizer(IEnumerable<ITermValueFilter> termFilters)
 		{
 			if (termFilters == null) throw new ArgumentNullException("termFilters");
-			TermFilters = termFilters.ToList();
+			TermFilters = termFilters.ToList();			
 		}
 
 		/// <summary>

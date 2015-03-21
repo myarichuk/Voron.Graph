@@ -18,7 +18,7 @@ namespace Voron.Graph
         private readonly string _disconnectedNodesTreeName;
         private readonly string _keyByEtagTreeName;
         private readonly string _graphMetadataKey;
-        private readonly HashSet<string> _indexedProperties;
+        private HashSet<string> _indexedProperties;
 	    private NodeIndex _nodeIndex;
         private long _nextId;
 
@@ -37,10 +37,8 @@ namespace Voron.Graph
 
 			CreateConventions();
             CreateSchema();
-            CreateCommandAndQueryInstances();
 
-			using (var tx = NewTransaction(TransactionFlags.Read))
-				_indexedProperties = Queries.GetFromSystemMetadata<HashSet<string>>(tx, Constants.IndexedPropertyListKey) ?? new HashSet<string>();
+			CreateCommandAndQueryInstances();
 
             _nextId = GetLatestStoredNodeKey();
         }
@@ -144,13 +142,18 @@ namespace Voron.Graph
 
         public void CreateCommandAndQueryInstances()
         {
+			Queries = new GraphQueries();
+
+			using (var tx = NewTransaction(TransactionFlags.Read))
+				_indexedProperties = Queries.GetFromSystemMetadata<HashSet<string>>(tx, Constants.IndexedPropertyListKey) ?? new HashSet<string>();
+
 			_nodeIndex = new NodeIndex(this, new NgramTermsParser(3));//by default use Trigram terms
             AdminQueries = new GraphAdminQueries();
-            Queries = new GraphQueries();
 			Commands = new GraphCommands(Queries, Conventions, _nodeIndex);
-        }
 
-        public void Dispose()
+		}
+
+		public void Dispose()
         {
         }
     }
