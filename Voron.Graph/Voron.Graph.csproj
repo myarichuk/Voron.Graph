@@ -77,9 +77,6 @@
     <Compile Include="DisposableAction.cs" />
     <Compile Include="Extensions\StringExtensions.cs" />
     <Compile Include="Extensions\UtilityExtensions.cs" />
-    <Compile Include="Indexing\ITermsParser.cs" />
-    <Compile Include="Indexing\NodeIndex.cs" />
-    <Compile Include="Indexing\NgramTermsParser.cs" />
     <Compile Include="Primitives\Etag.cs" />
     <Compile Include="Impl\GraphAdminQueries.cs" />
     <Compile Include="Impl\GraphCommands.cs" />
@@ -101,10 +98,6 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Voron.Indexing\Voron.Indexing.csproj">
-      <Project>{8e0795e7-3112-4eca-8ffb-b6eb3d92cbf4}</Project>
-      <Name>Voron.Indexing</Name>
-    </ProjectReference>
     <ProjectReference Include="C:\Work\ravendb\Raven.Voron\Voron\Voron.csproj">
       <Project>{ff83c7c2-bc7b-4dcc-a782-49ef9bbd9390}</Project>
       <Name>Voron</Name>
