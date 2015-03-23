@@ -14,7 +14,7 @@ namespace Voron.Graph.Indexing
 	public class Index : IDisposable
 	{
 		private readonly Lucene.Net.Store.Directory _indexDirectory;
-		internal IndexingBatch _currentBatch;
+		internal IndexWriter _writer;
 
 		internal Lucene.Net.Store.Directory Directory
 		{
@@ -34,26 +34,21 @@ namespace Voron.Graph.Indexing
 			
 		}
 
-		public IDisposable Batch()
+		public IndexBatch Batch()
 		{
-			var batch = new IndexingBatch(this);
-			if (Interlocked.CompareExchange(ref _currentBatch, batch, null) != null)
-			{
-				throw new InvalidOperationException("Cannot instantiate two indexing batches at the same time");
-			}
-			return batch;
+			return new IndexBatch(_writer);
 		}
 
 		private void Dispose(bool isDisposing)
 		{
-			if(_currentBatch != null)
-				_currentBatch.Dispose(isDisposing);
+			_writer.Dispose(isDisposing);
 			_indexDirectory.Dispose();
 		}
 
 		public void Dispose()
 		{
 			Dispose(true);
+			GC.SuppressFinalize(this);
 		}
 
 		~Index()
