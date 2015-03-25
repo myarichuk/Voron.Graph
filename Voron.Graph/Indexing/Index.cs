@@ -8,13 +8,16 @@ using System.Threading.Tasks;
 using Lucene.Net;
 using Lucene.Net.Index;
 using Lucene.Net.Store;
+using Lucene.Net.Analysis.Standard;
+using Lucene.Net.Analysis;
 
 namespace Voron.Graph.Indexing
 {
 	public class Index : IDisposable
 	{
 		private readonly Lucene.Net.Store.Directory _indexDirectory;
-		internal IndexWriter _writer;
+		private IndexWriter _writer;
+		private Analyzer _analyzer;
 
 		internal Lucene.Net.Store.Directory Directory
 		{
@@ -26,18 +29,23 @@ namespace Voron.Graph.Indexing
 
 		private readonly string _indexPath;
 
-		public Index(string indexPath,bool runInMemory = false)
+		public Index(string indexPath,bool runInMemory = false, Analyzer analyzer = null)
 		{
 			_indexPath = indexPath;
 			_indexDirectory = runInMemory ? (Lucene.Net.Store.Directory)(new RAMDirectory()) : 
 											(Lucene.Net.Store.Directory)(new MMapDirectory(new DirectoryInfo(indexPath)));
-			
+			_analyzer = analyzer;
+			CreateWriter();
+		
 		}
 
-		public IndexBatch Batch()
+		internal IndexWriter CreateWriter()
 		{
-			return new IndexBatch(_writer);
+			_writer = new IndexWriter(_indexDirectory, _analyzer ?? new StandardAnalyzer(Lucene.Net.Util.Version.LUCENE_30), IndexWriter.MaxFieldLength.UNLIMITED);
+			return _writer;
 		}
+
+	
 
 		private void Dispose(bool isDisposing)
 		{
