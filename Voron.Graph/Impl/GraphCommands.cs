@@ -1,7 +1,11 @@
-﻿using Newtonsoft.Json.Linq;
+﻿using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Diagnostics;
+using System.Dynamic;
 using Voron.Graph.Extensions;
+using Voron.Graph.Indexing;
 
 namespace Voron.Graph.Impl
 {
@@ -26,8 +30,10 @@ namespace Voron.Graph.Impl
                 Debug.Assert(metadataStream != null);
 
                 var metadata = metadataStream.ToJObject();
-                metadata[key] = JToken.FromObject(value);
+				var serializedValue = JObject.FromObject(value);
+                metadata[key] = serializedValue;
 
+				tx.IndexSession.Add(serializedValue);
                 tx.SystemTree.Add(tx.GraphMetadataKey, metadata.ToStream());
             }            
         }
@@ -45,8 +51,10 @@ namespace Voron.Graph.Impl
             tx.NodeTree.Add(nodeKey, Util.EtagAndValueToStream(etag,value));
             tx.KeyByEtagTree.Add(etag.ToSlice(), nodeKey);
             tx.DisconnectedNodeTree.Add(nodeKey, value.ToStream());
-
+						
 			var node = new Node(key, value, etag);
+
+			tx.IndexSession.Add(value);
 
 	        return node;
         }

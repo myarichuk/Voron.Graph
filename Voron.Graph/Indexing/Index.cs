@@ -10,6 +10,13 @@ using Lucene.Net.Index;
 using Lucene.Net.Store;
 using Lucene.Net.Analysis.Standard;
 using Lucene.Net.Analysis;
+using Lucene.Net.Linq;
+using Lucene.Net.Linq.Abstractions;
+using Lucene.Net.Linq.Mapping;
+using Lucene.Net.Documents;
+using Lucene.Net.QueryParsers;
+using Lucene.Net.Search;
+using Newtonsoft.Json.Linq;
 
 namespace Voron.Graph.Indexing
 {
@@ -18,6 +25,7 @@ namespace Voron.Graph.Indexing
 		private readonly Lucene.Net.Store.Directory _indexDirectory;
 		private IndexWriter _writer;
 		private Analyzer _analyzer;
+		private LuceneDataProvider _provider;
 
 		internal Lucene.Net.Store.Directory Directory
 		{
@@ -36,7 +44,13 @@ namespace Voron.Graph.Indexing
 											(Lucene.Net.Store.Directory)(new MMapDirectory(new DirectoryInfo(indexPath)));
 			_analyzer = analyzer;
 			CreateWriter();
+			_provider = new LuceneDataProvider(_indexDirectory, analyzer, Lucene.Net.Util.Version.LUCENE_30, _writer);
 		
+		}
+
+		public ISession<JObject> OpenSession()
+		{
+			return _provider.OpenSession<JObject>();
 		}
 
 		internal IndexWriter CreateWriter()
@@ -45,12 +59,11 @@ namespace Voron.Graph.Indexing
 			return _writer;
 		}
 
-	
-
 		private void Dispose(bool isDisposing)
 		{
 			_writer.Dispose(isDisposing);
 			_indexDirectory.Dispose();
+			_provider.Dispose();
 		}
 
 		public void Dispose()
@@ -62,6 +75,6 @@ namespace Voron.Graph.Indexing
 		~Index()
 		{
 			Dispose(false);
-		}
+		}		
 	}
 }

@@ -5,6 +5,7 @@ using System;
 using System.Threading;
 using Voron.Graph.Extensions;
 using Voron.Graph.Impl;
+using Voron.Graph.Indexing;
 
 namespace Voron.Graph
 {
@@ -17,7 +18,7 @@ namespace Voron.Graph
         private readonly string _disconnectedNodesTreeName;
         private readonly string _keyByEtagTreeName;
         private readonly string _graphMetadataKey;
-        private HashSet<string> _indexedProperties;
+		private Index _index;
         private long _nextId;
 
         public GraphStorage(string graphName, StorageEnvironment storageEnvironment)
@@ -50,7 +51,8 @@ namespace Voron.Graph
                 _disconnectedNodesTreeName, 
                 _keyByEtagTreeName, 
                 _graphMetadataKey,
-                _nextId);
+                _nextId,
+				_index.OpenSession());
         }
 
         private long GetLatestStoredNodeKey()
@@ -84,11 +86,6 @@ namespace Voron.Graph
 
         public GraphAdminQueries AdminQueries { get; private set; }
 
-        public IEnumerable<string> IndexedProperties
-        {
-            get { return _indexedProperties; }
-        }
-
         public string GraphName
         {
             get { return _graphName; }
@@ -115,39 +112,14 @@ namespace Voron.Graph
             }
         }
 
-        public void AddIndexedProperties(params string[] propertyNames)
-        {
-            using (var tx = NewTransaction(TransactionFlags.ReadWrite))
-            {
-                _indexedProperties.UnionWith(propertyNames.Select(x => x.ToLower()));
-                Commands.PutToSystemMetadata(tx,Constants.IndexedPropertyListKey,_indexedProperties);
-
-                tx.Commit();
-            }
-        }
-
-        public void RemoveIndexedProperties(params string[] propertyNames)
-        {
-            using (var tx = NewTransaction(TransactionFlags.ReadWrite))
-            {
-                _indexedProperties.ExceptWith(propertyNames.Select(x =>x.ToLower()));
-                Commands.PutToSystemMetadata(tx, Constants.IndexedPropertyListKey, _indexedProperties);
-
-                tx.Commit();
-            }
-        }
-
 
         public void CreateCommandAndQueryInstances()
         {
+			var runInMemory = _storageEnvironment.Options is StorageEnvironmentOptions.PureMemoryStorageEnvironmentOptions;
+			_index = new Index(Constants.DataFolder, runInMemory);
 			Queries = new GraphQueries();
-
-			using (var tx = NewTransaction(TransactionFlags.Read))
-				_indexedProperties = Queries.GetFromSystemMetadata<HashSet<string>>(tx, Constants.IndexedPropertyListKey) ?? new HashSet<string>();
-
             AdminQueries = new GraphAdminQueries();
-			Commands = new GraphCommands(Queries, Conventions);
-
+			Commands = new GraphCommands(Queries, Conventions);			
 		}
 
 		public void Dispose()

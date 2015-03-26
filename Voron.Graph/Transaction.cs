@@ -1,4 +1,6 @@
-﻿using System;
+﻿using Lucene.Net.Linq;
+using Newtonsoft.Json.Linq;
+using System;
 using Voron.Trees;
 
 namespace Voron.Graph
@@ -39,6 +41,8 @@ namespace Voron.Graph
             }
         }
 
+		internal ISession<JObject> IndexSession { get; private set; }
+
         internal Voron.Impl.Transaction VoronTransaction { get; private set; }
 
         public Transaction(Voron.Impl.Transaction voronTransaction, 
@@ -47,11 +51,14 @@ namespace Voron.Graph
             string disconnectedNodesTreeName,
             string keyByEtagTreeName,
             string graphMetadataKey,
-            long nodeCount)
+            long nodeCount,
+			ISession<JObject> indexSession)
         {
             _isDisposed = false;
             if (voronTransaction == null)
                 throw new ArgumentNullException("voronTransaction");
+
+			IndexSession = indexSession;
             VoronTransaction = voronTransaction;
             _nodeCount = nodeCount;
             NodeTree = voronTransaction.ReadTree(nodeTreeName);
@@ -77,16 +84,19 @@ namespace Voron.Graph
         public void Dispose()
         {
             _isDisposed = true;
+			IndexSession.Dispose();
             VoronTransaction.Dispose();
         }
 
         public void Rollback()
         {
+			IndexSession.Rollback();
             VoronTransaction.Rollback();
         }
 
         public void Commit()
-        {
+        {			
+			IndexSession.Commit();
             VoronTransaction.Commit();
         }
     }

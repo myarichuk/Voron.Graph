@@ -1,4 +1,5 @@
-﻿namespace Voron.Graph
+﻿using System.IO;
+namespace Voron.Graph
 {
     public static class Constants
     {
@@ -13,6 +14,7 @@
         public const string GraphMetadataKeySuffix = "_GraphMetadata";
 
         public const string IndexedPropertyListKey = "IndexedProperties_SystemMetadata";
+		public readonly static string DataFolder = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + "Data";
 
     }
 }
