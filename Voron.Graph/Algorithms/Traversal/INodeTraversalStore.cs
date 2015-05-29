@@ -1,12 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Collections.Generic;
 
 namespace Voron.Graph.Algorithms.Traversal
 {
-    public interface INodeTraversalStore<T> : IEnumerable<T>
+	public interface INodeTraversalStore<T> : IEnumerable<T>
     {
         T GetNext();
         void Put(T item);

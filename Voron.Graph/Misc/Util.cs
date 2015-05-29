@@ -2,7 +2,6 @@
 using Newtonsoft.Json.Linq;
 using System.IO;
 using System.Runtime.InteropServices;
-using System.Text;
 using Voron.Util.Conversion;
 
 namespace Voron.Graph
@@ -65,7 +64,7 @@ namespace Voron.Graph
             source.Read(etagBytes, 0, Etag.Size);
             source.Read(weightBytes, 0, 2);
             etag = new Etag(etagBytes);
-            weight = BigEndianBitConverter.Big.ToInt16(weightBytes, 0);
+            weight = EndianBitConverter.Big.ToInt16(weightBytes, 0);
             value = JObject.Load(reader);
         }
 
