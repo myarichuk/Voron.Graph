@@ -12,9 +12,9 @@ namespace Voron.Graph.Extensions
             return storage.CreateEdgeBetween(tx,node,otherNode,edgeWeight:weight);
         }
 
-        public static Task<List<Edge>> GetEdges(this Node node, Transaction tx, GraphStorage storage, CancellationToken token)
+        public static IEnumerable<Edge> GetEdges(this Node node, Transaction tx, GraphStorage storage)
         {
-            return storage.Admin.GetEdgesOfNode(tx, node, token);
+            return storage.Admin.GetEdgesOfNode(tx, node);
         }
     }
 }

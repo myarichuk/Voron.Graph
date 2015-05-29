@@ -9,68 +9,58 @@ namespace Voron.Graph.Impl
 {
     public class GraphStorageAdmin
     {
-        public Task<List<Node>> GetAllNodes(Transaction tx, CancellationToken cancelToken)
+		public IEnumerable<Node> GetAllNodes(Transaction tx, CancellationToken cancelToken)
+		{
+			if (tx == null) throw new ArgumentNullException("tx");
+			using (var nodesIterator = tx.NodeTree.Iterate())
+			{
+				if (!nodesIterator.Seek(Slice.BeforeAllKeys))
+					yield break;
+
+				do
+				{
+					cancelToken.ThrowIfCancellationRequested();
+					if (tx.IsDisposed)
+						throw new InvalidOperationException("Transaction was disposed before the operation has been complete.");
+
+					var readResult = nodesIterator.CreateReaderForCurrent();
+					using (var readResultAsStream = readResult.AsStream())
+					{
+						Etag etag;
+						JObject value;
+						Util.EtagAndValueFromStream(readResultAsStream, out etag, out value);
+
+						yield return new Node(nodesIterator.CurrentKey.CreateReader().ReadBigEndianInt64(), value, etag);
+					}
+
+				} while (nodesIterator.MoveNext());
+			}
+		}
+
+		public IEnumerable<Edge> GetAllEdges(Transaction tx)
         {
-	        if (tx == null) throw new ArgumentNullException("tx");
-	        return Task.Run(() =>
-            {
-                var results = new List<Node>();
-                using (var nodesIterator = tx.NodeTree.Iterate())
-                {
-                    if (!nodesIterator.Seek(Slice.BeforeAllKeys))
-                        return results;
-
-                    do
-                    {
-                        cancelToken.ThrowIfCancellationRequested();
-	                    if (tx.IsDisposed)
-		                    throw new InvalidOperationException("Transaction was disposed before the operation has been complete.");
-
-	                    var readResult = nodesIterator.CreateReaderForCurrent();
-                        using (var readResultAsStream = readResult.AsStream())
-                        {
-                            Etag etag;
-                            JObject value;
-                            Util.EtagAndValueFromStream(readResultAsStream, out etag, out value);
-
-                            results.Add(new Node(nodesIterator.CurrentKey.CreateReader().ReadBigEndianInt64(), value, etag));
-                        }
-
-                    } while (nodesIterator.MoveNext());
-                }
-
-	            if (tx.IsDisposed)
-		            throw new InvalidOperationException("Transaction was disposed before the operation has been complete.");
-	            return results;
-            }, cancelToken);
+            return GetEdges(tx, null);
         }
 
-        public Task<List<Edge>> GetAllEdges(Transaction tx, CancellationToken cancelToken)
+        public IEnumerable<Edge> GetEdgesOfNode(Transaction tx, Node node)
         {
-            return Task.Run(() => GetEdges(tx, null, ref cancelToken), cancelToken);
+            return GetEdges(tx, node.Key.ToSlice());
         }
 
-        public Task<List<Edge>> GetEdgesOfNode(Transaction tx, Node node, CancellationToken cancelToken)
+	    private static IEnumerable<Edge> GetEdges(Transaction tx,Slice requiredPrefix)
         {
-            return Task.Run(() => GetEdges(tx, node.Key.ToSlice(), ref cancelToken), cancelToken);
-        }
-
-	    private static List<Edge> GetEdges(Transaction tx,Slice requiredPrefix, ref CancellationToken cancelToken)
-        {
-            var results = new List<Edge>();
             using (var edgesIterator = tx.EdgeTree.Iterate())
             {
-                if (requiredPrefix != null)
-                {
-                    edgesIterator.RequiredPrefix = requiredPrefix;
-                    edgesIterator.Seek(requiredPrefix);
-                }
-                else if (!edgesIterator.Seek(Slice.BeforeAllKeys))
-                    return results;
+				if (requiredPrefix != null)
+				{
+					edgesIterator.RequiredPrefix = requiredPrefix;
+					edgesIterator.Seek(requiredPrefix);
+				}
+				else if (!edgesIterator.Seek(Slice.BeforeAllKeys))
+					yield break;
 
                 do
                 {
-                    cancelToken.ThrowIfCancellationRequested();
 	                if (tx.IsDisposed)
 		                throw new InvalidOperationException("Transaction was disposed before the operation has been complete.");
 
@@ -82,13 +72,12 @@ namespace Voron.Graph.Impl
                         var edgeTreeKey = edgesIterator.CurrentKey.ToEdgeTreeKey();
                         short weight;
                         Util.EtagWeightAndValueFromStream(readResultAsStream, out etag, out weight, out value);
-                        results.Add(new Edge(edgeTreeKey.NodeKeyFrom, edgeTreeKey.NodeKeyTo, value, edgeTreeKey.Type, etag, weight));
+                        yield return new Edge(edgeTreeKey.NodeKeyFrom, edgeTreeKey.NodeKeyTo, value, edgeTreeKey.Type, etag, weight);
                     }
 
                 } while (edgesIterator.MoveNext());
             }
 
-            return results;
         }
     }
 }

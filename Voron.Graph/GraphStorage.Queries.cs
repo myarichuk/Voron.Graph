@@ -1,32 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using Newtonsoft.Json.Linq;
 using Voron.Graph.Extensions;
-using Voron.Trees;
 using Voron.Graph.Primitives;
 
 namespace Voron.Graph
 {
 	public partial class GraphStorage
-	{
-	    public T GetFromSystemMetadata<T>(Transaction tx, string key)
-		{
-			var metadataReadResult = tx.SystemTree.Read(tx.GraphMetadataKey);
-			Debug.Assert(metadataReadResult.Version > 0);
-
-			using (var metadataStream = metadataReadResult.Reader.AsStream())
-			{
-				if (metadataStream == null)
-					return default(T);
-
-				var metadata = metadataStream.ToJObject();
-				return metadata.Value<T>(key);
-			}
-		}
-
+	{	   
 		public IEnumerable<Edge> GetEdgesOf(Transaction tx, Node node)
 		{
 			if (tx == null) throw new ArgumentNullException("tx");

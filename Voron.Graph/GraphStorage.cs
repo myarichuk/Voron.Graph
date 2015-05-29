@@ -5,7 +5,6 @@ using System;
 using System.Threading;
 using Voron.Graph.Extensions;
 using Voron.Graph.Impl;
-using Voron.Graph.Indexing;
 
 namespace Voron.Graph
 {
@@ -18,7 +17,6 @@ namespace Voron.Graph
         private readonly string _disconnectedNodesTreeName;
         private readonly string _keyByEtagTreeName;
         private readonly string _graphMetadataKey;
-		private Index _index;
         private long _nextId;
 
         public GraphStorage(string graphName, StorageEnvironment storageEnvironment)
@@ -51,8 +49,7 @@ namespace Voron.Graph
                 _disconnectedNodesTreeName, 
                 _keyByEtagTreeName, 
                 _graphMetadataKey,
-                _nextId,
-				_index.OpenSession());
+                _nextId);
         }
 
         private long GetLatestStoredNodeKey()
@@ -112,7 +109,6 @@ namespace Voron.Graph
         public void CreateCommandAndQueryInstances()
         {
 			var runInMemory = _storageEnvironment.Options is StorageEnvironmentOptions.PureMemoryStorageEnvironmentOptions;
-			_index = new Index(Constants.DataFolder, runInMemory);
             Admin = new GraphStorageAdmin();
 		}
 

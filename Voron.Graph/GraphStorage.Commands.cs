@@ -1,33 +1,12 @@
-﻿using Newtonsoft.Json;
-using Newtonsoft.Json.Converters;
-using Newtonsoft.Json.Linq;
+﻿using Newtonsoft.Json.Linq;
 using System;
 using System.Diagnostics;
-using System.Dynamic;
 using Voron.Graph.Extensions;
-using Voron.Graph.Indexing;
 
 namespace Voron.Graph
 {
-    public partial class GraphStorage
+	public partial class GraphStorage
 	{
-        public void PutToSystemMetadata<T>(Transaction tx, string key, T value)
-        {
-            var metadataReadResult = tx.SystemTree.Read(tx.GraphMetadataKey);
-            Debug.Assert(metadataReadResult != null && metadataReadResult.Version > 0);
-
-            using (var metadataStream = metadataReadResult.Reader.AsStream())
-            {
-                Debug.Assert(metadataStream != null);
-
-                var metadata = metadataStream.ToJObject();
-				var serializedValue = JObject.FromObject(value);
-                metadata[key] = serializedValue;
-
-				tx.IndexSession.Add(serializedValue);
-                tx.SystemTree.Add(tx.GraphMetadataKey, metadata.ToStream());
-            }            
-        }
 
         public Node CreateNode(Transaction tx, JObject value)
         {
@@ -44,8 +23,6 @@ namespace Voron.Graph
             tx.DisconnectedNodeTree.Add(nodeKey, value.ToStream());
 						
 			var node = new Node(key, value, etag);
-
-			tx.IndexSession.Add(value);
 
 	        return node;
         }

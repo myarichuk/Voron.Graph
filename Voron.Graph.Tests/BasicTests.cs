@@ -123,7 +123,7 @@ namespace Voron.Graph.Tests
         }
 
         [TestMethod]
-        public async Task Can_Avoid_Duplicate_Nodes_InParallel_Adds()
+        public void Can_Avoid_Duplicate_Nodes_In_Parallel_Adds()
         {
             var graph = new GraphStorage("TestGraph",Env);
 
@@ -135,38 +135,13 @@ namespace Voron.Graph.Tests
 	                tx.Commit();
                 }
             });
-           
+			
             using (var tx = graph.NewTransaction(TransactionFlags.Read))
             {
-                var nodesList = await graph.Admin.GetAllNodes(tx, CancelTokenSource.Token);
+                var nodesList = graph.Admin.GetAllNodes(tx, CancelTokenSource.Token).ToList();
                 nodesList.Select(node => node.Key).Should().OnlyHaveUniqueItems();
             }
-        }
-
-        [TestMethod]
-        public void Read_and_writing_system_metadata_should_work()
-        {
-            var graph = new GraphStorage("TestGraph", Env);
-            using (var tx = graph.NewTransaction(TransactionFlags.ReadWrite))
-            {
-                graph.PutToSystemMetadata(tx, "Foo", "Bar");
-                graph.PutToSystemMetadata(tx, "FooNum", 123);
-                graph.PutToSystemMetadata(tx, "FooBoolean", false);
-                
-                tx.Commit();
-            }
-
-            using (var tx = graph.NewTransaction(TransactionFlags.Read))
-            {
-                var bar = graph.GetFromSystemMetadata<string>(tx, "Foo");
-                var fooNum = graph.GetFromSystemMetadata<int>(tx, "FooNum");
-                var fooBoolean = graph.GetFromSystemMetadata<bool>(tx, "FooBoolean");
-
-                Assert.AreEqual("Bar", bar);
-                Assert.AreEqual(123, fooNum);
-                Assert.AreEqual(false, fooBoolean);
-            }
-        }
+        }      
 
         [TestMethod]
         public void Can_Iterate_On_Nearest_Nodes()

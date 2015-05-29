@@ -28,20 +28,15 @@ namespace Voron.Graph.Algorithms.ShortestPath
 
         public IMultiDestinationShortestPathResults Execute()
         {
-            var getAllEdgesTask = _graphAdminQueries.GetAllEdges(_tx, _cancelToken);
-            getAllEdgesTask.Wait();
-            var edges = getAllEdgesTask.Result;
+            var edges = _graphAdminQueries.GetAllEdges(_tx).ToList();
 
             var results = ExecuteAlgorithm(edges);
             return results;
         }
 
-        public async Task<IMultiDestinationShortestPathResults> ExecuteAsync()
+        public Task<IMultiDestinationShortestPathResults> ExecuteAsync()
         {
-            var edges = await _graphAdminQueries.GetAllEdges(_tx, _cancelToken);
-
-            var results = ExecuteAlgorithm(edges);
-            return results;
+			return Task.Run(() => Execute());
         }
 
         private ShortestPathResults ExecuteAlgorithm(List<Edge> edges)
