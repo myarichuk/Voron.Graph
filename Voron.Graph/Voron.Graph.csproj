@@ -93,7 +93,6 @@
     <Compile Include="Extensions\NodeExtensions.cs" />
     <Compile Include="Primitives\EdgeTreeKey.cs" />
     <Compile Include="GraphStorage.cs" />
-    <Compile Include="Misc\NativeMethods.cs" />
     <Compile Include="Primitives\Edge.cs" />
     <Compile Include="Primitives\Node.cs" />
     <Compile Include="Primitives\NodeWithEdgeWeight.cs" />
