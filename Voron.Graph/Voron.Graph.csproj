@@ -43,6 +43,8 @@
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.ServiceModel" />
+    <Reference Include="System.ServiceModel.Channels" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
@@ -79,6 +81,7 @@
     <Compile Include="DisposableAction.cs" />
     <Compile Include="Extensions\StringExtensions.cs" />
     <Compile Include="Extensions\UtilityExtensions.cs" />
+    <Compile Include="Misc\SmallBufferPool.cs" />
     <Compile Include="Primitives\Etag.cs" />
     <Compile Include="Impl\GraphAdminQueries.cs" />
     <Compile Include="GraphStorage.Commands.cs" />

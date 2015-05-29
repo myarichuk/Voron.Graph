@@ -3,6 +3,7 @@ using Newtonsoft.Json.Linq;
 using System;
 using System.IO;
 using System.Runtime.InteropServices;
+using Voron.Graph.Misc;
 using Voron.Util.Conversion;
 
 namespace Voron.Graph.Extensions
@@ -15,7 +16,7 @@ namespace Voron.Graph.Extensions
         private static readonly int SizeOfInt = Marshal.SizeOf(typeof(int));
         private static readonly int SizeOfLong = Marshal.SizeOf(typeof(long));
 
-        internal static Stream ToStream(this JObject jsonObject)
+		internal static Stream ToStream(this JObject jsonObject)
         {
             if (jsonObject == null)
                 return Stream.Null;
@@ -44,17 +45,31 @@ namespace Voron.Graph.Extensions
 
         internal static Slice ToSlice(this long key)
         {
-            var buffer = new byte[SizeOfLong]; //TODO: refactor this with BufferPool implementation
-            EndianBitConverter.Big.CopyBytes(key, buffer, 0);
-            return new Slice(buffer);
+			var buffer = BufferPool.TakeBuffer(SizeOfLong);
+			try
+			{
+				EndianBitConverter.Big.CopyBytes(key, buffer, 0);
+				return new Slice(buffer);
+			}
+			finally
+			{
+				BufferPool.ReturnBuffer(buffer);
+			}
         }
 
-        internal static Slice ToSlice(this int key)
-        {
-            var buffer = new byte[SizeOfInt]; //TODO: refactor this with BufferPool implementation
-            EndianBitConverter.Big.CopyBytes(key, buffer, 0);
-            return new Slice(buffer);
-        }
+		internal static Slice ToSlice(this int key)
+		{
+			var buffer = BufferPool.TakeBuffer(SizeOfInt);
+			try
+			{
+				EndianBitConverter.Big.CopyBytes(key, buffer, 0);
+				return new Slice(buffer);
+			}
+			finally
+			{
+				BufferPool.ReturnBuffer(buffer);
+			}
+		}
 
         internal static Slice ToSlice(this EdgeTreeKey edgeKey)
         {
@@ -69,24 +84,39 @@ namespace Voron.Graph.Extensions
 
 	    internal static long ToNodeKey(this Slice key)
 	    {
-		    var keyData = new byte[SizeOfLong];
-		    key.CopyTo(keyData);
+		    var keyData = BufferPool.TakeBuffer(SizeOfLong);
+			try
+			{
+				key.CopyTo(keyData);
 
-		    return EndianBitConverter.Big.ToInt64(keyData, 0);
+				return EndianBitConverter.Big.ToInt64(keyData, 0);
+			}
+			finally
+			{
+				BufferPool.ReturnBuffer(keyData);
+            }
 	    }
 
         internal static EdgeTreeKey ToEdgeTreeKey(this Slice edgeKey)
         {
-            var keyData = new byte[EdgeTreeKeySize];
-            edgeKey.CopyTo(keyData);
-            var edgeTreeKey = new EdgeTreeKey
-            {
-                NodeKeyFrom = EndianBitConverter.Big.ToInt64(keyData, 0),
-                NodeKeyTo = EndianBitConverter.Big.ToInt64(keyData, SizeOfLong),
-                Type = EndianBitConverter.Big.ToUInt16(keyData, SizeOfLong * 2)
-            };
+            var keyData = BufferPool.TakeBuffer(EdgeTreeKeySize);
 
-            return edgeTreeKey;
+			try
+			{
+				edgeKey.CopyTo(keyData);
+				var edgeTreeKey = new EdgeTreeKey
+				{
+					NodeKeyFrom = EndianBitConverter.Big.ToInt64(keyData, 0),
+					NodeKeyTo = EndianBitConverter.Big.ToInt64(keyData, SizeOfLong),
+					Type = EndianBitConverter.Big.ToUInt16(keyData, SizeOfLong * 2)
+				};
+
+				return edgeTreeKey;
+			}
+			finally
+			{
+				BufferPool.ReturnBuffer(keyData);
+			}
         }
 
         internal static Etag ToEtag(this Stream stream)
@@ -97,13 +127,20 @@ namespace Voron.Graph.Extensions
             if (stream.Length - stream.Position > Etag.Size)
                 throw new ArgumentException("Invalid etag size in stream - data is corrupted?");
 
-            var etagBytes = new byte[Etag.Size];
-            stream.Read(etagBytes, 0, Etag.Size);
+            var etagBytes = BufferPool.TakeBuffer(Etag.Size);
+			try
+			{
+				stream.Read(etagBytes, 0, Etag.Size);
 
-            var timestamp = EndianBitConverter.Big.ToInt64(etagBytes, 0);
-            var count = EndianBitConverter.Big.ToInt64(etagBytes, SizeOfLong);
+				var timestamp = EndianBitConverter.Big.ToInt64(etagBytes, 0);
+				var count = EndianBitConverter.Big.ToInt64(etagBytes, SizeOfLong);
 
-            return new Etag(count, timestamp);
+				return new Etag(count, timestamp);
+			}
+			finally
+			{
+				BufferPool.ReturnBuffer(etagBytes);
+			}
         }
 
     }
