@@ -43,32 +43,20 @@ namespace Voron.Graph.Extensions
             return JObject.Load(reader);
         }
 
-        internal static Slice ToSlice(this long key)
-        {
-			var buffer = BufferPool.TakeBuffer(SizeOfLong);
-			try
-			{
-				EndianBitConverter.Big.CopyBytes(key, buffer, 0);
-				return new Slice(buffer);
-			}
-			finally
-			{
-				BufferPool.ReturnBuffer(buffer);
-			}
-        }
+		//note : cannot use BufferPool here since the buffer reference is used in the Slice
+		internal static Slice ToSlice(this long key)
+		{
+			var buffer = new byte[SizeOfLong];
+			EndianBitConverter.Big.CopyBytes(key, buffer, 0);
+			return new Slice(buffer);
+		}
 
+		//note : cannot use BufferPool here since the buffer reference is used in the Slice
 		internal static Slice ToSlice(this int key)
 		{
-			var buffer = BufferPool.TakeBuffer(SizeOfInt);
-			try
-			{
-				EndianBitConverter.Big.CopyBytes(key, buffer, 0);
-				return new Slice(buffer);
-			}
-			finally
-			{
-				BufferPool.ReturnBuffer(buffer);
-			}
+			var buffer = new byte[SizeOfInt];
+			EndianBitConverter.Big.CopyBytes(key, buffer, 0);
+			return new Slice(buffer);
 		}
 
         internal static Slice ToSlice(this EdgeTreeKey edgeKey)

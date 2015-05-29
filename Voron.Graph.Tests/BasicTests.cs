@@ -153,8 +153,9 @@ namespace Voron.Graph.Tests
             {
                 var centerNode = graph.LoadNode(tx, centerNodeKey);
                 var nodeValues = new Dictionary<string, string>();
+				var adjacentNodes = graph.GetAdjacentOf(tx, centerNode).Select(x => x.Node).ToList();
 
-	            foreach (var curNode in graph.GetAdjacentOf(tx, centerNode).Select(x => x.Node))
+				foreach (var curNode in adjacentNodes)
                 {
                     var curEdge = graph.GetEdgesBetween(tx, centerNode, curNode).FirstOrDefault();              
                     Assert.IsNotNull(curEdge);

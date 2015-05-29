@@ -1,5 +1,5 @@
-﻿using System.Collections.Concurrent;
-using System.ServiceModel.Channels;
+﻿using System;
+using System.Collections.Concurrent;
 
 namespace Voron.Graph.Misc
 {

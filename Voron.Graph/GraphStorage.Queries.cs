@@ -85,11 +85,12 @@ namespace Voron.Graph
                             Util.EtagWeightAndValueFromStream(edgeEtagAndValueAsStream, out etag, out weight, out value);
                             var edge = new Edge(edgeKey.NodeKeyFrom, edgeKey.NodeKeyTo, value, edgeKey.Type, etag, weight);
 
-                            yield return new NodeWithEdge
+                            var nodeWithEdge = new NodeWithEdge
                             {
                                 Node = adjacentNode,
                                 EdgeTo = edge
                             };
+							yield return nodeWithEdge;
                         }
                     }
 				} while (edgeIterator.MoveNext());
