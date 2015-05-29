@@ -81,7 +81,7 @@
     <Compile Include="Extensions\UtilityExtensions.cs" />
     <Compile Include="Misc\BufferPool.cs" />
     <Compile Include="Primitives\Etag.cs" />
-    <Compile Include="Impl\GraphAdminQueries.cs" />
+    <Compile Include="GraphStorage.Admin.cs" />
     <Compile Include="GraphStorage.Commands.cs" />
     <Compile Include="Constants.cs" />
     <Compile Include="Conventions.cs" />
@@ -97,6 +97,7 @@
     <Compile Include="Misc\Util.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="GraphStorage.Advanced.cs" />
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>

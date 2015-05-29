@@ -4,7 +4,6 @@ using Newtonsoft.Json.Linq;
 using System;
 using System.Threading;
 using Voron.Graph.Extensions;
-using Voron.Graph.Impl;
 
 namespace Voron.Graph
 {
@@ -77,8 +76,6 @@ namespace Voron.Graph
 
         public Conventions Conventions { get; private set; }
 
-        public GraphStorageAdmin Admin { get; private set; }
-
         public string GraphName
         {
             get { return _graphName; }
@@ -89,7 +86,9 @@ namespace Voron.Graph
             get { return _storageEnvironment; }
         }
 
-        private void CreateSchema()
+		public GraphAdmin Admin { get; private set; }
+
+		private void CreateSchema()
         {
             using (var tx = StorageEnvironment.NewTransaction(TransactionFlags.ReadWrite))
             {
@@ -109,7 +108,7 @@ namespace Voron.Graph
         public void CreateCommandAndQueryInstances()
         {
 			var runInMemory = _storageEnvironment.Options is StorageEnvironmentOptions.PureMemoryStorageEnvironmentOptions;
-            Admin = new GraphStorageAdmin();
+            Admin = new GraphAdmin();
 		}
 
 		public void Dispose()

@@ -7,20 +7,19 @@ using System.Threading;
 using System.Threading.Tasks;
 using Voron.Graph.Algorithms.Traversal;
 using Voron.Graph.Exceptions;
-using Voron.Graph.Impl;
 
 namespace Voron.Graph.Algorithms.ShortestPath
 {
     public class BellmanFordMultiDestinationShortestPath : BaseAlgorithm, IMultiDestinationShortestPath
     {
         private readonly Node _rootNode;
-        private readonly GraphStorageAdmin _graphAdminQueries;
+        private readonly GraphStorage.GraphAdmin _graphAdmin;
         private readonly Transaction _tx;
         private readonly CancellationToken _cancelToken;
 
         public BellmanFordMultiDestinationShortestPath(Transaction tx, GraphStorage graphStorage, Node root, CancellationToken cancelToken)
         {
-            _graphAdminQueries = graphStorage.Admin;
+            _graphAdmin = graphStorage.Admin;
             _rootNode = root;
             _tx = tx;
             _cancelToken = cancelToken;
@@ -28,7 +27,7 @@ namespace Voron.Graph.Algorithms.ShortestPath
 
         public IMultiDestinationShortestPathResults Execute()
         {
-            var edges = _graphAdminQueries.GetAllEdges(_tx).ToList();
+            var edges = _graphAdmin.GetAllEdges(_tx).ToList();
 
             var results = ExecuteAlgorithm(edges);
             return results;
