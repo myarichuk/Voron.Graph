@@ -14,13 +14,13 @@ namespace Voron.Graph.Algorithms.ShortestPath
     public class BellmanFordMultiDestinationShortestPath : BaseAlgorithm, IMultiDestinationShortestPath
     {
         private readonly Node _rootNode;
-        private readonly GraphAdminQueries _graphAdminQueries;
+        private readonly GraphStorageAdmin _graphAdminQueries;
         private readonly Transaction _tx;
         private readonly CancellationToken _cancelToken;
 
         public BellmanFordMultiDestinationShortestPath(Transaction tx, GraphStorage graphStorage, Node root, CancellationToken cancelToken)
         {
-            _graphAdminQueries = graphStorage.AdminQueries;
+            _graphAdminQueries = graphStorage.Admin;
             _rootNode = root;
             _tx = tx;
             _cancelToken = cancelToken;

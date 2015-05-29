@@ -89,7 +89,7 @@ namespace Voron.Graph.Algorithms.Traversal
                     Visitor.ExamineTraversalInfo(traversalInfo);
 
                 foreach (var childNodeWithEdge in
-                    _graphStorage.Queries.GetAdjacentOf(_tx, traversalInfo.CurrentNode, EdgeTypePredicate)
+                    _graphStorage.GetAdjacentOf(_tx, traversalInfo.CurrentNode, EdgeTypePredicate)
                                          .Where(nodeWithEdge => !TraversedEdges.Contains(nodeWithEdge.EdgeTo.Key)))
                 {
                     if (_cancelToken != null)

@@ -74,7 +74,7 @@ namespace Voron.Graph.Tests
             using (var tx = graph.NewTransaction(TransactionFlags.ReadWrite))
             {
                 for (var i = 0; i < 100; i++)
-                    nodes.Add(graph.Commands.CreateNode(tx, JsonFromValue("test1")));
+                    nodes.Add(graph.CreateNode(tx, JsonFromValue("test1")));
                 tx.Commit();
             }
 
@@ -94,7 +94,7 @@ namespace Voron.Graph.Tests
                 using (var tx = graph.NewTransaction(TransactionFlags.ReadWrite))
                 {
                     for (var j = 0; j < 10; j++)
-                        nodes.Add(graph.Commands.CreateNode(tx, JsonFromValue("test1")));
+                        nodes.Add(graph.CreateNode(tx, JsonFromValue("test1")));
                     tx.Commit();
                 }
             });
@@ -112,8 +112,8 @@ namespace Voron.Graph.Tests
 
             using (var tx = graph.NewTransaction(TransactionFlags.ReadWrite))
             {
-                var node1 = graph.Commands.CreateNode(tx, JsonFromValue("test1"));
-                var node2 = graph.Commands.CreateNode(tx, JsonFromValue("test1"));
+                var node1 = graph.CreateNode(tx, JsonFromValue("test1"));
+                var node2 = graph.CreateNode(tx, JsonFromValue("test1"));
 
                 for (var i = 0; i < 100; i++)
                     edges.Add(node1.ConnectWith(tx, node2, graph));
@@ -135,7 +135,7 @@ namespace Voron.Graph.Tests
 
             using (var tx = graph.NewTransaction(TransactionFlags.ReadWrite))
             {
-                node = graph.Commands.CreateNode(tx, JsonFromValue("test1"));
+                node = graph.CreateNode(tx, JsonFromValue("test1"));
                 tx.Commit();
             }
 
@@ -144,7 +144,7 @@ namespace Voron.Graph.Tests
                 using (var tx = graph.NewTransaction(TransactionFlags.ReadWrite))
                 {
                     node.Data["value"] = "updated " + i;
-                    Assert.IsTrue(graph.Commands.TryUpdate(tx, node));
+                    Assert.IsTrue(graph.TryUpdate(tx, node));
                     etags.Add(node.Etag);
                     tx.Commit();
                 }

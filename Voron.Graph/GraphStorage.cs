@@ -9,7 +9,7 @@ using Voron.Graph.Indexing;
 
 namespace Voron.Graph
 {
-    public class GraphStorage : IDisposable
+    public partial class GraphStorage : IDisposable
     {
         private readonly string _graphName;
         private readonly StorageEnvironment _storageEnvironment;
@@ -80,11 +80,7 @@ namespace Voron.Graph
 
         public Conventions Conventions { get; private set; }
 
-        public GraphCommands Commands { get; private set; }
-
-        public GraphQueries Queries { get; private set; }
-
-        public GraphAdminQueries AdminQueries { get; private set; }
+        public GraphStorageAdmin Admin { get; private set; }
 
         public string GraphName
         {
@@ -117,9 +113,7 @@ namespace Voron.Graph
         {
 			var runInMemory = _storageEnvironment.Options is StorageEnvironmentOptions.PureMemoryStorageEnvironmentOptions;
 			_index = new Index(Constants.DataFolder, runInMemory);
-			Queries = new GraphQueries();
-            AdminQueries = new GraphAdminQueries();
-			Commands = new GraphCommands(Queries, Conventions);			
+            Admin = new GraphStorageAdmin();
 		}
 
 		public void Dispose()

@@ -7,19 +7,10 @@ using System.Dynamic;
 using Voron.Graph.Extensions;
 using Voron.Graph.Indexing;
 
-namespace Voron.Graph.Impl
+namespace Voron.Graph
 {
-    public class GraphCommands
-    {
-        private readonly Conventions _conventions;
-        private readonly GraphQueries _graphQueries;
-
-        internal GraphCommands(GraphQueries graphQueries, Conventions conventions)
-        {
-            _graphQueries = graphQueries;
-            _conventions = conventions;
-        }      
-
+    public partial class GraphStorage
+	{
         public void PutToSystemMetadata<T>(Transaction tx, string key, T value)
         {
             var metadataReadResult = tx.SystemTree.Read(tx.GraphMetadataKey);
@@ -43,7 +34,7 @@ namespace Voron.Graph.Impl
 	        if (tx == null) throw new ArgumentNullException("tx");
 	        if (value == null) throw new ArgumentNullException("value");
 
-            var key = _conventions.GetNextNodeKey();
+            var key = this.Conventions.GetNextNodeKey();
 
             var nodeKey = key.ToSlice();
             var etag = Etag.Generate();
@@ -70,7 +61,7 @@ namespace Voron.Graph.Impl
 	        if (tx == null) throw new ArgumentNullException("tx");
 	        if (node == null) throw new ArgumentNullException("node");
 
-	        if (!_graphQueries.ContainsNode(tx, node))
+	        if (!ContainsNode(tx, node))
                 return false;
 
             //Voron's method name here is misleading --> it performs updates as well
@@ -89,11 +80,11 @@ namespace Voron.Graph.Impl
 	        if (tx == null) throw new ArgumentNullException("tx");
 
 	        if (nodeFrom == null) throw new ArgumentNullException("nodeFrom");
-            if (!_graphQueries.ContainsNode(tx, nodeFrom.Key))
+            if (!ContainsNode(tx, nodeFrom.Key))
                 throw new ArgumentException("nodeFrom does not exist in the tree", "nodeFrom");
 
             if (nodeTo == null) throw new ArgumentNullException("nodeTo");
-            if (!_graphQueries.ContainsNode(tx, nodeTo.Key))
+            if (!ContainsNode(tx, nodeTo.Key))
                 throw new ArgumentException("nodeTo does not exist in the tree", "nodeTo");
             
             var newEtag = Etag.Generate();
@@ -114,7 +105,7 @@ namespace Voron.Graph.Impl
 
 	        var nodeKey = node.Key.ToSlice();
             tx.NodeTree.Delete(nodeKey);
-            foreach (var edge in _graphQueries.GetEdgesOf(tx, node))
+            foreach (var edge in GetEdgesOf(tx, node))
                 tx.EdgeTree.Delete(edge.Key.ToSlice());
 
             tx.KeyByEtagTree.Delete(node.Etag.ToSlice());

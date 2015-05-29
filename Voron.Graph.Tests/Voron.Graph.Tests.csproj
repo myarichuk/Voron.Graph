@@ -114,13 +114,13 @@
     <Compile Include="SearchTests.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\Raven.Voron\Voron\Voron.csproj">
+      <Project>{ff83c7c2-bc7b-4dcc-a782-49ef9bbd9390}</Project>
+      <Name>Voron</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Voron.Graph\Voron.Graph.csproj">
       <Project>{28fdb332-bce9-496d-bd6d-c910db4f1c1c}</Project>
       <Name>Voron.Graph</Name>
-    </ProjectReference>
-    <ProjectReference Include="C:\Work\ravendb\Raven.Voron\Voron\Voron.csproj">
-      <Project>{ff83c7c2-bc7b-4dcc-a782-49ef9bbd9390}</Project>
-      <Name>Voron</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

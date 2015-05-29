@@ -25,9 +25,9 @@ namespace Voron.Graph.Tests
             Node node1, node2, node3;
             using (var tx = graph.NewTransaction(TransactionFlags.ReadWrite))
             {
-                node1 = graph.Commands.CreateNode(tx, JsonFromValue(1));
-                node2 = graph.Commands.CreateNode(tx, JsonFromValue(2));
-                node3 = graph.Commands.CreateNode(tx, JsonFromValue(3));
+                node1 = graph.CreateNode(tx, JsonFromValue(1));
+                node2 = graph.CreateNode(tx, JsonFromValue(2));
+                node3 = graph.CreateNode(tx, JsonFromValue(3));
 
                 node1.ConnectWith(tx, node2, graph, -1);
                 node1.ConnectWith(tx, node3, graph, -1);

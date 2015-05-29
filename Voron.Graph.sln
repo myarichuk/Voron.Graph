@@ -1,13 +1,13 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2013
-VisualStudioVersion = 12.0.31101.0
+# Visual Studio 14
+VisualStudioVersion = 14.0.22823.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Voron.Graph", "Voron.Graph\Voron.Graph.csproj", "{28FDB332-BCE9-496D-BD6D-C910DB4F1C1C}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Voron.Graph.Tests", "Voron.Graph.Tests\Voron.Graph.Tests.csproj", "{FADF6EC2-656F-4801-82A4-1CEC423E0C2F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Voron", "C:\Work\ravendb\Raven.Voron\Voron\Voron.csproj", "{FF83C7C2-BC7B-4DCC-A782-49EF9BBD9390}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Voron", "..\Raven.Voron\Voron\Voron.csproj", "{FF83C7C2-BC7B-4DCC-A782-49EF9BBD9390}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

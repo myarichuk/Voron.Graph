@@ -97,7 +97,7 @@
     <Compile Include="Indexing\Index.cs" />
     <Compile Include="Primitives\Etag.cs" />
     <Compile Include="Impl\GraphAdminQueries.cs" />
-    <Compile Include="Impl\GraphCommands.cs" />
+    <Compile Include="Impl\GraphStorage.Commands.cs" />
     <Compile Include="Constants.cs" />
     <Compile Include="Conventions.cs" />
     <Compile Include="Extensions\NodeExtensions.cs" />
@@ -108,7 +108,7 @@
     <Compile Include="Primitives\Node.cs" />
     <Compile Include="Primitives\NodeWithEdgeWeight.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Impl\GraphQueries.cs" />
+    <Compile Include="Impl\GraphStorage.Queries.cs" />
     <Compile Include="Transaction.cs" />
     <Compile Include="Misc\Util.cs" />
   </ItemGroup>
@@ -116,7 +116,7 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="C:\Work\ravendb\Raven.Voron\Voron\Voron.csproj">
+    <ProjectReference Include="..\..\Raven.Voron\Voron\Voron.csproj">
       <Project>{ff83c7c2-bc7b-4dcc-a782-49ef9bbd9390}</Project>
       <Name>Voron</Name>
     </ProjectReference>

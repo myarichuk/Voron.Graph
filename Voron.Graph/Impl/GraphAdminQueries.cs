@@ -7,7 +7,7 @@ using Voron.Graph.Extensions;
 
 namespace Voron.Graph.Impl
 {
-    public class GraphAdminQueries
+    public class GraphStorageAdmin
     {
         public Task<List<Node>> GetAllNodes(Transaction tx, CancellationToken cancelToken)
         {

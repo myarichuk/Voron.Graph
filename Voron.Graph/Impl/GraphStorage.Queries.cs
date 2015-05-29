@@ -8,9 +8,9 @@ using Voron.Graph.Extensions;
 using Voron.Trees;
 using Voron.Graph.Primitives;
 
-namespace Voron.Graph.Impl
+namespace Voron.Graph
 {
-	public class GraphQueries
+	public partial class GraphStorage
 	{
 	    public T GetFromSystemMetadata<T>(Transaction tx, string key)
 		{

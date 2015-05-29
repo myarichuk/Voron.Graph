@@ -27,10 +27,10 @@ namespace Voron.Graph.Tests
             Node s, u, v, t;
             using (var tx = graph.NewTransaction(TransactionFlags.ReadWrite))
             {
-                s = graph.Commands.CreateNode(tx, JsonFromValue("s"));
-                u = graph.Commands.CreateNode(tx, JsonFromValue("u"));
-                v = graph.Commands.CreateNode(tx, JsonFromValue("v"));
-                t = graph.Commands.CreateNode(tx, JsonFromValue("t"));
+                s = graph.CreateNode(tx, JsonFromValue("s"));
+                u = graph.CreateNode(tx, JsonFromValue("u"));
+                v = graph.CreateNode(tx, JsonFromValue("v"));
+                t = graph.CreateNode(tx, JsonFromValue("t"));
 
                 s.ConnectWith(tx, u, graph, 20);
                 u.ConnectWith(tx, t, graph, 10);
@@ -80,10 +80,10 @@ namespace Voron.Graph.Tests
 			Node s, u, v, t;
 			using (var tx = graph.NewTransaction(TransactionFlags.ReadWrite))
 			{
-				s = graph.Commands.CreateNode(tx, JsonFromValue("s"));
-				u = graph.Commands.CreateNode(tx, JsonFromValue("u"));
-				v = graph.Commands.CreateNode(tx, JsonFromValue("v"));
-				t = graph.Commands.CreateNode(tx, JsonFromValue("t"));
+				s = graph.CreateNode(tx, JsonFromValue("s"));
+				u = graph.CreateNode(tx, JsonFromValue("u"));
+				v = graph.CreateNode(tx, JsonFromValue("v"));
+				t = graph.CreateNode(tx, JsonFromValue("t"));
 				s.ConnectWith(tx, u, graph, 20);
 				u.ConnectWith(tx, t, graph, 10);
 				s.ConnectWith(tx, v, graph, 10);
@@ -106,8 +106,8 @@ namespace Voron.Graph.Tests
             Node a, b;
             using (var tx = graph.NewTransaction(TransactionFlags.ReadWrite))
             {
-                a = graph.Commands.CreateNode(tx, JsonFromValue("a"));
-                b = graph.Commands.CreateNode(tx, JsonFromValue("b"));
+                a = graph.CreateNode(tx, JsonFromValue("a"));
+                b = graph.CreateNode(tx, JsonFromValue("b"));
 
                 a.ConnectWith(tx, b, graph, 25);
                 tx.Commit();
@@ -128,8 +128,8 @@ namespace Voron.Graph.Tests
             Node a, b;
             using (var tx = graph.NewTransaction(TransactionFlags.ReadWrite))
             {
-                a = graph.Commands.CreateNode(tx, JsonFromValue("a"));
-                b = graph.Commands.CreateNode(tx, JsonFromValue("b"));
+                a = graph.CreateNode(tx, JsonFromValue("a"));
+                b = graph.CreateNode(tx, JsonFromValue("b"));
                 tx.Commit();
             }
 
@@ -148,8 +148,8 @@ namespace Voron.Graph.Tests
             Node a, b;
             using (var tx = graph.NewTransaction(TransactionFlags.ReadWrite))
             {
-                a = graph.Commands.CreateNode(tx, JsonFromValue("a"));
-                b = graph.Commands.CreateNode(tx, JsonFromValue("b"));
+                a = graph.CreateNode(tx, JsonFromValue("a"));
+                b = graph.CreateNode(tx, JsonFromValue("b"));
 
                 a.ConnectWith(tx, b, graph, 0);
                 tx.Commit();
@@ -171,13 +171,13 @@ namespace Voron.Graph.Tests
             Node a,b,c,d,e,f,g;
             using (var tx = graph.NewTransaction(TransactionFlags.ReadWrite))
             {
-                a = graph.Commands.CreateNode(tx, JsonFromValue("a"));
-                b = graph.Commands.CreateNode(tx, JsonFromValue("b"));
-                c = graph.Commands.CreateNode(tx, JsonFromValue("c"));
-                d = graph.Commands.CreateNode(tx, JsonFromValue("d"));
-                e = graph.Commands.CreateNode(tx, JsonFromValue("e"));
-                f = graph.Commands.CreateNode(tx, JsonFromValue("f"));
-                g = graph.Commands.CreateNode(tx, JsonFromValue("g"));
+                a = graph.CreateNode(tx, JsonFromValue("a"));
+                b = graph.CreateNode(tx, JsonFromValue("b"));
+                c = graph.CreateNode(tx, JsonFromValue("c"));
+                d = graph.CreateNode(tx, JsonFromValue("d"));
+                e = graph.CreateNode(tx, JsonFromValue("e"));
+                f = graph.CreateNode(tx, JsonFromValue("f"));
+                g = graph.CreateNode(tx, JsonFromValue("g"));
 
                 a.ConnectWith(tx, b, graph, 3);
                 a.ConnectWith(tx, d, graph, 3);
