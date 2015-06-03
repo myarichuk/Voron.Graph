@@ -1,12 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Collections.Generic;
 
 namespace Voron.Graph.Algorithms.ShortestPath
 {
-    public interface IMultiDestinationShortestPathResults
+	public interface IMultiDestinationShortestPathResults
     {
         IEnumerable<long> GetShortestPathToNode(Node node);
     }

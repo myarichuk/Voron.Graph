@@ -1,11 +1,9 @@
 ﻿using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace Voron.Graph.Extensions
 {
-    //alternative syntax for doing stuff with nodes
-    public static class NodeExtensions
+	//alternative syntax for doing stuff with nodes
+	public static class NodeExtensions
     {
         public static Edge ConnectWith(this Node node,Transaction tx,Node otherNode, GraphStorage storage,short weight = 1)
         {            

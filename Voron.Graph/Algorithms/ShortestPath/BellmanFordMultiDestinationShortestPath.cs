@@ -2,15 +2,13 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using Voron.Graph.Algorithms.Traversal;
 using Voron.Graph.Exceptions;
 
 namespace Voron.Graph.Algorithms.ShortestPath
 {
-    public class BellmanFordMultiDestinationShortestPath : BaseAlgorithm, IMultiDestinationShortestPath
+	public class BellmanFordMultiDestinationShortestPath : BaseAlgorithm, IMultiDestinationShortestPath
     {
         private readonly Node _rootNode;
         private readonly GraphStorage.GraphAdmin _graphAdmin;
@@ -83,8 +81,8 @@ namespace Voron.Graph.Algorithms.ShortestPath
         public class ShortestPathResults : IMultiDestinationShortestPathResults
         {
             public Node RootNode { get; internal set; }
-            public Dictionary<long, long> WeightsByNodeKey { get; internal set; }
-            public Dictionary<long, long> PreviousNodeInOptimizedPath { get; internal set; }
+            internal Dictionary<long, long> WeightsByNodeKey { get; set; }
+            internal Dictionary<long, long> PreviousNodeInOptimizedPath { get; set; }
 
             public ShortestPathResults(Node rootNode)
             {

@@ -1,12 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace Voron.Graph.Algorithms.MaximumFlow
 {
-    public abstract class BaseMaximumFlow : BaseAlgorithm
+	public abstract class BaseMaximumFlow : BaseAlgorithm
     {
         protected Func<Edge, long> _capacity;
 

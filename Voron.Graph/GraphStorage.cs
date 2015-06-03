@@ -1,13 +1,11 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-using Newtonsoft.Json.Linq;
+﻿using Newtonsoft.Json.Linq;
 using System;
 using System.Threading;
 using Voron.Graph.Extensions;
 
 namespace Voron.Graph
 {
-    public partial class GraphStorage : IDisposable
+	public partial class GraphStorage
     {
         private readonly string _graphName;
         private readonly StorageEnvironment _storageEnvironment;
@@ -34,7 +32,7 @@ namespace Voron.Graph
 			CreateConventions();
             CreateSchema();
 
-			CreateCommandAndQueryInstances();
+			CreateCommandClassInstances();
 
             _nextId = GetLatestStoredNodeKey();
         }
@@ -88,6 +86,8 @@ namespace Voron.Graph
 
 		public GraphAdmin Admin { get; private set; }
 
+		public GraphAdvanced Advanced { get; private set; }
+
 		private void CreateSchema()
         {
             using (var tx = StorageEnvironment.NewTransaction(TransactionFlags.ReadWrite))
@@ -104,15 +104,10 @@ namespace Voron.Graph
             }
         }
 
-
-        public void CreateCommandAndQueryInstances()
+        public void CreateCommandClassInstances()
         {
-			var runInMemory = _storageEnvironment.Options is StorageEnvironmentOptions.PureMemoryStorageEnvironmentOptions;
             Admin = new GraphAdmin();
-		}
-
-		public void Dispose()
-        {
+			Advanced = new GraphAdvanced(this);
         }
     }
 }

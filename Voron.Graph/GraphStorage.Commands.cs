@@ -1,6 +1,5 @@
 ﻿using Newtonsoft.Json.Linq;
 using System;
-using System.Diagnostics;
 using Voron.Graph.Extensions;
 
 namespace Voron.Graph

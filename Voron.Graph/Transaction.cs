@@ -1,17 +1,16 @@
-﻿using Newtonsoft.Json.Linq;
-using System;
+﻿using System;
 using Voron.Trees;
 
 namespace Voron.Graph
 {
-    /// <summary>
-    /// Encapsulates Voron transaction and provides clean access to Voron.Graph trees. 
-    /// There can be only one ReadWrite tx in any given time (enforced with semaphore)
-    /// </summary>
-    /// <remarks>
-    /// might be counter-intuitive, but the transaction does not offer change tracking
-    /// </remarks>
-    public class Transaction : IDisposable
+	/// <summary>
+	/// Encapsulates Voron transaction and provides clean access to Voron.Graph trees. 
+	/// There can be only one ReadWrite tx in any given time (enforced with semaphore)
+	/// </summary>
+	/// <remarks>
+	/// might be counter-intuitive, but the transaction does not offer change tracking
+	/// </remarks>
+	public class Transaction : IDisposable
     {
         private bool _isDisposed;
         private readonly long _nodeCount;

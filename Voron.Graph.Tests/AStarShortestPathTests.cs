@@ -1,16 +1,12 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Voron.Graph.Algorithms.ShortestPath;
 using Voron.Graph.Extensions;
 using FluentAssertions;
 
 namespace Voron.Graph.Tests
 {
-    [TestClass]
+	[TestClass]
     public class AStarShortestPathTests : BaseSingleDestinationShortestPathTests
     {
         protected override ISingleDestinationShortestPath GetAlgorithm(Transaction tx, GraphStorage graph, Node rootNode,Node targetNode)

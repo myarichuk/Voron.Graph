@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Linq;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
@@ -8,7 +7,7 @@ using Voron.Graph.Algorithms.Traversal;
 
 namespace Voron.Graph.Algorithms.ShortestPath
 {
-    public class DijkstraMultiDestinationShortestPath : BaseAlgorithm, IMultiDestinationShortestPath
+	public class DijkstraMultiDestinationShortestPath : BaseAlgorithm, IMultiDestinationShortestPath
     {
         private readonly TraversalAlgorithm _bfs;
         private readonly MultiDestinationShortestPathVisitor _shortestPathVisitor;

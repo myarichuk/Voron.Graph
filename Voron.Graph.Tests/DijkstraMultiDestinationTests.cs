@@ -1,10 +1,4 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 using Voron.Graph.Algorithms.ShortestPath;
 using Voron.Graph.Extensions;
 using FluentAssertions;
@@ -12,8 +6,8 @@ using Voron.Graph.Exceptions;
 
 namespace Voron.Graph.Tests
 {
-    //TODO: add more tests
-    [TestClass]
+	//TODO: add more tests
+	[TestClass]
     public class DijkstraMultiDestinationTests : BaseMultiDestinationShortestPathTests
     {
 

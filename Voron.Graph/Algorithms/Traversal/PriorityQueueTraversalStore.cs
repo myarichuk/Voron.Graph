@@ -1,13 +1,9 @@
 ﻿using C5;
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Voron.Graph.Algorithms.Traversal
 {
-    public class PriorityQueueTraversalStore : INodeTraversalStore<TraversalNodeInfo>
+	public class PriorityQueueTraversalStore : INodeTraversalStore<TraversalNodeInfo>
     {
         private readonly IPriorityQueue<TraversalNodeInfo> _store;
 

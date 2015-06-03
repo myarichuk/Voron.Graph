@@ -1,14 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 using Voron.Graph.Algorithms.Traversal;
 
 namespace Voron.Graph.Algorithms.ShortestPath
 {
-    public class AStarShortestPath : BaseSingleDestinationShortestPath
+	public class AStarShortestPath : BaseSingleDestinationShortestPath
     {
         public AStarShortestPath(Transaction tx, 
             GraphStorage graphStorage, 

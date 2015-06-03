@@ -1,11 +1,13 @@
-﻿using System;
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 
 namespace Voron.Graph.Misc
 {
 	/// <summary>
 	/// Simple class to reuse small buffer arrays allocated for conversions
 	/// </summary>
+	/// <remarks>
+	/// Since this class is used in conversions, primitive -> byte[], byte[] -> primitive, there is very few possible buffer sizes
+	/// </remarks>
 	public static class BufferPool
 	{
 		private static readonly ConcurrentDictionary<int, ConcurrentQueue<byte[]>> _bufferPool;

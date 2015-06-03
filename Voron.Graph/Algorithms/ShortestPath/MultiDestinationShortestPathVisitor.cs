@@ -1,14 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Voron.Graph.Algorithms.Traversal;
 using Voron.Graph.Primitives;
 
 namespace Voron.Graph.Algorithms.ShortestPath
 {
-    public class MultiDestinationShortestPathVisitor : IVisitor
+	public class MultiDestinationShortestPathVisitor : IVisitor
     {
         public Dictionary<long, double> DistancesByNode { get; private set; }
         public Dictionary<long, long> PreviousNodeInOptimalPath { get; private set; }

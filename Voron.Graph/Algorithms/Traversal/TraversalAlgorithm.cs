@@ -1,15 +1,12 @@
-﻿using Newtonsoft.Json.Linq;
-using System;
-using System.Collections.Concurrent;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace Voron.Graph.Algorithms.Traversal
 {
-    public enum TraversalType
+	public enum TraversalType
     {
         BFS,
         DFS

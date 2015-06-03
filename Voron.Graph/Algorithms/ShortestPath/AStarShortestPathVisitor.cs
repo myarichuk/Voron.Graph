@@ -1,14 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Voron.Graph.Algorithms.Traversal;
 using Voron.Graph.Primitives;
 
 namespace Voron.Graph.Algorithms.ShortestPath
 {
-    public class AStarShortestPathVisitor : SingleDestinationShortestPathVisitor
+	public class AStarShortestPathVisitor : SingleDestinationShortestPathVisitor
     {
         private readonly HashSet<long> _openSet;
         public AStarShortestPathVisitor(Node rootNode,

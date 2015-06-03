@@ -1,14 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Voron.Graph.Algorithms.Traversal;
 using Voron.Graph.Primitives;
 
 namespace Voron.Graph.Algorithms.ShortestPath
 {
-    public class SingleDestinationShortestPathVisitor : IVisitor
+	public class SingleDestinationShortestPathVisitor : IVisitor
     {
         private bool _hasDiscoveredDestination;
 

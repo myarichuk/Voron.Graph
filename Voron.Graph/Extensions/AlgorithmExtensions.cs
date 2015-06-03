@@ -4,11 +4,10 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Voron.Graph.Algorithms.Traversal;
-using System.Linq;
 
 namespace Voron.Graph.Extensions
 {
-    public static class AlgorithmExtensions
+	public static class AlgorithmExtensions
     {
         public static IEnumerable<Node> Find(this GraphStorage storage, 
             Node rootNode, 

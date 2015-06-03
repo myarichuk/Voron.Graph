@@ -1,12 +1,11 @@
 ﻿using System;
-using System.Collections.Generic;
 using Voron.Graph.Algorithms.Traversal;
 using Voron.Graph.Exceptions;
 using Voron.Graph.Primitives;
 
 namespace Voron.Graph.Algorithms.ShortestPath
 {
-    public class DijkstraMultiDestinationShortestPathVisitor : MultiDestinationShortestPathVisitor
+	public class DijkstraMultiDestinationShortestPathVisitor : MultiDestinationShortestPathVisitor
     {
         public DijkstraMultiDestinationShortestPathVisitor(Node rootNode,
             Func<Node, Node, double> h,

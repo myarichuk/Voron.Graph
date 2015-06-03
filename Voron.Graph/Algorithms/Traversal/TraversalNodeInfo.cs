@@ -1,12 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-
-namespace Voron.Graph.Algorithms.Traversal
+﻿namespace Voron.Graph.Algorithms.Traversal
 {
-    //for each node during traversal holds information relevant to the process
-    public class TraversalNodeInfo
+	//for each node during traversal holds information relevant to the process
+	public class TraversalNodeInfo
     {
         public Node CurrentNode { get; set; }
 

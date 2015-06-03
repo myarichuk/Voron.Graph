@@ -1,15 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Voron.Graph.Algorithms.Traversal;
 
 namespace Voron.Graph.Algorithms.MaximumFlow
 {
-    //implementation of Ford–Fulkerson algorithm
-    public class EdmondsKarpMaximumFlow : BaseMaximumFlow
+	//implementation of Ford–Fulkerson algorithm
+	public class EdmondsKarpMaximumFlow : BaseMaximumFlow
     {
         private readonly Node _sourceNode;
         private readonly Node _targetNode;
