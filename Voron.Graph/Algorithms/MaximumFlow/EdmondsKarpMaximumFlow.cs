@@ -12,7 +12,7 @@ namespace Voron.Graph.Algorithms.MaximumFlow
         private readonly Node _sourceNode;
         private readonly Node _targetNode;
         private readonly GraphStorage _storage;
-        private readonly Dictionary<Tuple<long,long>, long> _flow;
+        private readonly Flow _flow;
         private readonly Transaction _tx;
         private readonly CancellationToken? _cancelToken;
 
@@ -28,7 +28,7 @@ namespace Voron.Graph.Algorithms.MaximumFlow
             _targetNode = targetNode;
             _storage = graphStorage;
             _cancelToken = cancelToken;
-            _flow = new Dictionary<Tuple<long, long>, long>();
+            _flow = new Flow();
             _tx = tx;
         }
 
@@ -78,7 +78,7 @@ namespace Voron.Graph.Algorithms.MaximumFlow
         {
             private readonly Dictionary<long,long> _previousNodeInPath;
             private readonly Dictionary<Tuple<long,long>, long> _pathCapacity;
-            private readonly Dictionary<Tuple<long, long>, long> _flow;
+            private readonly Flow _flow;
 
             private readonly Func<Edge, long> _capacity;
             private readonly Node _sourceNode;
@@ -86,7 +86,7 @@ namespace Voron.Graph.Algorithms.MaximumFlow
             private TraversalNodeInfo _currentTraversalNodeInfo;
             private bool _hasDiscoveredDestination;
 
-            public EdmondsKarpBFSVisitor(Node sourceNode, Node targetNode, Func<Edge, long> capacity, Dictionary<Tuple<long, long>, long> flow)
+            public EdmondsKarpBFSVisitor(Node sourceNode, Node targetNode, Func<Edge, long> capacity, Flow flow)
             {
                 _capacity = capacity;
                 _previousNodeInPath = new Dictionary<long, long>();
@@ -133,7 +133,7 @@ namespace Voron.Graph.Algorithms.MaximumFlow
                 do
                 {
                     var capacityKey = Tuple.Create(_previousNodeInPath[currentKey], currentKey);
-                    _flow[capacityKey] += bottleneckCapacity;
+                    _flow.UpdateFlowBetween(_previousNodeInPath[currentKey],currentKey, oldValue => oldValue + bottleneckCapacity);
 
                     currentKey = _previousNodeInPath[currentKey];
                 } while (currentKey != _sourceNode.Key);
@@ -142,9 +142,7 @@ namespace Voron.Graph.Algorithms.MaximumFlow
 
             public bool ShouldSkipAdjacentNode(Primitives.NodeWithEdge adjacentNode)
             {
-                var key = EdgeKeyToTuple(adjacentNode.EdgeTo.Key);
-                if (!_flow.ContainsKey(key))
-                    _flow[key] = 0;
+                var key = EdgeKeyToTuple(adjacentNode.EdgeTo.Key);          
 
                 var capacity = _capacity(adjacentNode.EdgeTo);
                 _pathCapacity[Tuple.Create(adjacentNode.EdgeTo.Key.NodeKeyFrom,adjacentNode.EdgeTo.Key.NodeKeyTo)] = capacity;

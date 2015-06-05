@@ -37,8 +37,7 @@ namespace Voron.Graph.Tests
 
             using (var tx = graph.NewTransaction(TransactionFlags.Read))
             {
-                var algorithm = new EdmondsKarpMaximumFlow(tx, graph, s, t, e => e.Weight);
-                var maximumFlow = algorithm.MaximumFlow();
+				var maximumFlow = graph.Advanced.MaximumFlow.EdmondsKarp(tx, s, t, e => e.Weight);
                 Assert.AreEqual(20, maximumFlow);
             }
         }
@@ -87,9 +86,8 @@ namespace Voron.Graph.Tests
 				tx.Commit();
 			}
 			using (var tx = graph.NewTransaction(TransactionFlags.Read))
-			{
-				var algorithm = new EdmondsKarpMaximumFlow(tx, graph, s, t, e => e.Weight);
-				var maximumFlow = algorithm.MaximumFlow();
+			{				
+				var maximumFlow = graph.Advanced.MaximumFlow.EdmondsKarp(tx, s, t, e => e.Weight);
 				Assert.AreEqual(expected, maximumFlow);
 			}
 		}

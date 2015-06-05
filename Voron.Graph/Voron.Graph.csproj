@@ -51,7 +51,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Algorithms\MaximumFlow\BaseMaximumFlow.cs" />
-    <Compile Include="Algorithms\MaximumFlow\DinitzMaximumFlow.cs" />
+    <Compile Include="Algorithms\MaximumFlow\Flow.cs" />
+    <Compile Include="Algorithms\MaximumFlow\PushRelabelMaximumFlow.cs" />
     <Compile Include="Algorithms\MaximumFlow\EdmondsKarpMaximumFlow.cs" />
     <Compile Include="Algorithms\ShortestPath\AStarShortestPath.cs" />
     <Compile Include="Algorithms\ShortestPath\AStarShortestPathVisitor.cs" />
