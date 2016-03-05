@@ -5,6 +5,10 @@
   "tags": [ "storage", "acid", "voron", "graph", "graph storage engine", "nosql", "storage engine" ],
   "projectUrl": "https://github.com/myarichuk/Voron.Graph",
   "licenseUrl": "https://raw.githubusercontent.com/myarichuk/Voron.Graph/master/LICENSE",
+  "compilationOptions": {
+    "allowUnsafe": true,
+    "warningsAsErrors": true
+  },
   "frameworks": {
     "net46": {
       "frameworkAssemblies": {
