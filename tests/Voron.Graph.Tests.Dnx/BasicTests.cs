@@ -44,12 +44,42 @@ namespace Voron.Graph.Tests
 
 				using (var tx = storage.ReadTransaction())
 				{
-					using (var data1 = storage.ReadVertex(tx, id1))					
+					using (var data1 = storage.ReadVertex(tx, id1))
+					{
+						Assert.NotNull(data1);
 						Assert.Equal(new byte[] { 1, 2, 3 }, data1.ReadToEnd());
+					}
 					using (var data2 = storage.ReadVertex(tx, id2))
+					{
+						Assert.NotNull(data2);
 						Assert.Equal(new byte[] { 3, 2, 1 }, data2.ReadToEnd());
+					}
 				}
 			}
         }
-    }
+
+		[Fact]
+		public void Simple_vertex_delete_should_work()
+		{
+			using (var storage = new GraphStorage())
+			{
+				long id;
+				using (var tx = storage.WriteTransaction())
+				using (var data = new MemoryStream(new byte[] { 1, 2, 3 }))
+				{
+					id = storage.AddVertex(tx, data);
+					tx.Commit();
+				}
+
+				using (var tx = storage.WriteTransaction())
+				{
+					storage.DeleteVertex(tx, id);
+					tx.Commit();
+				}
+
+				using (var tx = storage.ReadTransaction())
+					Assert.Null(storage.ReadVertex(tx, id));
+			}
+		}
+	}
 }

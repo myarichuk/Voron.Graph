@@ -27,7 +27,15 @@ namespace Voron.Graph
 
 			var key = id.ToSlice();
 			var res = tx.VertexTree.Read(key);
-			return res == null ? Stream.Null : res.Reader.AsStream();
+			return res == null ? null : res.Reader.AsStream();
+		}
+
+		public void DeleteVertex(Transaction tx, long id)
+		{
+			ThrowIfDisposed();
+
+			var key = id.ToSlice();
+			tx.VertexTree.Delete(key);
 		}
 	}
 }
