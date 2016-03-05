@@ -10,15 +10,16 @@ namespace Voron.Graph.Tests
         public void Initialization_should_work()
         {
             //create in-memory 
-            using (var env = new StorageEnvironment())
+            using (var storage = new GraphStorage())
             { }
 
             //create persisted
             var tempPath = Path.GetTempPath() + Path.DirectorySeparatorChar + Guid.NewGuid();
             try
             {
-                using (var env = new StorageEnvironment(tempPath))
-                { }
+                using (var storage = new GraphStorage(tempPath))
+                {
+                }
             }
             finally
             {

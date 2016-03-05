@@ -6,24 +6,36 @@ using Voron.Data.Tables;
 
 namespace Voron.Graph
 {
-	public class StorageEnvironment : IDisposable
+	public partial class GraphStorage : IDisposable
 	{
-		private bool isDisposed;
-		private readonly Voron.StorageEnvironment _env;
+		private readonly bool _ownsStorageEnvironment;
+		private bool _isDisposed;
+		private readonly StorageEnvironment _env;
 		private TableSchema _adjacencyListSchema;
 
 		public TableSchema AdjacencyListSchema => _adjacencyListSchema;
 
-		public StorageEnvironment()
+		private GraphAdvanced _advanced;
+		public GraphAdvanced Advanced => (_advanced != null) ? _advanced : (_advanced = new GraphAdvanced(this));
+
+		private GraphAdmin _admin;
+		public GraphAdmin Admin => (_admin != null) ? _admin : (_admin = new GraphAdmin());
+
+		public GraphStorage()
+			: this(new StorageEnvironment(StorageEnvironmentOptions.CreateMemoryOnly()), true)
 		{
-			_env = new Voron.StorageEnvironment(StorageEnvironmentOptions.CreateMemoryOnly());
-			CreateSchema();
 		}
 
-		public StorageEnvironment(string path, string tempPath = null, string journalPath = null)
+		public GraphStorage(string path, string tempPath = null, string journalPath = null)
+			: this(new StorageEnvironment(StorageEnvironmentOptions.ForPath(path, tempPath, journalPath)), true)
 		{
-			_env = new Voron.StorageEnvironment(StorageEnvironmentOptions.ForPath(path,tempPath,journalPath));
+		}
+
+		public GraphStorage(StorageEnvironment env,bool ownsStorageEnvironment)
+		{
+			_env = env;
 			CreateSchema();
+			this._ownsStorageEnvironment = ownsStorageEnvironment;
 		}
 
 		public Transaction ReadTransaction()
@@ -67,17 +79,18 @@ namespace Voron.Graph
 
 		public void Dispose()
 		{
-			if (!isDisposed)
+			if (!_isDisposed)
 			{
-				_env.Dispose();
-				isDisposed = true;
+				if(_ownsStorageEnvironment)
+					_env.Dispose();
+				_isDisposed = true;
 			}
 			GC.SuppressFinalize(this);
 		}
 
-		~StorageEnvironment()
+		~GraphStorage()
 		{
-			if (!isDisposed)
+			if (!_isDisposed)
 				Dispose();
 		}		
 	}

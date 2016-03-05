@@ -18,8 +18,9 @@
     }
   },
   "dependencies": {
+    "FluentAssertions": "4.2.2",
     "Voron.Graph": "1.0.0-*",
-    "xunit": "2.2.0-beta1-build3239"
+    "xunit": "2.2.0-*"
   },
   "commands": {
     "test": "xunit.runner.dnx"

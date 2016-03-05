@@ -8,14 +8,14 @@ namespace Voron.Graph
 	{
 		private readonly Impl.Transaction _tx;
 		private bool _isDisposed;
-		private StorageEnvironment _env;
+		private GraphStorage _env;
 
 		private Table _adjacencyListTable;
 		private Tree _vertexTree;
 		private Tree _etagToVertexTree;
 		private Tree _etagToAdjacencyTree;
 
-		internal Transaction(StorageEnvironment env, Impl.Transaction tx)
+		internal Transaction(GraphStorage env, Impl.Transaction tx)
 		{
 			_tx = tx;
 			_env = env;

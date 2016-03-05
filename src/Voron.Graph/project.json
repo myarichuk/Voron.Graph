@@ -1,29 +1,29 @@
 ﻿{
- "version": "1.0.0-*",
+  "version": "1.0.0-*",
   "description": "Voron.Graph Storage Engine",
   "authors": [ "Michael Yarichuk" ],
   "tags": [ "storage", "acid", "voron", "graph", "graph storage engine", "nosql", "storage engine" ],
-  "projectUrl": "",
-  "licenseUrl": "",
+  "projectUrl": "https://github.com/myarichuk/Voron.Graph",
+  "licenseUrl": "https://raw.githubusercontent.com/myarichuk/Voron.Graph/master/LICENSE",
   "frameworks": {
-      "net46": {
-        "frameworkAssemblies": {
-          "Microsoft.CSharp": "4.0.0.0",
-          "System": "4.0.0.0",
-          "System.Collections": "4.0.10.0"
-        }
-      },
-      "dnxcore50": {
-        "dependencies": {
-          "Microsoft.CSharp": "4.0.1-beta-23516",
-          "System.Collections": "4.0.11-beta-23516",
-          "System.Linq": "4.0.1-beta-23516",
-          "System.Runtime": "4.0.21-beta-23516",
-          "System.Threading": "4.0.11-beta-23516"
-        }
+    "net46": {
+      "frameworkAssemblies": {
+        "Microsoft.CSharp": "4.0.0.0",
+        "System": "4.0.0.0",
+        "System.Collections": "4.0.10.0"
       }
     },
+    "dnxcore50": {
+      "dependencies": {
+        "Microsoft.CSharp": "4.0.1-*",
+        "System.Collections": "4.0.11-*",
+        "System.Linq": "4.0.1-*",
+        "System.Runtime": "4.0.21-*",
+        "System.Threading": "4.0.11-*"
+      }
+    }
+  },
   "dependencies": {
-"Voron": "4.0.0-*"
+    "Voron": "4.0.0-*"
   }
 }

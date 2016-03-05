@@ -9,7 +9,7 @@ namespace Voron.Graph.Tryout.Dnx
     {
         public static void Main(string[] args)
         {
-            using (var env = new StorageEnvironment())
+            using (var env = new GraphStorage())
             {
             }
         }
