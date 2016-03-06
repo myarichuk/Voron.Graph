@@ -9,14 +9,7 @@ using Voron.Util.Conversion;
 namespace Voron.Graph
 {
     public unsafe static class UtilExtensions
-    {
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Slice ToSlice(this long id)
-        {		
-			//TODO: investigate here how to create slice without allocations
-			//perhaps cast to pointer somehow?
-			return new Slice(EndianBitConverter.Big.GetBytes(id));
-        }
+    {      
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static byte[] ReadToEnd(this Stream stream)

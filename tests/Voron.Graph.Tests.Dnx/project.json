@@ -5,6 +5,10 @@
   "tags": [ "" ],
   "projectUrl": "",
   "licenseUrl": "",
+  "compilationOptions": {
+    "allowUnsafe": true,
+    "warningsAsErrors": true
+  },
   "frameworks": {
     "dnxcore50": {
       "dependencies": {

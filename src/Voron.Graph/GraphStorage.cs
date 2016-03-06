@@ -10,7 +10,7 @@ using Voron.Util.Conversion;
 
 namespace Voron.Graph
 {
-	public partial class GraphStorage : IDisposable
+	public unsafe partial class GraphStorage : IDisposable
 	{
 		private readonly bool _ownsStorageEnvironment;
 		private bool _isDisposed;
