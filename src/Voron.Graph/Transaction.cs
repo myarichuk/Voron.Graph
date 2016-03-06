@@ -1,5 +1,6 @@
 ﻿using System;
 using Voron.Data.BTrees;
+using Voron.Data.RawData;
 using Voron.Data.Tables;
 
 namespace Voron.Graph
@@ -8,28 +9,36 @@ namespace Voron.Graph
 	{
 		private readonly Impl.Transaction _tx;
 		private bool _isDisposed;
-		private GraphStorage _env;
+		private GraphStorage _storage;
 
 		private Table _adjacencyListTable;
-		private Tree _vertexTree;
+		private Table _vertexTable;
 		private Tree _etagToVertexTree;
 		private Tree _etagToAdjacencyTree;
+
+		private ActiveRawDataSmallSection _systemDataSection;
 
 		internal Transaction(GraphStorage env, Impl.Transaction tx)
 		{
 			_tx = tx;
-			_env = env;
+			_storage = env;
 		}
+
+		public ActiveRawDataSmallSection SystemDataSection =>
+			(_systemDataSection != null) ?
+				_systemDataSection :
+			(_systemDataSection = new ActiveRawDataSmallSection(_tx.LowLevelTransaction, _storage.SystemDataSectionPage));
 
 		public Table AdjacencyListTable => 
 			(_adjacencyListTable != null) ? 
 				_adjacencyListTable : 
-				(_adjacencyListTable = new Table(_env.AdjacencyListSchema, 
+				(_adjacencyListTable = new Table(_storage.AdjacencyListSchema, 
 					Constants.Schema.AdjacencyList, _tx));
 
-		public Tree VertexTree => (_vertexTree != null) ?
-			_vertexTree : 
-			(_vertexTree = _tx.ReadTree(Constants.Schema.VertexTree));
+		public Table VertexTable => (_vertexTable != null) ?
+			_vertexTable : 
+			(_vertexTable = new Table(_storage.VerticesSchema, 
+				Constants.Schema.Vertices, _tx));
 
 		public Tree EtagToVertexTree => (_etagToVertexTree != null) ?
 			_etagToVertexTree :
