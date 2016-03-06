@@ -7,7 +7,7 @@ namespace Voron.Graph
 {
 	public static class Util
 	{
-		//taken from one of the answers here
+		//taken from here
 		//http://jasonf-blog.blogspot.co.il/2006/08/hanselmans-endianess-converter.html
 		private static readonly byte[] _flippedBytes = {
 			0x00, 0x80, 0x40, 0xC0, 0x20, 0xA0, 0x60, 0xE0,
