@@ -11,7 +11,7 @@ namespace Voron.Graph
 		private bool _isDisposed;
 		private GraphStorage _storage;
 
-		private Table _adjacencyListTable;
+		private Table _edgesTable;
 		private Table _vertexTable;
 		private Tree _etagToVertexTree;
 		private Tree _etagToAdjacencyTree;
@@ -29,11 +29,11 @@ namespace Voron.Graph
 				_systemDataSection :
 			(_systemDataSection = new ActiveRawDataSmallSection(_tx.LowLevelTransaction, _storage.SystemDataSectionPage));
 
-		public Table AdjacencyListTable => 
-			(_adjacencyListTable != null) ? 
-				_adjacencyListTable : 
-				(_adjacencyListTable = new Table(_storage.AdjacencyListSchema, 
-					Constants.Schema.AdjacencyList, _tx));
+		public Table EdgesTable => 
+			(_edgesTable != null) ? 
+				_edgesTable : 
+				(_edgesTable = new Table(_storage.EdgesSchema, 
+					Constants.Schema.Edges, _tx));
 
 		public Table VertexTable => (_vertexTable != null) ?
 			_vertexTable : 

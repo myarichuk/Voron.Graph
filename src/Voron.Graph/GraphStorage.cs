@@ -16,20 +16,19 @@ namespace Voron.Graph
 		private bool _isDisposed;
 		private readonly StorageEnvironment _env;
 
-		private TableSchema _adjacencyListSchema;
+		private TableSchema _edgesSchema;
 		private TableSchema _verticesSchema;
 
-		internal TableSchema AdjacencyListSchema => _adjacencyListSchema;
+		internal TableSchema EdgesSchema => _edgesSchema;
 		internal TableSchema VerticesSchema => _verticesSchema;
 
 		private GraphAdvanced _advanced;
 		public GraphAdvanced Advanced => (_advanced != null) ? _advanced : (_advanced = new GraphAdvanced(this));
 
 		private GraphAdmin _admin;
-		private long _nextEdgeIdEntry;
 		private long _nextEdgeEtagEntry;
 		private long _nextVertexEtagEntry;
-		private long _nextVertexIdEntry;
+		private long _nextIdEntry;
 		private long _systemDataSectionPage;
 
 		internal long SystemDataSectionPage => _systemDataSectionPage;
@@ -67,24 +66,29 @@ namespace Voron.Graph
 		{			
 			using (var tx = _env.WriteTransaction())
 			{
-				_adjacencyListSchema = new TableSchema()
+				_edgesSchema = new TableSchema()
 					.DefineKey(new TableSchema.SchemaIndexDef
 					{
-						Name = "Etag",
+						Name = "Id",
 						StartIndex = 0
 					})
-					.DefineIndex("FromId",new TableSchema.SchemaIndexDef
+					.DefineFixedSizeIndex("Etag",new TableSchema.FixedSizeSchemaIndexDef
+					{
+						StartIndex = 1,
+						Name = "Etag"
+					})
+					.DefineFixedSizeIndex("FromId",new TableSchema.FixedSizeSchemaIndexDef
 					{
 						Name = "FromId",
-						StartIndex = 1
+						StartIndex = 2					
 					})
-					.DefineIndex("ToId", new TableSchema.SchemaIndexDef
+					.DefineFixedSizeIndex("ToId", new TableSchema.FixedSizeSchemaIndexDef
 					{
 						Name = "ToId",
-						StartIndex = 2
+						StartIndex = 3
 					});
 				
-				_adjacencyListSchema.Create(tx, Constants.Schema.AdjacencyList);		
+				_edgesSchema.Create(tx, Constants.Schema.Edges);		
 
 				//for long-term system related storage
 				var systemTree = tx.CreateTree(Constants.Schema.SystemDataTree);
@@ -95,7 +99,7 @@ namespace Voron.Graph
 						Name = "Id",
 						StartIndex = 0
 					})
-					.DefineIndex("Etag", new TableSchema.SchemaIndexDef
+					.DefineFixedSizeIndex("Etag", new TableSchema.FixedSizeSchemaIndexDef
 					{
 						Name = "Etag",
 						StartIndex = 1
@@ -115,22 +119,19 @@ namespace Voron.Graph
 
 					//if fails to allocate several very small entries, we have a problem
 					Debug.Assert(systemDataSection.TryAllocate(sizeof(long), out _nextVertexEtagEntry));
-					Debug.Assert(systemDataSection.TryAllocate(sizeof(long), out _nextVertexIdEntry));
+					Debug.Assert(systemDataSection.TryAllocate(sizeof(long), out _nextIdEntry));
 
 					Debug.Assert(systemDataSection.TryAllocate(sizeof(long), out _nextEdgeEtagEntry));
-					Debug.Assert(systemDataSection.TryAllocate(sizeof(long), out _nextEdgeIdEntry));
 
 					systemDataSection.TryWriteInt64(_nextVertexEtagEntry, 1L);
-					systemDataSection.TryWriteInt64(_nextVertexIdEntry, 1L);
+					systemDataSection.TryWriteInt64(_nextIdEntry, 1L);
 
 					systemDataSection.TryWriteInt64(_nextEdgeEtagEntry, 1L);
-					systemDataSection.TryWriteInt64(_nextEdgeIdEntry, 1L);
 
 					systemTree.Add(Constants.SystemKeys.NextVertexEtagEntry, EndianBitConverter.Big.GetBytes(_nextVertexEtagEntry));
-					systemTree.Add(Constants.SystemKeys.NextVertexIdEntry, EndianBitConverter.Big.GetBytes(_nextVertexIdEntry));
+					systemTree.Add(Constants.SystemKeys.NextIdEntry, EndianBitConverter.Big.GetBytes(_nextIdEntry));
 
 					systemTree.Add(Constants.SystemKeys.NextEdgeEtagEntry, EndianBitConverter.Big.GetBytes(_nextEdgeEtagEntry));
-					systemTree.Add(Constants.SystemKeys.NextEdgeIdEntry, EndianBitConverter.Big.GetBytes(_nextEdgeIdEntry));
 				}
 				else
 				{
@@ -141,14 +142,12 @@ namespace Voron.Graph
 					res = systemTree.Read(Constants.SystemKeys.NextVertexEtagEntry);
 					_nextVertexEtagEntry = res.Reader.ReadBigEndianInt64();
 
-					res = systemTree.Read(Constants.SystemKeys.NextVertexIdEntry);
-					_nextVertexIdEntry = res.Reader.ReadBigEndianInt64();
+					res = systemTree.Read(Constants.SystemKeys.NextIdEntry);
+					_nextIdEntry = res.Reader.ReadBigEndianInt64();
 
 					res = systemTree.Read(Constants.SystemKeys.NextEdgeEtagEntry);
 					_nextEdgeEtagEntry = res.Reader.ReadBigEndianInt64();
 
-					res = systemTree.Read(Constants.SystemKeys.NextEdgeIdEntry);
-					_nextEdgeIdEntry = res.Reader.ReadBigEndianInt64();
 				}
 				tx.Commit();
 			}
@@ -198,14 +197,11 @@ namespace Voron.Graph
 			long entryId;
 			switch (type)
 			{
-				case IncrementingValue.VertexId:
-					entryId = _nextVertexIdEntry;
+				case IncrementingValue.Id:
+					entryId = _nextIdEntry;
 					break;
 				case IncrementingValue.VertexEtag:
 					entryId = _nextVertexEtagEntry;
-					break;
-				case IncrementingValue.EdgeId:
-					entryId = _nextEdgeIdEntry;
 					break;
 				case IncrementingValue.EdgeEtag:
 					entryId = _nextEdgeEtagEntry;

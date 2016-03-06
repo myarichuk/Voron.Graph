@@ -2,9 +2,8 @@
 {
 	public enum IncrementingValue
     {
-		VertexId,
+		Id,
 		VertexEtag,
-		EdgeId,
 		EdgeEtag
     }
 }
