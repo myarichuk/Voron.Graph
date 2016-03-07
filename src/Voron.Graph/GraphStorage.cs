@@ -63,30 +63,15 @@ namespace Voron.Graph
 		}
 
 		private void CreateSchema()
-		{			
+		{	
 			using (var tx = _env.WriteTransaction())
 			{
 				_edgesSchema = new TableSchema()
-					.DefineKey(new TableSchema.SchemaIndexDef
-					{
-						Name = "Id",
-						StartIndex = 0
-					})
-					.DefineFixedSizeIndex("Etag",new TableSchema.FixedSizeSchemaIndexDef
-					{
-						StartIndex = 1,
-						Name = "Etag"
-					})
-					.DefineFixedSizeIndex("FromId",new TableSchema.FixedSizeSchemaIndexDef
-					{
-						Name = "FromId",
-						StartIndex = 2					
-					})
-					.DefineFixedSizeIndex("ToId", new TableSchema.FixedSizeSchemaIndexDef
-					{
-						Name = "ToId",
-						StartIndex = 3
-					});
+					.DefineKey(Constants.Indexes.EdgeTable.Key)
+					.DefineFixedSizeIndex(Constants.Indexes.EdgeTable.EtagIndex.Name,
+						Constants.Indexes.EdgeTable.EtagIndex)
+					.DefineIndex(Constants.Indexes.EdgeTable.FromToIndex.Name,
+						Constants.Indexes.EdgeTable.FromToIndex);
 				
 				_edgesSchema.Create(tx, Constants.Schema.Edges);		
 
@@ -94,16 +79,9 @@ namespace Voron.Graph
 				var systemTree = tx.CreateTree(Constants.Schema.SystemDataTree);
 
 				_verticesSchema = new TableSchema()
-					.DefineKey(new TableSchema.SchemaIndexDef
-					{
-						Name = "Id",
-						StartIndex = 0
-					})
-					.DefineFixedSizeIndex("Etag", new TableSchema.FixedSizeSchemaIndexDef
-					{
-						Name = "Etag",
-						StartIndex = 1
-					});
+					.DefineKey(Constants.Indexes.VertexTable.Key)
+					.DefineFixedSizeIndex(Constants.Indexes.VertexTable.Etag.Name,
+						Constants.Indexes.VertexTable.Etag);
 				_verticesSchema.Create(tx,Constants.Schema.Vertices);
 
 				tx.CreateTree(Constants.Schema.EtagToAdjacencyTree);
