@@ -68,7 +68,7 @@ namespace Voron.Graph.Tests
 
                 using (var tx = storage.WriteTransaction())
                 {
-                    storage.DeleteVertex(tx, id);
+                    storage.RemoveVertex(tx, id);
                     tx.Commit();
                 }
 
@@ -101,7 +101,43 @@ namespace Voron.Graph.Tests
             }
         }
 
-        [Fact]
+		[Fact]
+		public void Simple_edge_delete_should_work()
+		{
+			using (var storage = new GraphStorage())
+			{
+				long vertexId1, vertexId2, edgeId;
+				using (var tx = storage.WriteTransaction())
+				{
+					vertexId1 = storage.AddVertex(tx, new byte[] { 1, 2, 3 });
+					vertexId2 = storage.AddVertex(tx, new byte[] { 3, 2, 1 });
+
+					edgeId = storage.AddEdge(tx, vertexId1, vertexId2, new byte[] { 5, 6, 7, 8 });
+
+					tx.Commit();
+				}
+
+				using (var tx = storage.ReadTransaction())
+				{
+					var data = storage.ReadEdgeData(tx, edgeId);
+					Assert.NotNull(data);
+				}
+
+				using (var tx = storage.WriteTransaction())
+				{
+					storage.RemoveEdge(tx, edgeId);
+					tx.Commit();
+				}
+
+				using (var tx = storage.ReadTransaction())
+				{
+					var data = storage.ReadEdgeData(tx, edgeId);
+					Assert.Null(data);
+				}
+			}
+		}
+
+		[Fact]
         public unsafe void Simple_edge_read_write_without_data_should_work()
         {
             using (var storage = new GraphStorage())
@@ -132,7 +168,7 @@ namespace Voron.Graph.Tests
         }    
 
         [Fact]
-        public unsafe void GetAdjacentTo_should_work()
+        public unsafe void GetAdjacent_should_work()
         {
             using (var storage = new GraphStorage())
             {
@@ -159,7 +195,7 @@ namespace Voron.Graph.Tests
 
                 using (var tx = storage.ReadTransaction())
                 {
-                    var adjacentVertices = storage.GetAdjacentTo(tx, vertexId1).ToList();
+                    var adjacentVertices = storage.GetAdjacent(tx, vertexId1).ToList();
                     adjacentVertices.Should()
 						.HaveCount(3)
 						.And.Contain(new[] 
@@ -169,7 +205,7 @@ namespace Voron.Graph.Tests
                                 vertexId5
                             });
 
-					adjacentVertices = storage.GetAdjacentTo(tx, vertexId2).ToList();
+					adjacentVertices = storage.GetAdjacent(tx, vertexId2).ToList();
 					adjacentVertices.Should()
 						.HaveCount(1)
 						.And.Contain(new[]
@@ -177,7 +213,7 @@ namespace Voron.Graph.Tests
 								vertexId3
 							});
 
-					adjacentVertices = storage.GetAdjacentTo(tx, vertexId4).ToList();
+					adjacentVertices = storage.GetAdjacent(tx, vertexId4).ToList();
 					adjacentVertices.Should()
 						.HaveCount(3)
 						.And.Contain(new[]

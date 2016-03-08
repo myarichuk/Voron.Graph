@@ -50,7 +50,7 @@ namespace Voron.Graph
 			return valueReader.Read((int)VertexTableFields.Data, out size);
 		}
 
-		public byte[] ReadVertexData(Transaction tx, long id)
+		public IReadOnlyList<byte> ReadVertexData(Transaction tx, long id)
 		{
 			ThrowIfDisposed();
 
@@ -66,7 +66,7 @@ namespace Voron.Graph
 			return data;
 		}
 
-		public void DeleteVertex(Transaction tx, long id)
+		public void RemoveVertex(Transaction tx, long id)
 		{
 			ThrowIfDisposed();
 			_key.Set((byte*)&id, sizeof(long));
@@ -86,7 +86,11 @@ namespace Voron.Graph
 				return AddEdge(tx, fromId, toId, dataPtr, data.Length);
 		}
 
-		public long AddEdge(Transaction tx, long fromId, long toId, byte* data, int size)
+		public long AddEdge(Transaction tx, 
+			long fromId, 
+			long toId, 
+			byte* data, 
+			int size)
 		{
 			ThrowIfDisposed();
 			var id = NextValue(tx, IncrementingValue.Id);
@@ -107,7 +111,14 @@ namespace Voron.Graph
 			return flippedBitsId;
 		}
 
-		public byte[] ReadEdgeData(Transaction tx, long id)
+		public void RemoveEdge(Transaction tx, long id)
+		{
+			ThrowIfDisposed();
+			_key.Set((byte*)&id, sizeof(long));
+			tx.EdgesTable.DeleteByKey(_key);
+		}
+
+		public IReadOnlyList<byte> ReadEdgeData(Transaction tx, long id)
 		{
 			int size;
 			var fetchedDataPtr = ReadEdgeData(tx, id, out size);
@@ -136,18 +147,21 @@ namespace Voron.Graph
 			return valueReader.Read((int)EdgeTableFields.Data, out size);
 		}
 
-		public IEnumerable<long> GetAdjacentTo(Transaction tx, long fromId)
+		public IReadOnlyList<long> GetAdjacent(Transaction tx, long fromId)
 		{
 			ThrowIfDisposed();
 			var result = tx.EdgesTable.SeekForwardFrom(
 				Constants.Indexes.EdgeTable.FromToIndex,
 				new Slice((byte*)&fromId,sizeof(long)),true);
 
-			int _;
-			var res = result.SelectMany(x => 
-				x.Results.Select(r => 
-					*(long*)r.Read((int)EdgeTableFields.ToKey,out _))).ToList();
-			return res;
+
+			return result.SelectMany(x => 
+				x.Results.Select(r =>
+				{
+					int _;
+					return *(long*)r.Read((int)EdgeTableFields.ToKey, out _);
+				}))
+				.ToList();
 		}	
 	}
 }

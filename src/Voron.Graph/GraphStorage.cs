@@ -108,7 +108,6 @@ namespace Voron.Graph
 
 					systemTree.Add(Constants.SystemKeys.NextVertexEtagEntry, EndianBitConverter.Big.GetBytes(_nextVertexEtagEntry));
 					systemTree.Add(Constants.SystemKeys.NextIdEntry, EndianBitConverter.Big.GetBytes(_nextIdEntry));
-
 					systemTree.Add(Constants.SystemKeys.NextEdgeEtagEntry, EndianBitConverter.Big.GetBytes(_nextEdgeEtagEntry));
 				}
 				else
