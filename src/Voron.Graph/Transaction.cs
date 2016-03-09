@@ -29,7 +29,7 @@ namespace Voron.Graph
 				_systemDataSection :
 			(_systemDataSection = new ActiveRawDataSmallSection(_tx.LowLevelTransaction, _storage.SystemDataSectionPage));
 
-		public Table EdgesTable => 
+		public Table EdgeTable => 
 			(_edgesTable != null) ? 
 				_edgesTable : 
 				(_edgesTable = new Table(_storage.EdgesSchema, 

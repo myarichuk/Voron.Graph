@@ -1,16 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-
-namespace Voron.Graph
+﻿namespace Voron.Graph
 {
-    public enum EdgeTableFields
+	public enum EdgeTableFields
     {
-		Id = 0,
-		Etag = 1,
-		FromKey = 2,
-		ToKey = 3,
-		Data = 4
+		Etag = 0,
+		FromKey = 1,
+		ToKey = 2,
+		Data = 3
     }
 }

@@ -20,33 +20,32 @@ namespace Voron.Graph
 		{
 			ThrowIfDisposed();
 
-			var id = NextValue(tx, IncrementingValue.Id);
-			var flippedBitsId = Util.ReverseBits(id);
 			var etag = NextValue(tx, IncrementingValue.VertexEtag);
 			//since we are single threaded, this should be ok
 			var valueBuilder = new TableValueBuilder
 			{
-				{ (byte*)&flippedBitsId, sizeof(long) },
 				{ (byte*)&etag, sizeof(long) },
 				{ data, dataSize }
 			};
 
-			tx.VertexTable.Set(valueBuilder);
-			return flippedBitsId;
+			return tx.VertexTable.Set(valueBuilder);
 		}
 
 		//pointer is valid only if the transaction is valid
 		public byte* ReadVertexData(Transaction tx, long id, out int size)
 		{
-			ThrowIfDisposed();
-			_key.Set((byte*)&id, sizeof(long));
-			var valueReader = tx.VertexTable.ReadByKey(_key);
-			if (valueReader == null)
+			ThrowIfDisposed();			
+
+			int readerSize;
+			//if already deleted, do not throw -> return null pointer
+			var ptr = tx.VertexTable.DirectRead(id, out readerSize, false);
+			if (ptr == null) 
 			{
 				size = -1;
 				return null;
 			}
 
+			var valueReader = new TableValueReader(ptr, readerSize);
 			return valueReader.Read((int)VertexTableFields.Data, out size);
 		}
 
@@ -69,8 +68,7 @@ namespace Voron.Graph
 		public void RemoveVertex(Transaction tx, long id)
 		{
 			ThrowIfDisposed();
-			_key.Set((byte*)&id, sizeof(long));
-			tx.VertexTable.DeleteByKey(_key);
+			tx.VertexTable.Delete(id);
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -93,29 +91,23 @@ namespace Voron.Graph
 			int size)
 		{
 			ThrowIfDisposed();
-			var id = NextValue(tx, IncrementingValue.Id);
 			var etag = NextValue(tx, IncrementingValue.EdgeEtag);
-			var flippedBitsId = Util.ReverseBits(id);
 
 			var val = new TableValueBuilder
 			{
-				{ (byte*)&flippedBitsId,sizeof(long) },
 				{ (byte*)&etag,sizeof(long) },
 				{ (byte*)&fromId,sizeof(long) },
 				{ (byte*)&toId, sizeof(long) },
 				{ data, size }
 			};		
 
-			tx.EdgesTable.Set(val);
-
-			return flippedBitsId;
+			return tx.EdgeTable.Set(val);
 		}
 
 		public void RemoveEdge(Transaction tx, long id)
 		{
 			ThrowIfDisposed();
-			_key.Set((byte*)&id, sizeof(long));
-			tx.EdgesTable.DeleteByKey(_key);
+			tx.EdgeTable.Delete(id);
 		}
 
 		public IReadOnlyList<byte> ReadEdgeData(Transaction tx, long id)
@@ -136,21 +128,22 @@ namespace Voron.Graph
 		public byte* ReadEdgeData(Transaction tx, long id, out int size)
 		{
 			ThrowIfDisposed();
-			_key.Set((byte*)&id, sizeof(long));
-			var valueReader = tx.EdgesTable.ReadByKey(_key);
-			if (valueReader == null)
+			int readerSize;
+			var ptr = tx.EdgeTable.DirectRead(id, out readerSize,false);
+			if (ptr == null)
 			{
 				size = -1;
 				return null;
 			}
 
+			var valueReader = new TableValueReader(ptr, readerSize);
 			return valueReader.Read((int)EdgeTableFields.Data, out size);
 		}
 
 		public IReadOnlyList<long> GetAdjacent(Transaction tx, long fromId)
 		{
 			ThrowIfDisposed();
-			var result = tx.EdgesTable.SeekForwardFrom(
+			var result = tx.EdgeTable.SeekForwardFrom(
 				Constants.Indexes.EdgeTable.FromToIndex,
 				new Slice((byte*)&fromId,sizeof(long)),true);
 

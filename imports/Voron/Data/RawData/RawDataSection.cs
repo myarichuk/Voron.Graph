@@ -158,7 +158,7 @@ namespace Voron.Data.RawData
             return DirectRead(_tx, id, out size);
         }
 
-        public static byte* DirectRead(LowLevelTransaction tx, long id, out int size)
+        public static byte* DirectRead(LowLevelTransaction tx, long id, out int size, bool throwOnAlreadyFreed = true)
         {
             var posInPage = (int)(id % tx.DataPager.PageSize);
             var pageNumberInSection = (id - posInPage) / tx.DataPager.PageSize;
@@ -169,10 +169,17 @@ namespace Voron.Data.RawData
                     $"Asked to load a past the allocated values: {id} from page {pageHeader->PageNumber}");
 
             var sizes = (short*)((byte*)pageHeader + posInPage);
-            if (sizes[1] < 0)
-                throw new InvalidDataException(
-                    $"Asked to load a value that was already freed: {id} from page {pageHeader->PageNumber}");
+			if (sizes[1] < 0)
+			{
+				if (!throwOnAlreadyFreed)
+				{
+					size = -1;
+					return null;
+				}
 
+				throw new InvalidDataException(
+					$"Asked to load a value that was already freed: {id} from page {pageHeader->PageNumber}");
+			}
             if (sizes[0] < sizes[1])
                 throw new InvalidDataException(
                     $"Asked to load a value that where the allocated size is smaller than the used size: {id} from page {pageHeader->PageNumber}");

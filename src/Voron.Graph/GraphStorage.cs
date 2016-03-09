@@ -67,9 +67,7 @@ namespace Voron.Graph
 			using (var tx = _env.WriteTransaction())
 			{
 				_edgesSchema = new TableSchema()
-					.DefineKey(Constants.Indexes.EdgeTable.Key)
-					.DefineFixedSizeIndex(Constants.Indexes.EdgeTable.EtagIndex.Name,
-						Constants.Indexes.EdgeTable.EtagIndex)
+					.DefineKey(Constants.Indexes.EdgeTable.Etag)
 					.DefineIndex(Constants.Indexes.EdgeTable.FromToIndex.Name,
 						Constants.Indexes.EdgeTable.FromToIndex);
 				
@@ -79,9 +77,8 @@ namespace Voron.Graph
 				var systemTree = tx.CreateTree(Constants.Schema.SystemDataTree);
 
 				_verticesSchema = new TableSchema()
-					.DefineKey(Constants.Indexes.VertexTable.Key)
-					.DefineFixedSizeIndex(Constants.Indexes.VertexTable.Etag.Name,
-						Constants.Indexes.VertexTable.Etag);
+					.DefineKey(Constants.Indexes.VertexTable.Etag);
+
 				_verticesSchema.Create(tx,Constants.Schema.Vertices);
 
 				tx.CreateTree(Constants.Schema.EtagToAdjacencyTree);

@@ -154,7 +154,7 @@ namespace Voron.Data.Tables
 
         }
 
-        public byte* DirectRead(long id, out int size)
+        public byte* DirectRead(long id, out int size, bool throwOnAlreadyFreed = true)
         {
             var posInPage = id % _pageSize;
             if (posInPage == 0) // large
@@ -168,7 +168,7 @@ namespace Voron.Data.Tables
             // here we rely on the fact that RawDataSmallSection can 
             // read any RawDataSmallSection piece of data, not just something that
             // it exists in its own section, but anything from other sections as well
-            return RawDataSection.DirectRead(_tx.LowLevelTransaction, id, out size);
+            return RawDataSection.DirectRead(_tx.LowLevelTransaction, id, out size, throwOnAlreadyFreed);
         }
 
         public long Update(long id, TableValueBuilder builder)

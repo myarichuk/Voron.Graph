@@ -12,38 +12,22 @@ namespace Voron.Graph
 		{
 			public static class VertexTable
 			{
-				public static readonly TableSchema.SchemaIndexDef Key = new TableSchema.SchemaIndexDef
-				{
-					Name = "VertexId",
-					NameAsSlice = "VertexId",
-					StartIndex = (int)VertexTableFields.Id,
-					IsGlobal = true
-				};
-
-				public static readonly TableSchema.FixedSizeSchemaIndexDef Etag = new TableSchema.FixedSizeSchemaIndexDef
+				public static readonly TableSchema.SchemaIndexDef Etag = new TableSchema.SchemaIndexDef
 				{
 					Name = "VertexEtag",
 					NameAsSlice = "VertexEtag",
 					StartIndex = (int)VertexTableFields.Etag,
 					IsGlobal = true
-				};
+				};				
 			}
 
 			public static class EdgeTable
 			{
-				public static readonly TableSchema.SchemaIndexDef Key = new TableSchema.SchemaIndexDef
+				public static readonly TableSchema.SchemaIndexDef Etag = new TableSchema.SchemaIndexDef
 				{
-					Name = "EdgeId",
-					NameAsSlice = "EdgeId",
-					StartIndex = (int)EdgeTableFields.Id,
-					IsGlobal = true
-				};
-
-				public static readonly TableSchema.FixedSizeSchemaIndexDef EtagIndex = new TableSchema.FixedSizeSchemaIndexDef
-				{
-					StartIndex = (int)EdgeTableFields.Etag,
 					Name = "EdgeEtag",
 					NameAsSlice = "EdgeEtag",
+					StartIndex = (int)EdgeTableFields.Etag,
 					IsGlobal = true
 				};
 

@@ -12,6 +12,15 @@
           "System.Collections"
         ]
       },
+      "System.Diagnostics.Debug/4.0.11-beta-23516": {
+        "type": "package",
+        "compile": {
+          "ref/net45/_._": {}
+        },
+        "runtime": {
+          "lib/net45/_._": {}
+        }
+      },
       "Voron/4.0.0": {
         "type": "project",
         "framework": ".NETFramework,Version=v4.6",
@@ -651,6 +660,12 @@
       }
     },
     ".NETFramework,Version=v4.6/win7-x86": {
+      "runtime.win7.System.Diagnostics.Debug/4.0.11-beta-23516": {
+        "type": "package",
+        "compile": {
+          "ref/dotnet/_._": {}
+        }
+      },
       "Sparrow/4.0.0": {
         "type": "project",
         "framework": ".NETFramework,Version=v4.6",
@@ -659,6 +674,15 @@
           "System",
           "System.Collections"
         ]
+      },
+      "System.Diagnostics.Debug/4.0.11-beta-23516": {
+        "type": "package",
+        "compile": {
+          "ref/net45/_._": {}
+        },
+        "runtime": {
+          "lib/net45/_._": {}
+        }
       },
       "Voron/4.0.0": {
         "type": "project",
@@ -675,6 +699,12 @@
       }
     },
     ".NETFramework,Version=v4.6/win7-x64": {
+      "runtime.win7.System.Diagnostics.Debug/4.0.11-beta-23516": {
+        "type": "package",
+        "compile": {
+          "ref/dotnet/_._": {}
+        }
+      },
       "Sparrow/4.0.0": {
         "type": "project",
         "framework": ".NETFramework,Version=v4.6",
@@ -683,6 +713,15 @@
           "System",
           "System.Collections"
         ]
+      },
+      "System.Diagnostics.Debug/4.0.11-beta-23516": {
+        "type": "package",
+        "compile": {
+          "ref/net45/_._": {}
+        },
+        "runtime": {
+          "lib/net45/_._": {}
+        }
       },
       "Voron/4.0.0": {
         "type": "project",
@@ -4306,6 +4345,7 @@
       "Voron >= 4.0.0-*"
     ],
     ".NETFramework,Version=v4.6": [
+      "System.Diagnostics.Debug >= 4.0.11-beta-23516",
       "fx/Microsoft.CSharp >= 4.0.0",
       "fx/System >= 4.0.0",
       "fx/System.Collections >= 4.0.10"
