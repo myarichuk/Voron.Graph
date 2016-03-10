@@ -24,27 +24,27 @@ namespace Voron.Graph
 			_storage = env;
 		}
 
-		public ActiveRawDataSmallSection SystemDataSection =>
+		internal ActiveRawDataSmallSection SystemDataSection =>
 			(_systemDataSection != null) ?
 				_systemDataSection :
 			(_systemDataSection = new ActiveRawDataSmallSection(_tx.LowLevelTransaction, _storage.SystemDataSectionPage));
 
-		public Table EdgeTable => 
+		internal Table EdgeTable => 
 			(_edgesTable != null) ? 
 				_edgesTable : 
 				(_edgesTable = new Table(_storage.EdgesSchema, 
 					Constants.Schema.Edges, _tx));
 
-		public Table VertexTable => (_vertexTable != null) ?
+		internal Table VertexTable => (_vertexTable != null) ?
 			_vertexTable : 
 			(_vertexTable = new Table(_storage.VerticesSchema, 
 				Constants.Schema.Vertices, _tx));
 
-		public Tree EtagToVertexTree => (_etagToVertexTree != null) ?
+		internal Tree EtagToVertexTree => (_etagToVertexTree != null) ?
 			_etagToVertexTree :
 			(_etagToVertexTree = _tx.ReadTree(Constants.Schema.EtagToVertexTree));
 
-		public Tree EtagToAdjacencyTree => (_etagToAdjacencyTree != null) ?
+		internal Tree EtagToAdjacencyTree => (_etagToAdjacencyTree != null) ?
 			_etagToAdjacencyTree :
 			(_etagToAdjacencyTree = _tx.ReadTree(Constants.Schema.EtagToAdjacencyTree));
 

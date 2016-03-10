@@ -7,6 +7,8 @@ namespace Voron.Graph
 {
 	public partial class GraphStorage
 	{
+		public TraversalBuilder Traverse() => new TraversalBuilder(this);
+
 		public class GraphAdvanced
 		{
 			private readonly GraphStorage _parent;
