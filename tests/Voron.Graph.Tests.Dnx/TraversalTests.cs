@@ -505,6 +505,86 @@ namespace Voron.Graph.Tests.Dnx
 		}
 
 		[Fact]
+		public void Traversal_with_BFS_and_with_edges_visitor_should_visit_vertices_once()
+		{
+			using (var storage = new GraphStorage())
+			{
+				long id1, id2, id3;
+				using (var tx = storage.WriteTransaction())
+				{
+					id1 = storage.AddVertex(tx, new byte[] { 1, 2, 3 });
+					id2 = storage.AddVertex(tx, new byte[] { 3, 2, 1 });
+					id3 = storage.AddVertex(tx, new byte[] { 1, 1, 1 });
+					storage.AddEdge(tx, id1, id2, new byte[] { 12 });
+					storage.AddEdge(tx, id2, id3, new byte[] { 23 });
+					storage.AddEdge(tx, id3, id1, new byte[] { 31 });
+					tx.Commit();
+				}
+
+				using (var tx = storage.ReadTransaction())
+				{
+					var fetchedData = new List<byte[]>();
+					var expectedData = new[]
+					{
+						new byte[] { 12 },
+						new byte[] { 23 },
+						new byte[] { 31 }
+					};
+					var results = storage.Traverse()
+										 .WithStrategy(Traversal.Strategy.Bfs)
+										 .Execute(id1,
+											edgeVisitor: reader =>
+											{
+												var data = reader.ReadData((int)EdgeTableFields.Data);
+												fetchedData.Add(data);
+											});
+					Assert.Equal(expectedData, fetchedData);				
+				}
+			}
+		}
+
+		[Fact]
+		public void Traversal_with_DFS_and_with_edges_visitor_should_visit_vertices_once()
+		{
+			using (var storage = new GraphStorage())
+			{
+				long id1, id2, id3;
+				using (var tx = storage.WriteTransaction())
+				{
+					id1 = storage.AddVertex(tx, new byte[] { 1, 2, 3 });
+					id2 = storage.AddVertex(tx, new byte[] { 3, 2, 1 });
+					id3 = storage.AddVertex(tx, new byte[] { 1, 1, 1 });
+					storage.AddEdge(tx, id1, id2, new byte[] { 12 });
+					storage.AddEdge(tx, id2, id3, new byte[] { 23 });
+					storage.AddEdge(tx, id3, id1, new byte[] { 31 });
+					tx.Commit();
+				}
+
+				using (var tx = storage.ReadTransaction())
+				{
+					var fetchedData = new List<byte[]>();
+					var expectedData = new[]
+					{
+						new byte[] { 12 },
+						new byte[] { 23 },
+						new byte[] { 31 }
+					};
+					var results = storage.Traverse()
+										 .WithStrategy(Traversal.Strategy.Dfs)
+										 .Execute(id1,
+											edgeVisitor: reader =>
+											{
+												var data = reader.ReadData((int)EdgeTableFields.Data);
+												fetchedData.Add(data);
+											});
+
+					//DFS visits edges in the same manner as BFS, but vertices it visits in reverse
+					Assert.Equal(expectedData, fetchedData);
+				}
+			}
+		}
+
+		[Fact]
 		public void Traversal_with_BFS_and_with_vertex_visitor_should_visit_vertices_once()
 		{
 			using (var storage = new GraphStorage())
