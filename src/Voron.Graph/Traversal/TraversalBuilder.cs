@@ -15,7 +15,7 @@ namespace Voron.Graph
 
 		private int _minDepth = -1;
 		private int _maxDepth = int.MaxValue;
-		private long _maxResults = long.MaxValue; //essentially default => no limit
+		private long _maxResults = 0; //default => no limit
 
 		private Func<int, bool> _traversalDepthPredicate;
 
@@ -29,7 +29,8 @@ namespace Voron.Graph
 		{
 			return new Traversal(_tx, _traversalStrategy,
 					_minDepth, 
-					_maxDepth, 
+					_maxDepth,
+					_maxResults,
 					_traversalDepthPredicate, 
 					_edgePredicate, 
 					_traversalContinuationPredicate,					

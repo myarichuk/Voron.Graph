@@ -22,6 +22,7 @@ namespace Voron.Graph
 
 		private readonly int _minDepth;
 		private readonly int _maxDepth;
+		private readonly long _maxResults;
 
 		private readonly Func<int, bool> _traversalDepthPredicate;
 
@@ -30,6 +31,7 @@ namespace Voron.Graph
 
 		private bool _traversed;
 		private int _depth;
+		private long _traversedResults;
 
 		private readonly HashSet<long> _visitedVertices = new HashSet<long>();
 		private Func<TableValueReader, bool> _traversalStopPredicate;
@@ -37,7 +39,8 @@ namespace Voron.Graph
 		public Traversal(Lazy<Transaction> tx, 
 						 Strategy traversalStrategy, 
 						 int minDepth, 
-						 int maxDepth, 
+						 int maxDepth,
+						 long maxResults,
 						 Func<int, bool> traversalDepthPredicate, 
 						 Func<TableValueReader, bool> edgePredicate, 
 						 Func<TableValueReader, bool> traversalContinuationPredicate,
@@ -48,6 +51,7 @@ namespace Voron.Graph
 			_traversalStrategy = traversalStrategy;
 			_minDepth = minDepth;
 			_maxDepth = maxDepth;
+			_maxResults = maxResults;
 			_traversalDepthPredicate = traversalDepthPredicate;
 			_edgePredicate = edgePredicate;
 			_traversalContinuationPredicate = traversalContinuationPredicate;
@@ -132,7 +136,12 @@ namespace Voron.Graph
 #pragma warning restore CC0016 // Copy Event To Variable Before Fire
 
 				vertexVisitor?.Invoke(vertexTableReader);
-			}			
+			}
+
+			_traversedResults++;
+			if (_maxResults > 0 && _traversedResults >= _maxResults)
+				return new[] { vertexId };
+
 
 			if (_depth < _minDepth)
 				return intermediateResults;
@@ -162,13 +171,16 @@ namespace Voron.Graph
 #pragma warning disable CC0016 // Copy Event To Variable Before Fire
 				//this warning is likely a Roslyn bug and should be here,
 				//but it is.. hence the warning disable
-				if (_traversalStopPredicate != null &&
-					_traversalStopPredicate(vertexTableReader))
+				if (_traversalStopPredicate?.Invoke(vertexTableReader) ?? default(bool))
 					return Enumerable.Empty<long>();
 #pragma warning restore CC0016 // Copy Event To Variable Before Fire
 
 				vertexVisitor?.Invoke(vertexTableReader);
 			}
+
+			_traversedResults++;
+			if (_maxResults > 0 && _traversedResults >= _maxResults)
+				return new[] { vertexId };
 
 			var adjacentVertices = GetAdjacent(tx, vertexId, edgeVisitor);
 			var intermediateResults = Enumerable.Empty<long>();
