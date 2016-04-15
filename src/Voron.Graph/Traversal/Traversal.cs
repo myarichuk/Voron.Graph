@@ -102,25 +102,20 @@ namespace Voron.Graph
 
 			var adjacentVertices = GetAdjacent(tx, vertexId, edgeVisitor);
 			var intermediateResults = Enumerable.Empty<long>();
-			foreach (var adjacentVertex in adjacentVertices)
-			{
-				if (!_visitedVertices.Contains(adjacentVertex))
-				{
-					_depth++;
-					var currentInnerResults = InnerTraverseDFS(tx,
-						adjacentVertex,
-						vertexVisitor,
-						edgeVisitor);
-					_depth--;
-
-					intermediateResults = intermediateResults.Concat(currentInnerResults);
-				}
-			}
-
 			_visitedVertices.Add(vertexId);
+			foreach (var adjacentVertex in adjacentVertices.Where(vId => !_visitedVertices.Contains(vId)))
+			{
+				_depth++;
+				_visitedVertices.Add(adjacentVertex);
+				var currentInnerResults = InnerTraverseDFS(tx,
+					adjacentVertex,
+					vertexVisitor,
+					edgeVisitor);
+				_depth--;
 
-			//TODO : finish all the limitation implementations
-			// and write relevant tests
+				intermediateResults = intermediateResults.Concat(currentInnerResults);
+				
+			}
 
 			if (vertexVisitor != null || _traversalStopPredicate != null)
 			{
@@ -128,10 +123,7 @@ namespace Voron.Graph
 #pragma warning disable CC0016 // Copy Event To Variable Before Fire
 				//this warning is likely a Roslyn bug and should be here,
 				//but it is.. hence the warning disable
-				if (_traversalStopPredicate != null &&
-#pragma warning disable CC0031 // Check for null before calling a delegate
-					_traversalStopPredicate(vertexTableReader))
-#pragma warning restore CC0031 // Check for null before calling a delegate
+				if (_traversalStopPredicate?.Invoke(vertexTableReader) ?? default(bool))
 					return Enumerable.Empty<long>();
 #pragma warning restore CC0016 // Copy Event To Variable Before Fire
 

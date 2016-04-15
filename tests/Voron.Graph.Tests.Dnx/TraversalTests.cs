@@ -7,8 +7,8 @@ using Xunit;
 
 namespace Voron.Graph.Tests.Dnx
 {
-    public class TraversalTests
-    {
+	public class TraversalTests
+	{
 		[Fact]
 		public void Traversal_without_edges_should_return_first_vertex()
 		{
@@ -35,7 +35,7 @@ namespace Voron.Graph.Tests.Dnx
 						.OnlyContain(r => r == id1);
 
 					results = storage.Traverse()
-								     .Execute(id2);
+									 .Execute(id2);
 
 					results.Should()
 						.HaveCount(1)
@@ -257,9 +257,9 @@ namespace Voron.Graph.Tests.Dnx
 						.Contain(new[] { id3, id4, id5 });
 
 					results = storage.Traverse()
-										 //zero-based depth,
-										 //4 levels in total
-								     .WithStrategy(Traversal.Strategy.Dfs)
+									 //zero-based depth,
+									 //4 levels in total
+									 .WithStrategy(Traversal.Strategy.Dfs)
 									 .WithMinDepth(3)
 									 .Execute(id1);
 
@@ -385,7 +385,38 @@ namespace Voron.Graph.Tests.Dnx
 		}
 
 		[Fact]
-		public void Traversal_with_max_results_should_return_proper_number_of_results1()
+		public void Traversal_with_DFS_should_handle_loops_properly()
+		{
+			using (var storage = new GraphStorage())
+			{
+				long id1, id2, id3;
+				using (var tx = storage.WriteTransaction())
+				{
+					id1 = storage.AddVertex(tx, new byte[] { 1, 2, 3 });
+					id2 = storage.AddVertex(tx, new byte[] { 3, 2, 1 });
+					id3 = storage.AddVertex(tx, new byte[] { 1, 1, 1 });
+					storage.AddEdge(tx, id1, id2);
+					storage.AddEdge(tx, id2, id3);
+					storage.AddEdge(tx, id3, id1);
+					tx.Commit();
+				}
+
+				using (var tx = storage.ReadTransaction())
+				{
+					var results = storage.Traverse()
+										 .WithStrategy(Traversal.Strategy.Dfs)
+										 .Execute(id1);
+
+					results.Should()
+						.HaveCount(3)
+						.And
+						.Contain(new[] { id1, id2, id3 });
+				}
+			}
+		}
+
+		[Fact]
+		public void Traversal_with_max_results_should_return_proper_number_of_results()
 		{
 			using (var storage = new GraphStorage())
 			{
@@ -410,7 +441,7 @@ namespace Voron.Graph.Tests.Dnx
 					results.Should()
 						.HaveCount(2)
 						.And
-						.ContainInOrder(id1, id2);
+						.Contain(new[] { id1, id2 });
 
 					results = storage.Traverse()
 									 .WithMaxResults(2)
@@ -419,7 +450,7 @@ namespace Voron.Graph.Tests.Dnx
 					results.Should()
 					.HaveCount(2)
 					.And
-					.ContainInOrder(id2, id3);
+					.Contain(new[] { id2, id3 });					
 				}
 			}
 		}
