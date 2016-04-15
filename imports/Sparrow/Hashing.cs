@@ -82,13 +82,13 @@ namespace Sparrow
                 {
                     uint h32;
 
-                    var bEnd = buffer + len;
+                    byte* bEnd = buffer + len;
 
-					if (len >= 16)
+                    if (len >= 16)
                     {
-                        var limit = bEnd - 16;
+                        byte* limit = bEnd - 16;
 
-						uint v1 = seed + XXHash32Constants.PRIME32_1 + XXHash32Constants.PRIME32_2;
+                        uint v1 = seed + XXHash32Constants.PRIME32_1 + XXHash32Constants.PRIME32_2;
                         uint v2 = seed + XXHash32Constants.PRIME32_2;
                         uint v3 = seed + 0;
                         uint v4 = seed - XXHash32Constants.PRIME32_1;
@@ -222,13 +222,13 @@ namespace Sparrow
             {
                 ulong h64;
 
-                var bEnd = buffer + len;
+                byte* bEnd = buffer + len;
 
-				if (len >= 32)
+                if (len >= 32)
                 {
-                    var limit = bEnd - 32;
+                    byte* limit = bEnd - 32;
 
-					ulong v1 = seed + XXHash64Constants.PRIME64_1 + XXHash64Constants.PRIME64_2;
+                    ulong v1 = seed + XXHash64Constants.PRIME64_1 + XXHash64Constants.PRIME64_2;
                     ulong v2 = seed + XXHash64Constants.PRIME64_2;
                     ulong v3 = seed + 0;
                     ulong v4 = seed - XXHash64Constants.PRIME64_1;
@@ -484,19 +484,10 @@ namespace Sparrow
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static unsafe Metro128Hash CalculateInline(byte* buffer, int length, ulong seed = 0)
             {
-
-/* Unmerged change from project 'Sparrow..NET Platform'
-Before:
                 byte* ptr = buffer;
                 byte* end = ptr + length;
-After:
-                byte* ptr = buffer;
-				byte* end = ptr + length;
-*/
-                var ptr = buffer;
-                var end = ptr + length;
 
-				ulong v0 = (seed - Metro128Constants.K0) * Metro128Constants.K3;
+                ulong v0 = (seed - Metro128Constants.K0) * Metro128Constants.K3;
                 ulong v1 = (seed + Metro128Constants.K1) * Metro128Constants.K2;
 
                 if (length >= 32)

@@ -58,8 +58,8 @@ namespace Voron.Platform.Posix
 
         public unsafe static int unlink(string pathname)
         {
-            var pathNameBytes = System.Text.Encoding.UTF8.GetBytes(pathname);
-			fixed (byte* pPath = pathNameBytes)
+            byte[] pathNameBytes = System.Text.Encoding.UTF8.GetBytes(pathname);
+            fixed(byte* pPath = pathNameBytes)
             {
                 return unlink((IntPtr)pPath);
             }
@@ -73,8 +73,8 @@ namespace Voron.Platform.Posix
         public unsafe static int open(
             string pathname, OpenFlags flags, FilePermissions mode)
         {
-            var pathNameBytes = System.Text.Encoding.UTF8.GetBytes(pathname);
-			fixed (byte* pPath = pathNameBytes)
+            byte[] pathNameBytes = System.Text.Encoding.UTF8.GetBytes(pathname);
+            fixed(byte* pPath = pathNameBytes)
             {
                 return open((IntPtr)pPath, flags, mode);
             }
@@ -248,8 +248,8 @@ namespace Voron.Platform.Posix
             if (obj == null || obj.GetType() != GetType())
                 return false;
 
-            var value = (Stat)obj;
-			return value.st_dev == st_dev &&
+            Stat value = (Stat)obj;
+            return value.st_dev == st_dev &&
                 value.st_ino == st_ino &&
                 value.st_mode == st_mode &&
                 value.st_nlink == st_nlink &&

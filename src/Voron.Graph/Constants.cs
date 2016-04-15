@@ -6,8 +6,8 @@ using Voron.Data.Tables;
 
 namespace Voron.Graph
 {
-    public static class Constants
-    {
+	public static class Constants
+	{
 		public static class Indexes
 		{
 			public static class VertexTable
@@ -30,13 +30,12 @@ namespace Voron.Graph
 					StartIndex = (int)EdgeTableFields.Etag,
 					IsGlobal = true
 				};
-
+				
 				public static readonly TableSchema.SchemaIndexDef FromToIndex = new TableSchema.SchemaIndexDef
 				{
 					Name = "FromToIndex",
 					NameAsSlice = "FromToIndex",
 					StartIndex = (int)EdgeTableFields.FromKey,		
-					MultiValue = true,
 					Count = 2,			
 					IsGlobal = true
 				};
@@ -51,9 +50,9 @@ namespace Voron.Graph
 			}
 		}
 
-        public static class SystemKeys
-        {
-            public const string GraphSystemDataPage = "SystemRawDataCreated";
+		public static class SystemKeys
+		{
+			public const string GraphSystemDataPage = "SystemRawDataCreated";
 
 			public const string NextVertexEtagEntry = "NextVertexEtagEntry";
 			public const string NextIdEntry = "NextIdEntry";
@@ -63,12 +62,12 @@ namespace Voron.Graph
 		}
 
 		public static class Schema
-        {
-            public const string SystemDataTree = "Voron.Graph.SystemDataTree";
-            public const string Vertices = "Voron.Graph.VertexTree";
-            public const string Edges = "Voron.Graph.AdjacencyList";
-            public const string EtagToVertexTree = "Voron.Graph.EtagToVertexTree";
-            public const string EtagToAdjacencyTree = "Voron.Graph.EtagToAdjacencyTree";
-        }
-    }
+		{
+			public const string SystemDataTree = "Voron.Graph.SystemDataTree";
+			public const string Vertices = "Voron.Graph.VertexTree";
+			public const string Edges = "Voron.Graph.AdjacencyList";
+			public const string EtagToVertexTree = "Voron.Graph.EtagToVertexTree";
+			public const string EtagToAdjacencyTree = "Voron.Graph.EtagToAdjacencyTree";
+		}
+	}
 }

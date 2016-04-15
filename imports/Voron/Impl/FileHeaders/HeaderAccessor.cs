@@ -150,7 +150,7 @@ namespace Voron.Impl.FileHeaders
                     throw new ObjectDisposedException("Cannot access the header after it was disposed");
 
 
-				modifyAction?.Invoke(_theHeader);
+                modifyAction(_theHeader);
 
                 _revision++;
                 _theHeader->HeaderRevision = _revision;

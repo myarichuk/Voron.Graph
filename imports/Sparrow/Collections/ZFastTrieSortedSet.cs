@@ -79,8 +79,8 @@ namespace Sparrow.Collections
                 if (this is Leaf)
                     return (Leaf)this;
 
-                var node = this;
-				do
+                Node node = this;
+                do
                 {
                     node = ((Internal)node).JumpRightPtr;
                 }
@@ -94,8 +94,8 @@ namespace Sparrow.Collections
                 if (this is Leaf)
                     return (Leaf)this;
 
-                var node = this;
-				do
+                Node node = this;
+                do
                 {
                     node = ((Internal)node).JumpLeftPtr;
                 }
@@ -108,22 +108,22 @@ namespace Sparrow.Collections
             {
                 TKey key = this.IsInternal ? ((Leaf)((Internal)this).ReferencePtr).Key : ((Leaf)this).Key;
                 
-                var extent = Extent(owner);
-				int extentLength = GetExtentLength(owner);
+                BitVector extent = Extent(owner);
+                int extentLength = GetExtentLength(owner);
 
                 string openBracket = this.IsLeaf ? "[" : "(" ;
-                var closeBracket = this.IsLeaf ? "]" : ")";
-				string extentBinary = extentLength > 16 ? extent.SubVector(0, 8).ToBinaryString() + "..." + extent.SubVector(extent.Count - 8, 8).ToBinaryString() : extent.ToBinaryString();
-                var lenghtInformation = "[" + this.NameLength + ".." + extentLength + "]";
-				string jumpInfo = this.IsInternal ? ((Internal)this).GetHandleLength(owner) + "->" + ((Internal)this).GetJumpLength(owner) : "";
+                string closeBracket = this.IsLeaf ? "]" : ")";
+                string extentBinary = extentLength > 16 ? extent.SubVector(0, 8).ToBinaryString() + "..." + extent.SubVector(extent.Count - 8, 8).ToBinaryString() : extent.ToBinaryString();
+                string lenghtInformation = "[" + this.NameLength + ".." + extentLength + "]";
+                string jumpInfo = this.IsInternal ? ((Internal)this).GetHandleLength(owner) + "->" + ((Internal)this).GetJumpLength(owner) : "";
 
                 return string.Format("{0}{2}, {4}, {3}{1}", openBracket, closeBracket, extentBinary, jumpInfo, lenghtInformation);
             }
 
             public bool Intersects(int x)
             {
-                var thisAsInternal = this as Internal;
-				if (thisAsInternal != null)
+                Internal thisAsInternal = this as Internal;
+                if (thisAsInternal != null)
                     return x >= thisAsInternal.NameLength && x <= thisAsInternal.ExtentLength;
                 else 
                     return x >= this.NameLength;
@@ -388,14 +388,14 @@ namespace Sparrow.Collections
         public bool Add(TKey key, TValue value)
         {
             // We prepare the signature to compute incrementally. 
-            var searchKey = binarizeFunc?.Invoke(key);
-			if ( size == 0 )
+            BitVector searchKey = binarizeFunc(key);
+            if ( size == 0 )
             {
                 // We set the root of the current key to the new leaf.
-                var leaf = new Leaf(0, key, value);
+                Leaf leaf = new Leaf(0, key, value);
 
-				// We add the leaf after the head.
-				AddAfter(this.Head, leaf);
+                // We add the leaf after the head.
+                AddAfter(this.Head, leaf);
                 this.Root = leaf;
 
                 size++;
@@ -415,7 +415,7 @@ namespace Sparrow.Collections
 
                 // If the exit node is a leaf and the key is equal to the LCP 
                 var exitNodeAsLeaf = exitNode as Leaf;
-                if (exitNodeAsLeaf != null && binarizeFunc?.Invoke(exitNodeAsLeaf.Key).Count == cutPoint.LongestPrefix)
+                if (exitNodeAsLeaf != null && binarizeFunc(exitNodeAsLeaf.Key).Count == cutPoint.LongestPrefix)
                     return false; // Then we are done (we found the key already).
 
                 var exitNodeAsInternal = exitNode as Internal; // Is the exit node internal?  
@@ -554,9 +554,9 @@ namespace Sparrow.Collections
                 return false;
 
             // We prepare the signature to compute incrementally.
-            var searchKey = binarizeFunc?.Invoke(key);
+            BitVector searchKey = binarizeFunc(key);
 
-			if ( size == 1 )
+            if ( size == 1 )
             {                
                 // Is the root key (which has to be a Leaf) equal to the one we are looking for?
                 var leaf = (Leaf)this.Root;
@@ -586,7 +586,7 @@ namespace Sparrow.Collections
 
                 // If the exit node is not a leaf or the key is not equal to the LCP                
                 var exitNodeAsLeaf = exitNode as Leaf;
-                if (exitNodeAsLeaf == null || binarizeFunc?.Invoke(exitNodeAsLeaf.Key).Count != cutPoint.LongestPrefix)
+                if (exitNodeAsLeaf == null || binarizeFunc(exitNodeAsLeaf.Key).Count != cutPoint.LongestPrefix)
                     return false;  // Then we are done (The key does not exist).
 
                 bool isRightLeaf = parentExitNode != null && parentExitNode.Right == exitNode;
@@ -687,7 +687,7 @@ namespace Sparrow.Collections
 
             // If the exit node is a leaf and the key is equal to the LCP 
             var exitNodeAsLeaf = exitNode.Exit as Leaf;
-            if (exitNodeAsLeaf != null && binarizeFunc?.Invoke(exitNodeAsLeaf.Key).Count == exitNode.LongestPrefix)
+            if (exitNodeAsLeaf != null && binarizeFunc(exitNodeAsLeaf.Key).Count == exitNode.LongestPrefix)
             {
                 value = exitNodeAsLeaf.Value;
                 return true; // Then we are done (we found the key already).
@@ -707,7 +707,7 @@ namespace Sparrow.Collections
 
             // If the exit node is a leaf and the key is equal to the LCP 
             var exitNodeAsLeaf = exitNode.Exit as Leaf;
-            if (exitNodeAsLeaf != null && binarizeFunc?.Invoke(exitNodeAsLeaf.Key).Count == exitNode.LongestPrefix)
+            if (exitNodeAsLeaf != null && binarizeFunc(exitNodeAsLeaf.Key).Count == exitNode.LongestPrefix)
                 return true; // Then we are done (we found the key already).
 
             return false;
@@ -1069,10 +1069,10 @@ namespace Sparrow.Collections
             int length = searchKey.Count;
 
             // Find parex(key), exit(key) or fail spectacularly (with very low probability). 
-            var parexOrExitNode = FatBinarySearch(searchKey, state, stack, -1, length, isExact: false);
+            Internal parexOrExitNode = FatBinarySearch(searchKey, state, stack, -1, length, isExact: false);
 
-			// Check if the node is either the parex(key) and/or exit(key). 
-			Node candidateNode;
+            // Check if the node is either the parex(key) and/or exit(key). 
+            Node candidateNode;
             if (parexOrExitNode.ExtentLength < length && searchKey[parexOrExitNode.ExtentLength])
                 candidateNode = parexOrExitNode.Right;
             else
@@ -1106,8 +1106,8 @@ namespace Sparrow.Collections
                 // Find parex(key) or fail spectacularly (with very low probability). 
                 int stackSize = stack.Count;
 
-                var parexNode = FatBinarySearch(searchKey, state, stack, startPoint, parexOrExitNode.NameLength, isExact: false);
-				if (parexNode.Left == parexOrExitNode || parexNode.Right == parexOrExitNode)
+                Internal parexNode = FatBinarySearch(searchKey, state, stack, startPoint, parexOrExitNode.NameLength, isExact: false);
+                if (parexNode.Left == parexOrExitNode || parexNode.Right == parexOrExitNode)
                     return new CutPoint(lcpLength, parexNode, parexOrExitNode, searchKey);
 
                 // It seems we just failed and found an unrelated node, we should restart in exact mode and also clear the stack of what we added during the last search.
@@ -1144,8 +1144,8 @@ namespace Sparrow.Collections
             if (startPoint == parexOrExitNode.NameLength - 1)
                 return new CutPoint(lcpLength, stack.Peek(), parexOrExitNode, searchKey);
 
-            var parentNode = FatBinarySearch(searchKey, state, stack, startPoint, parexOrExitNode.NameLength, isExact: true);
-			return new CutPoint(lcpLength, parentNode, parexOrExitNode, searchKey);
+            Internal parentNode = FatBinarySearch(searchKey, state, stack, startPoint, parexOrExitNode.NameLength, isExact: true);
+            return new CutPoint(lcpLength, parentNode, parexOrExitNode, searchKey);
         }
 
         private Internal FindGrandParentExitNode(BitVector searchKey, Hashing.Iterative.XXHash32Block state, Stack<Internal> stack)
@@ -1165,8 +1165,8 @@ namespace Sparrow.Collections
             int stackSize = stack.Count;
 
             // We will find the proper grand parent exit node with very high probability.
-            var grandParentExitNode = FatBinarySearch(searchKey, state, stack, start, parentExitNode.NameLength, false);
-			if (grandParentExitNode.Right == parentExitNode || grandParentExitNode.Left == parentExitNode)
+            Internal grandParentExitNode = FatBinarySearch(searchKey, state, stack, start, parentExitNode.NameLength, false);
+            if (grandParentExitNode.Right == parentExitNode || grandParentExitNode.Left == parentExitNode)
                 return grandParentExitNode;
 
             // We had failed spectacularly. Ensure there is no garbage on the stack and clean it up.
@@ -1184,19 +1184,19 @@ namespace Sparrow.Collections
             Contract.Requires(size != 0);
 
             // We prepare the signature to compute incrementally. 
-            var searchKey = binarizeFunc?.Invoke(key);
+            BitVector searchKey = binarizeFunc(key);          
 
-			if (size == 1)
+            if (size == 1)
                 return new ExitNode(searchKey.LongestCommonPrefixLength(this.Root.Extent(this)), this.Root, searchKey);
 
             // We look for the parent of the exit node for the key.
             var state = Hashing.Iterative.XXHash32.Preprocess(searchKey.Bits);
 
             // Find parex(key), exit(key) or fail spectacularly (with very low probability). 
-            var parexOrExitNode = FatBinarySearch(searchKey, state, -1, searchKey.Count, isExact: false);
+            Internal parexOrExitNode = FatBinarySearch(searchKey, state, -1, searchKey.Count, isExact: false);
 
-			// Check if the node is either the parex(key) and/or exit(key). 
-			Node candidateNode;
+            // Check if the node is either the parex(key) and/or exit(key). 
+            Node candidateNode;
             if (parexOrExitNode.ExtentLength < searchKey.Count && searchKey[parexOrExitNode.ExtentLength])
                 candidateNode = parexOrExitNode.Right;
             else
@@ -1238,9 +1238,9 @@ namespace Sparrow.Collections
 
             endBit--;
 
-            var top = stack.Count != 0 ? stack.Peek() : null;
+            Internal top = stack.Count != 0 ? stack.Peek() : null;
 
-			if (startBit == -1)
+            if (startBit == -1)
             {
                 Contract.Assert(this.Root is Internal);
 
@@ -1265,8 +1265,8 @@ namespace Sparrow.Collections
                     int position = isExact ? nodesTable.GetExactPosition(searchKey, current, hash)
                                            : nodesTable.GetPosition(searchKey, current, hash);
 
-                    var item = position != -1 ? nodesTable[position] : null;
-					if (item == null || item.ExtentLength < current)
+                    Internal item = position != -1 ? nodesTable[position] : null;
+                    if (item == null || item.ExtentLength < current)
                     {
                         endBit = current - 1;
                     }
@@ -1320,8 +1320,8 @@ namespace Sparrow.Collections
                     int position = isExact ? nodesTable.GetExactPosition(searchKey, current, hash)
                                            : nodesTable.GetPosition(searchKey, current, hash);
 
-                    var item = position != -1 ? nodesTable[position] : null;
-					if (item == null || item.ExtentLength < current)
+                    Internal item = position != -1 ? nodesTable[position] : null;
+                    if (item == null || item.ExtentLength < current)
                     {
                         endBit = current - 1;
                     }

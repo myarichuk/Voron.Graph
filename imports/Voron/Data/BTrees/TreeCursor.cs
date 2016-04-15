@@ -59,8 +59,8 @@ namespace Voron.Data.BTrees
         {
             get
             {
-                var linkedListNode = Pages.First;
-				if (linkedListNode == null)
+                LinkedListNode<TreePage> linkedListNode = Pages.First;
+                if (linkedListNode == null)
                     throw new InvalidOperationException("No pages in cursor");
                 linkedListNode = linkedListNode.Next;
                 if (linkedListNode == null)
@@ -73,8 +73,8 @@ namespace Voron.Data.BTrees
         {
             get
             {
-                var linkedListNode = Pages.First;
-				if (linkedListNode == null)
+                LinkedListNode<TreePage> linkedListNode = Pages.First;
+                if (linkedListNode == null)
                     throw new InvalidOperationException("No pages in cursor");
                 return linkedListNode.Value;
             }

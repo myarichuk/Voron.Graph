@@ -21,7 +21,6 @@ namespace Voron.Impl.Backup
 	public unsafe class FullBackup
 	{
 
-
 		public void ToFile(StorageEnvironment env, string backupPath, CompressionLevel compression = CompressionLevel.Optimal,
 			Action<string> infoNotify = null,
 			Action backupStarted = null)
@@ -58,7 +57,7 @@ namespace Voron.Impl.Backup
 							// journal files snapshot
 							files = env.Journal.Files;
 
-							var journalInfo = env.HeaderAccessor.Get(ptr => ptr->Journal);
+							JournalInfo journalInfo = env.HeaderAccessor.Get(ptr => ptr->Journal);
 							for (var journalNum = journalInfo.CurrentJournal - journalInfo.JournalFilesCount + 1; journalNum <= journalInfo.CurrentJournal; journalNum++)
 							{
 								var journalFile = files.FirstOrDefault(x => x.Number == journalNum); // first check journal files currently being in use
@@ -140,7 +139,7 @@ namespace Voron.Impl.Backup
 				if (txr != null)
 					txr.Dispose();
 			}
-			infoNotify?.Invoke(string.Format("Voron backup db finished"));
+			infoNotify(string.Format("Voron backup db finished"));
 		}
 
 		public void Restore(string backupPath, string voronDataDir, string journalDir = null)
@@ -154,7 +153,7 @@ namespace Voron.Impl.Backup
 				Directory.CreateDirectory(journalDir);
 
 			using (var fs = File.Open(backupPath, FileMode.Open))
-			using (var zip = new ZipArchive(fs, ZipArchiveMode.Read,false, System.Text.Encoding.UTF8))
+			using (var zip = new ZipArchive(fs, ZipArchiveMode.Read, false, System.Text.Encoding.UTF8))
 			{
 				foreach (var entry in zip.Entries)
 				{
@@ -167,7 +166,5 @@ namespace Voron.Impl.Backup
 				}
 			}
 		}
-
-
 	}
 }

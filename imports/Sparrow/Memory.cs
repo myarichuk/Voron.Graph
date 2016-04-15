@@ -23,9 +23,8 @@ namespace Sparrow
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int CompareInline(byte* p1, byte* p2, int size)
         {
-            var bpx = p1;
-			var bpy = p2;
-			int l = size;
+            byte* bpx = p1, bpy = p2;
+            int l = size;
 
             int last = 0;
             for (int i = 0; i < l / 8; i++, bpx += 8, bpy += 8)
@@ -83,9 +82,8 @@ namespace Sparrow
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int CompareInline(byte* p1, byte* p2, int size, out int position)
         {
-            var bpx = p1;
-			var bpy = p2;
-			int l = size;
+            byte* bpx = p1, bpy = p2;
+            int l = size;
 
             int last = 0;
             for (int i = 0; i < l / 8; i++, bpx += 8, bpy += 8)

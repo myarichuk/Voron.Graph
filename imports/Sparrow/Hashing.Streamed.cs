@@ -51,9 +51,9 @@ namespace Sparrow
                         throw new NotSupportedException("Streaming process does not support resuming with buffers whose size is not 16 bytes aligned. Supporting it would impact performance.");
 
                     byte* bEnd = buffer + size;
-                    var limit = bEnd - Alignment;
+                    byte* limit = bEnd - Alignment;
 
-					context.LeftoverCount = (int)(bEnd - buffer) % Alignment;
+                    context.LeftoverCount = (int)(bEnd - buffer) % Alignment;
 
                     if (context.BufferSize + size >= Alignment)
                     {
@@ -124,19 +124,10 @@ namespace Sparrow
                     {
                         fixed (byte* b = context.Leftover)
                         {
-
-/* Unmerged change from project 'Sparrow..NET Platform'
-Before:
                             byte* buffer = b;
                             byte* bEnd = b + context.LeftoverCount;
-After:
-                            byte* buffer = b;
-							byte* bEnd = b + context.LeftoverCount;
-*/
-                            var buffer = b;
-                            var bEnd = b + context.LeftoverCount;
 
-							while (buffer + 4 <= bEnd)
+                            while (buffer + 4 <= bEnd)
                             {
                                 h32 += *((uint*)buffer) * XXHash32Constants.PRIME32_3;
                                 h32 = Bits.RotateLeft32(h32, 17) * XXHash32Constants.PRIME32_4;
@@ -223,8 +214,8 @@ After:
                     if (context.LeftoverCount != 0)
                         throw new NotSupportedException("Streaming process does not support resuming with buffers whose size is not 16 bytes aligned. Supporting it would impact performance.");
 
-                    var bEnd = buffer + size;
-					byte* limit = bEnd - Alignment;
+                    byte* bEnd = buffer + size;
+                    byte* limit = bEnd - Alignment;
 
                     context.LeftoverCount = (int)(bEnd - buffer) % Alignment;
 
@@ -323,8 +314,8 @@ After:
                     {
                         fixed (byte* b = context.Leftover)
                         {
-                            var buffer = b;
-							byte* bEnd = b + context.LeftoverCount;
+                            byte* buffer = b;
+                            byte* bEnd = b + context.LeftoverCount;
 
                             while (buffer + 8 <= bEnd)
                             {
@@ -429,8 +420,8 @@ After:
                     if (context.LeftoverCount != 0)
                         throw new NotSupportedException("Streaming process does not support resuming with buffers whose size is not 32 bytes aligned. Supporting it would impact performance.");
 
-                    var ptr = buffer;
-					byte* end = ptr + length;
+                    byte* ptr = buffer;
+                    byte* end = ptr + length;
 
                     context.LeftoverCount = (int)(end - ptr) % Alignment;
 
@@ -493,8 +484,8 @@ After:
                     {
                         fixed (byte* b = context.Leftover)
                         {
-                            var ptr = b;
-							byte* end = b + context.LeftoverCount;
+                            byte* ptr = b;
+                            byte* end = b + context.LeftoverCount;
 
                             if ((end - ptr) >= 16)
                             {

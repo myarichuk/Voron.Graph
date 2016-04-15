@@ -22,9 +22,11 @@ namespace Voron.Graph.Tests.Dnx
 					tx.Commit();
 				}
 
+				//test both dfs and bfs
 				using (var tx = storage.ReadTransaction())
 				{
 					var results = storage.Traverse()
+										 .WithStrategy(Traversal.Strategy.Bfs)
 										 .Execute(id1);
 
 					results.Should()
@@ -39,12 +41,30 @@ namespace Voron.Graph.Tests.Dnx
 						.HaveCount(1)
 						.And
 						.OnlyContain(r => r == id2);
+
+					results = storage.Traverse()
+										 .WithStrategy(Traversal.Strategy.Dfs)
+										 .Execute(id1);
+
+					results.Should()
+						.HaveCount(1)
+						.And
+						.OnlyContain(r => r == id1);
+
+					results = storage.Traverse()
+									 .Execute(id2);
+
+					results.Should()
+						.HaveCount(1)
+						.And
+						.OnlyContain(r => r == id2);
+
 				}
 			}
 		}
 
 		[Fact]
-		public void Traversal_without_limits_should_return_all_edges1()
+		public void Traversal_without_limits_should_traverse_all_edges1()
 		{
 			using (var storage = new GraphStorage())
 			{
@@ -79,7 +99,7 @@ namespace Voron.Graph.Tests.Dnx
 		}
 
 		[Fact]
-		public void Traversal_without_limits_should_return_all_edges2()
+		public void Traversal_without_limits_should_traverse_all_edges2()
 		{
 			using (var storage = new GraphStorage())
 			{
@@ -108,7 +128,7 @@ namespace Voron.Graph.Tests.Dnx
 		}
 
 		[Fact]
-		public void Traversal_without_limits_should_return_all_edges3()
+		public void Traversal_without_limits_should_traverse_all_edges3()
 		{
 			using (var storage = new GraphStorage())
 			{
@@ -141,7 +161,7 @@ namespace Voron.Graph.Tests.Dnx
 		}
 
 		[Fact]
-		public void Traversal_with_min_depth_should_return_proper_edges1()
+		public void Traversal_with_min_depth_should_traverse_only_relevant_edges1()
 		{
 			using (var storage = new GraphStorage())
 			{
@@ -195,7 +215,7 @@ namespace Voron.Graph.Tests.Dnx
 		}
 
 		[Fact]
-		public void Traversal_with_min_depth_should_return_proper_edges1_with_DFS()
+		public void Traversal_with_min_depth_should_traverse_relevant_edges1_with_DFS()
 		{
 			using (var storage = new GraphStorage())
 			{
@@ -252,7 +272,7 @@ namespace Voron.Graph.Tests.Dnx
 		}
 
 		[Fact]
-		public void Traversal_would_travel_loops_once()
+		public void Traversal_should_travel_loops_once1()
 		{
 			using (var storage = new GraphStorage())
 			{
@@ -283,6 +303,122 @@ namespace Voron.Graph.Tests.Dnx
 					.HaveCount(2)
 					.And
 					.ContainInOrder(id2, id1);
+				}
+			}
+		}
+
+		[Fact]
+		public void Traversal_should_travel_loops_once2()
+		{
+			using (var storage = new GraphStorage())
+			{
+				long id1, id2, id3;
+				using (var tx = storage.WriteTransaction())
+				{
+					id1 = storage.AddVertex(tx, new byte[] { 1, 2, 3 });
+					id2 = storage.AddVertex(tx, new byte[] { 3, 2, 1 });
+					id3 = storage.AddVertex(tx, new byte[] { 1, 1, 1 });
+					storage.AddEdge(tx, id1, id2);
+					storage.AddEdge(tx, id2, id3);
+					storage.AddEdge(tx, id3, id1);
+					tx.Commit();
+				}
+
+				using (var tx = storage.ReadTransaction())
+				{
+					var results = storage.Traverse()
+										 .Execute(id1);
+
+					results.Should()
+						.HaveCount(3)
+						.And
+						.ContainInOrder(id1, id2, id3);
+
+					results = storage.Traverse()
+									 .Execute(id2);
+
+					results.Should()
+					.HaveCount(3)
+					.And
+					.ContainInOrder(id2, id3, id1);
+				}
+			}
+		}
+
+		[Fact]
+		public void Traversal_with_max_results_lower_than_actual_results_should_have_no_effect()
+		{
+			using (var storage = new GraphStorage())
+			{
+				long id1, id2, id3;
+				using (var tx = storage.WriteTransaction())
+				{
+					id1 = storage.AddVertex(tx, new byte[] { 1, 2, 3 });
+					id2 = storage.AddVertex(tx, new byte[] { 3, 2, 1 });
+					id3 = storage.AddVertex(tx, new byte[] { 1, 1, 1 });
+					storage.AddEdge(tx, id1, id2);
+					storage.AddEdge(tx, id2, id3);
+					storage.AddEdge(tx, id3, id1);
+					tx.Commit();
+				}
+
+				using (var tx = storage.ReadTransaction())
+				{
+					var results = storage.Traverse()
+										 .WithMaxResults(50)
+										 .Execute(id1);
+
+					results.Should()
+						.HaveCount(3)
+						.And
+						.ContainInOrder(id1, id2, id3);
+
+					results = storage.Traverse()
+									 .Execute(id2);
+
+					results.Should()
+					.HaveCount(3)
+					.And
+					.ContainInOrder(id2, id3, id1);
+				}
+			}
+		}
+
+		[Fact]
+		public void Traversal_with_max_results_should_return_proper_number_of_results1()
+		{
+			using (var storage = new GraphStorage())
+			{
+				long id1, id2, id3;
+				using (var tx = storage.WriteTransaction())
+				{
+					id1 = storage.AddVertex(tx, new byte[] { 1, 2, 3 });
+					id2 = storage.AddVertex(tx, new byte[] { 3, 2, 1 });
+					id3 = storage.AddVertex(tx, new byte[] { 1, 1, 1 });
+					storage.AddEdge(tx, id1, id2);
+					storage.AddEdge(tx, id2, id3);
+					storage.AddEdge(tx, id3, id1);
+					tx.Commit();
+				}
+
+				using (var tx = storage.ReadTransaction())
+				{
+					var results = storage.Traverse()
+										 .WithMaxResults(2)
+										 .Execute(id1);
+
+					results.Should()
+						.HaveCount(2)
+						.And
+						.ContainInOrder(id1, id2);
+
+					results = storage.Traverse()
+									 .Execute(id2);
+
+					results.Should()
+					.HaveCount(2)
+					.And
+					.ContainInOrder(id2, id3);
 				}
 			}
 		}

@@ -1,12 +1,21 @@
 using System;
 using System.Collections.Generic;
 using Voron.Data.BTrees;
+using Voron.Data.Compact;
 using Voron.Data.RawData;
 using Voron.Impl;
 using Voron.Util.Conversion;
 
 namespace Voron.Data.Tables
 {
+    [Flags]
+    public enum TableIndexType
+    {
+        Default = 0x01,
+        BTree = 0x01,
+        Compact = 0x02,
+    }
+
     public unsafe class TableSchema
     {
         public static readonly Slice ActiveSectionSlice = "Active-Section";
@@ -21,6 +30,8 @@ namespace Voron.Data.Tables
 
         public class SchemaIndexDef
         {
+            public TableIndexType Type = TableIndexType.Default;
+
             /// <summary>
             /// Here we take advantage on the fact that the values are laid out in memory sequentially
             /// we can point to a certain item index, and use one or more fields in the key directly, 
@@ -28,22 +39,35 @@ namespace Voron.Data.Tables
             /// </summary>
             public int StartIndex = -1;
             public int Count = -1;
-            public bool MultiValue;
             public Slice NameAsSlice;
             public string Name;
 
-            public bool IsGlobal;
+            public bool IsGlobal;                        
 
             public Slice GetSlice(TableValueReader value)
             {
                 int totalSize;
                 var ptr = value.Read(StartIndex, out totalSize);
+#if DEBUG
+                if (totalSize < 0)
+                    throw new ArgumentOutOfRangeException(nameof(totalSize), "Size cannot be negative");
+#endif
                 for (var i = 1; i < Count; i++)
                 {
                     int size;
                     value.Read(i + StartIndex, out size);
+#if DEBUG
+                    if (size < 0)
+                        throw new ArgumentOutOfRangeException(nameof(size), "Size cannot be negative");
+#endif
                     totalSize += size;
                 }
+#if DEBUG
+                if (totalSize < 0 || totalSize > value.Size)
+                    throw new ArgumentOutOfRangeException(nameof(value), "Reading a slice that is longer than the value");
+                if (totalSize > ushort.MaxValue)
+                    throw new ArgumentOutOfRangeException(nameof(totalSize), "Reading a slice that too big to be a slice");
+#endif
                 return new Slice(ptr, (ushort)totalSize);
             }
         }
@@ -62,9 +86,7 @@ namespace Voron.Data.Tables
                 var ptr = value.Read(StartIndex, out totalSize);
                 return EndianBitConverter.Big.ToInt64(ptr);
             }
-        }
-
-
+        }        
 
         private SchemaIndexDef _pk;
         private readonly Dictionary<string, SchemaIndexDef> _indexes = new Dictionary<string, SchemaIndexDef>();
@@ -97,7 +119,6 @@ namespace Voron.Data.Tables
             if (string.IsNullOrWhiteSpace(_pk.Name))
                 _pk.Name = "PK";
             _pk.NameAsSlice = _pk.Name;
-            _pk.MultiValue = false;
 
             if (_pk.Count > 1)
                 throw new InvalidOperationException("Primary key must be a single field");
@@ -120,40 +141,87 @@ namespace Voron.Data.Tables
         /// </summary>
         public void Create(Transaction tx, string name)
         {
-            if (_pk == null)
-                throw new InvalidOperationException($"Cannot create table {name} without a primary key");
+            if (_pk == null && _indexes.Count == 0 && _fixedSizeIndexes.Count == 0)
+                throw new InvalidOperationException($"Cannot create table {name} without a primary key and no indexes");
 
             var tableTree = tx.CreateTree(name);
             if (tableTree.State.NumberOfEntries > 0)
                 return; // this was already created
 
-            var rawDataActiveSection = ActiveRawDataSmallSection.Create(tx.LowLevelTransaction);
+            var rawDataActiveSection = ActiveRawDataSmallSection.Create(tx.LowLevelTransaction, name);
             tableTree.Add(ActiveSectionSlice, EndianBitConverter.Little.GetBytes(rawDataActiveSection.PageNumber));
-            var stats = (TableSchemaStats*) tableTree.DirectAdd(StatsSlice, sizeof (TableSchemaStats));
+            var stats = (TableSchemaStats*)tableTree.DirectAdd(StatsSlice, sizeof(TableSchemaStats));
             stats->NumberOfEntries = 0;
 
-            if (_pk.IsGlobal == false)
+            if (_pk != null)
             {
-                var indexTree = Tree.Create(tx.LowLevelTransaction, tx);
-                var treeHeader = tableTree.DirectAdd(_pk.NameAsSlice, sizeof (TreeRootHeader));
-                indexTree.State.CopyTo((TreeRootHeader*) treeHeader);
-            }
-            else
-            {
-                tx.CreateTree(_pk.Name);
+                switch (_pk.Type)
+                {
+                    case TableIndexType.BTree:
+                        {
+                            if (_pk.IsGlobal == false)
+                            {
+                                var indexTree = Tree.Create(tx.LowLevelTransaction, tx);
+                                var treeHeader = tableTree.DirectAdd(_pk.NameAsSlice, sizeof(TreeRootHeader));
+                                indexTree.State.CopyTo((TreeRootHeader*)treeHeader);
+                            }
+                            else
+                            {
+                                tx.CreateTree(_pk.Name);
+                            }
+
+                            break;
+                        }
+                    case TableIndexType.Compact:
+                        {
+                            if (_pk.IsGlobal == false)
+                            {
+                                var indexTree = PrefixTree.Create(tx, tableTree, _pk.Name);
+                                var treeHeader = tableTree.DirectAdd(_pk.NameAsSlice, sizeof(PrefixTreeRootHeader));
+                                indexTree.State.CopyTo((PrefixTreeRootHeader*)treeHeader);
+                            }
+                            else
+                            {
+                                tx.CreatePrefixTree(_pk.Name);
+                            }
+                            break;
+                        }
+                }
             }
 
             foreach (var indexDef in _indexes.Values)
             {
-                if (indexDef.IsGlobal == false)
+                switch (indexDef.Type)
                 {
-                    var indexTree = Tree.Create(tx.LowLevelTransaction, tx);
-                    var treeHeader = tableTree.DirectAdd(indexDef.NameAsSlice, sizeof (TreeRootHeader));
-                    indexTree.State.CopyTo((TreeRootHeader*) treeHeader);
-                }
-                else
-                {
-                    tx.CreateTree(indexDef.Name);
+                    case TableIndexType.BTree:
+                        {
+                            if (indexDef.IsGlobal == false)
+                            {
+                                var indexTree = Tree.Create(tx.LowLevelTransaction, tx);
+                                var treeHeader = tableTree.DirectAdd(indexDef.NameAsSlice, sizeof(TreeRootHeader));
+                                indexTree.State.CopyTo((TreeRootHeader*)treeHeader);
+                            }
+                            else
+                            {
+                                tx.CreateTree(indexDef.Name);
+                            }
+
+                            break;
+                        }
+                    case TableIndexType.Compact:
+                        {
+                            if (indexDef.IsGlobal == false)
+                            {
+                                var indexTree = PrefixTree.Create(tx, tableTree, indexDef.NameAsSlice);
+                                var treeHeader = tableTree.DirectAdd(indexDef.NameAsSlice, sizeof(PrefixTreeRootHeader));
+                                indexTree.State.CopyTo((PrefixTreeRootHeader*)treeHeader);
+                            }
+                            else
+                            {
+                                tx.CreatePrefixTree(indexDef.Name);
+                            }
+                            break;
+                        }
                 }
             }
         }

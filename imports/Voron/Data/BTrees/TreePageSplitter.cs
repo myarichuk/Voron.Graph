@@ -36,8 +36,8 @@ namespace Voron.Data.BTrees
             _nodeType = nodeType;
             _nodeVersion = nodeVersion;
             _cursor = cursor;
-            var page = _cursor.Pages.First.Value;
-			_page = _tree.ModifyPage(page);
+            TreePage page = _cursor.Pages.First.Value;
+            _page = _tree.ModifyPage(page);
             _cursor.Pop();
         }
 
@@ -54,12 +54,12 @@ namespace Voron.Data.BTrees
         {
             using (DisableFreeSpaceUsageIfSplittingRootTree())
             {
-                var rightPage = _tree.NewPage(_page.TreeFlags, 1);
+                TreePage rightPage = _tree.NewPage(_page.TreeFlags, 1);
 
-				if (_cursor.PageCount == 0) // we need to do a root split
+                if (_cursor.PageCount == 0) // we need to do a root split
                 {
-                    var newRootPage = _tree.NewPage(TreePageFlags.Branch, 1);
-					_cursor.Push(newRootPage);
+                    TreePage newRootPage = _tree.NewPage(TreePageFlags.Branch, 1);
+                    _cursor.Push(newRootPage);
                     _tree.State.RootPageNumber = newRootPage.PageNumber;
                     _tree.State.Depth++;
 
@@ -95,8 +95,8 @@ namespace Voron.Data.BTrees
                         {
                             // here we steal the last entry from the current page so we maintain the implicit null left entry
 
-                            var node = _page.GetNode(_page.NumberOfEntries - 1);
-							Debug.Assert(node->Flags == TreeNodeFlags.PageRef);
+                            TreeNodeHeader* node = _page.GetNode(_page.NumberOfEntries - 1);
+                            Debug.Assert(node->Flags == TreeNodeFlags.PageRef);
                             rightPage.AddPageRefNode(0, Slice.BeforeAllKeys, node->PageNumber);
                             pos = AddNodeToPage(rightPage, 1);
 
@@ -187,9 +187,9 @@ namespace Voron.Data.BTrees
 
             AddSeparatorToParentPage(rightPage.PageNumber, seperatorKey);
 
-            var instance = _page.CreateNewEmptyKey();
+            Slice instance = _page.CreateNewEmptyKey();
 
-			bool addedAsImplicitRef = false;
+            bool addedAsImplicitRef = false;
 
             if (_page.IsBranch && toRight && seperatorKey.Equals(_newKey))
             {
@@ -202,8 +202,8 @@ namespace Voron.Data.BTrees
             ushort nKeys = _page.NumberOfEntries;
             for (int i = splitIndex; i < nKeys; i++)
             {
-                var node = _page.GetNode(i);
-				if (_page.IsBranch && rightPage.NumberOfEntries == 0)
+                TreeNodeHeader* node = _page.GetNode(i);
+                if (_page.IsBranch && rightPage.NumberOfEntries == 0)
                 {
                     rightPage.CopyNodeDataToEndOfPage(node, Slice.BeforeAllKeys);
                 }
@@ -298,8 +298,8 @@ namespace Voron.Data.BTrees
                 return pageSplitter.Execute();
             }
 
-            var dataPos = AddNodeToPage(p, pos, newKeyToInsert);
-			_cursor.Push(p);
+            byte* dataPos = AddNodeToPage(p, pos, newKeyToInsert);
+            _cursor.Push(p);
             return dataPos;
         }
 
@@ -319,16 +319,16 @@ namespace Voron.Data.BTrees
 
         private int AdjustSplitPosition(int currentIndex, int splitIndex, ref bool toRight)
         {
-            var keyToInsert = _newKey;
+            Slice keyToInsert = _newKey;
 
-			int pageSize = TreeSizeOf.NodeEntry(_tx.DataPager.PageMaxSpace, keyToInsert, _len) + Constants.NodeOffsetSize;
+            int pageSize = TreeSizeOf.NodeEntry(_tx.DataPager.PageMaxSpace, keyToInsert, _len) + Constants.NodeOffsetSize;
 
             if (toRight == false)
             {
                 for (int i = 0; i < splitIndex; i++)
                 {
-                    var node = _page.GetNode(i);
-					pageSize += node->GetNodeSize();
+                    TreeNodeHeader* node = _page.GetNode(i);
+                    pageSize += node->GetNodeSize();
                     pageSize += pageSize & 1;
                     if (pageSize > _tx.DataPager.PageMaxSpace)
                     {
@@ -346,8 +346,8 @@ namespace Voron.Data.BTrees
             {
                 for (int i = _page.NumberOfEntries - 1; i >= splitIndex; i--)
                 {
-                    var node = _page.GetNode(i);
-					pageSize += node->GetNodeSize();
+                    TreeNodeHeader* node = _page.GetNode(i);
+                    pageSize += node->GetNodeSize();
                     pageSize += pageSize & 1;
                     if (pageSize > _tx.DataPager.PageMaxSpace)
                     {

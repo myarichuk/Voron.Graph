@@ -49,8 +49,8 @@ namespace Voron.Util
                 fixed (uint* t3 = Table_3)
                 {
                     byte* dataPtr = ptr + offset;
-                    var endPtr = dataPtr + count;
-					uint c;
+                    byte* endPtr = dataPtr + count;
+                    uint c;
                     uint uint32Value;
 
                     crc ^= 0xFFFFFFFF;
@@ -58,9 +58,9 @@ namespace Voron.Util
                     // Point x at first 4-byte aligned byte in string.  This might be
                     // just past the end of the string.
                     ulong pval = (ulong)dataPtr;
-                    var x = (byte*)(((pval + 3) >> 2) << 2);
+                    byte* x = (byte*)(((pval + 3) >> 2) << 2);
 
-					if (x <= endPtr)
+                    if (x <= endPtr)
                     {
                         // Process bytes until finished or p is 4-byte aligned
                         while (dataPtr != x)

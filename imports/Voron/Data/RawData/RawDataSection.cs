@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -17,7 +18,7 @@ namespace Voron.Data.RawData
         protected RawDataSmallSectionPageHeader* _sectionHeader;
 
         [StructLayout(LayoutKind.Sequential)]
-        protected struct RawDataEntrySizes
+        public struct RawDataEntrySizes
         {
             public short AllocatedSize;
             public short UsedSize;
@@ -60,23 +61,39 @@ namespace Voron.Data.RawData
                 var pageHeaderForId = PageHeaderFor(pageNumberInSection);
 
                 // this is in another section, cannot free it directly, so we'll forward to the right section
-                var sectionPageNumber = pageHeaderForId->PageNumber - pageHeaderForId->PageNumberInSection;
-                return new RawDataSection(_tx, sectionPageNumber).GetAllIdsInSectionContaining(id);
+                var sectionPageNumber = pageHeaderForId->PageNumber - pageHeaderForId->PageNumberInSection - 1;
+                var actualSection = new RawDataSection(_tx, sectionPageNumber);
+                if (actualSection._sectionHeader->SectionOwnerHash != _sectionHeader->SectionOwnerHash)
+                {
+                    throw new InvalidDataException(
+                        $"Cannot get all ids in section containing {id} because the raw data section starting in {sectionPageNumber} belongs to a different owner");
+                }
+                return actualSection.GetAllIdsInSectionContaining(id);
             }
 
             var ids = new List<long>(_sectionHeader->NumberOfEntries);
-            for (int i = 0; i < _sectionHeader->NumberOfPages; i++)
+            for (int i = 0; i < _sectionHeader->NumberOfPages && ids.Count < _sectionHeader->NumberOfEntries; i++)
             {
                 var pageHeader = PageHeaderFor(_sectionHeader->PageNumber + i + 1);
                 var offset = sizeof(RawDataSmallPageHeader);
                 while (offset < _pageSize)
                 {
-                    var sizes = (short*)((byte*)pageHeader + offset);
-                    if (sizes[1] != -1)
+                    var sizes = (RawDataEntrySizes*)((byte*)pageHeader + offset);
+                    if (sizes->UsedSize != -1)
                     {
-                        ids.Add((pageHeader->PageNumber * _pageSize) + offset);
+                        var currentId = (pageHeader->PageNumber * _pageSize) + offset;
+
+                        var posInPage = (int)(currentId % _tx.DataPager.PageSize);
+
+                        if (posInPage >= pageHeader->NextAllocation)
+                            break;
+
+                        ids.Add(currentId);
+                        
+                        if (ids.Count == _sectionHeader->NumberOfEntries)
+                            break;
                     }
-                    offset += sizeof(short) * 2 + sizes[0];
+                    offset += sizeof(short) * 2 + sizes->AllocatedSize;
                 }
             }
             return ids;
@@ -149,7 +166,8 @@ namespace Voron.Data.RawData
             pageHeader = ModifyPage(pageHeader);
             writePos = ((byte*)pageHeader + posInPage + sizeof(short) /*allocated*/+ sizeof(short) /*used*/);
             // note that we have to do this calc again, pageHeader might have changed
-            ((short*)((byte*)pageHeader + posInPage))[1] = (short)size;
+            ((RawDataEntrySizes*)((byte*)pageHeader + posInPage))->UsedSize = (short)size;
+            
             return true;
         }
 
@@ -168,8 +186,8 @@ namespace Voron.Data.RawData
                 throw new InvalidDataException(
                     $"Asked to load a past the allocated values: {id} from page {pageHeader->PageNumber}");
 
-            var sizes = (short*)((byte*)pageHeader + posInPage);
-			if (sizes[1] < 0)
+            var sizes = (RawDataEntrySizes*)((byte*)pageHeader + posInPage);
+			if (sizes->UsedSize < 0)
 			{
 				if (!throwOnAlreadyFreed)
 				{
@@ -180,12 +198,13 @@ namespace Voron.Data.RawData
 				throw new InvalidDataException(
 					$"Asked to load a value that was already freed: {id} from page {pageHeader->PageNumber}");
 			}
-            if (sizes[0] < sizes[1])
+
+            if (sizes->AllocatedSize < sizes->UsedSize)
                 throw new InvalidDataException(
                     $"Asked to load a value that where the allocated size is smaller than the used size: {id} from page {pageHeader->PageNumber}");
 
-            size = sizes[1];
-            return ((byte*)pageHeader + posInPage + sizeof(short) /*allocated*/+ sizeof(short) /*used*/);
+            size = sizes->UsedSize;
+            return (byte*)pageHeader + posInPage + sizeof(RawDataEntrySizes);
         }
 
         public long GetSectionPageNumber(long id)
@@ -193,7 +212,7 @@ namespace Voron.Data.RawData
             var posInPage = (int)(id % _pageSize);
             var pageNumberInSection = (id - posInPage) / _pageSize;
             var pageHeader = PageHeaderFor(pageNumberInSection);
-            var sectionPageNumber = pageHeader->PageNumber - pageHeader->PageNumberInSection;
+            var sectionPageNumber = pageHeader->PageNumber - pageHeader->PageNumberInSection - 1;
             return sectionPageNumber;
         }
 
@@ -203,7 +222,13 @@ namespace Voron.Data.RawData
             if (sectionPageNumber != _sectionHeader->PageNumber)
             {
                 // this is in another section, cannot delete it directly, so we'll forward to the right section
-                new RawDataSection(_tx, sectionPageNumber).DeleteSection(sectionPageNumber);
+                var actualSection = new RawDataSection(_tx, sectionPageNumber);
+                if (actualSection._sectionHeader->SectionOwnerHash != _sectionHeader->SectionOwnerHash)
+                {
+                    throw new InvalidDataException(
+                        $"Cannot delete section because the raw data section starting in {sectionPageNumber} belongs to a different owner");
+                }
+                actualSection.DeleteSection(sectionPageNumber);
                 return;
             }
 
@@ -223,10 +248,17 @@ namespace Voron.Data.RawData
             if (Contains(id) == false)
             {
                 // this is in another section, cannot free it directly, so we'll forward to the right section
-                var sectionPageNumber = pageHeader->PageNumber - pageHeader->PageNumberInSection;
+                var sectionPageNumber = pageHeader->PageNumber - pageHeader->PageNumberInSection - 1;
                 var actualSection = new RawDataSection(_tx, sectionPageNumber);
-                if(actualSection.Contains(id)==false)
+                if (actualSection.Contains(id) == false)
                     throw new InvalidDataException($"Cannot delete {id} because the raw data section starting in {sectionPageNumber} with size {actualSection.AllocatedSize} doesn't own it. Possible data corruption?");
+
+                if (actualSection._sectionHeader->SectionOwnerHash != _sectionHeader->SectionOwnerHash)
+                {
+                    throw new InvalidDataException(
+                        $"Cannot delete {id} because the raw data section starting in {sectionPageNumber} belongs to a different owner");
+                }
+
                 return actualSection.Free(id);
             }
 
@@ -234,16 +266,16 @@ namespace Voron.Data.RawData
             if (posInPage >= pageHeader->NextAllocation)
                 throw new InvalidDataException($"Asked to load a past the allocated values: {id} from page {pageHeader->PageNumber}");
 
-            var sizes = (short*)((byte*)pageHeader + posInPage);
-            if (sizes[1] < 0)
+            var sizes = (RawDataEntrySizes*)((byte*)pageHeader + posInPage);
+            if (sizes->UsedSize < 0)
                 throw new InvalidDataException($"Asked to free a value that was already freed: {id} from page {pageHeader->PageNumber}");
 
-            sizes[1] = -1;
+            sizes->UsedSize = -1;
             pageHeader->NumberOfEntries--;
 
             EnsureHeaderModified();
             _sectionHeader->NumberOfEntries--;
-            var sizeFreed = sizes[0] + (sizeof(short) * 2);
+            var sizeFreed = sizes->AllocatedSize + (sizeof(short) * 2);
             _sectionHeader->AllocatedSize -= sizeFreed;
             AvailableSpace[pageHeader->PageNumberInSection] += (ushort)sizeFreed;
 
@@ -283,7 +315,16 @@ namespace Voron.Data.RawData
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected RawDataSmallPageHeader* PageHeaderFor(long pageNumber)
         {
-            return PageHeaderFor(_tx, pageNumber);
+            var pageHeader = PageHeaderFor(_tx, pageNumber);
+
+            if ((pageHeader->Flags & PageFlags.RawData) != PageFlags.RawData)
+                ThrowInvalidPage(pageNumber);
+            return pageHeader;
+        }
+
+        private static void ThrowInvalidPage(long id)
+        {
+            throw new InvalidOperationException($"Page {id} is not a raw data section page");
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

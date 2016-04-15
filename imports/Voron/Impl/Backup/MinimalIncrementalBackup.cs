@@ -15,7 +15,7 @@ namespace Voron.Impl.Backup
 		public void ToFile(StorageEnvironment env, string backupPath, CompressionLevel compression = CompressionLevel.Optimal, Action<string> infoNotify = null,
 			Action backupStarted = null)
 		{
-			if (!env.Options.IncrementalBackupEnabled)
+			if (env.Options.IncrementalBackupEnabled == false)
 				throw new InvalidOperationException("Incremental backup is disabled for this storage");
 
 			var pageNumberToPageInScratch = new Dictionary<long, long>();
@@ -44,7 +44,7 @@ namespace Voron.Impl.Backup
 				if (backupStarted != null)
 					backupStarted();
 
-				infoNotify?.Invoke("Voron - reading storage journals for snapshot pages");
+				infoNotify("Voron - reading storage journals for snapshot pages");
 
 				var lastBackedUpFile = backupInfo.LastBackedUpJournal;
 				var lastBackedUpPage = backupInfo.LastBackedUpJournalPage;
@@ -66,10 +66,8 @@ namespace Voron.Impl.Backup
 					{
 						using (var filePager = env.Options.OpenJournalPager(journalNum))
 						{
-							var reader = new JournalReader(filePager, recoveryPager, 0, null, recoveryPage)
-							{
-								MaxPageToRead = lastBackedUpPage = journalFile.JournalWriter.NumberOfAllocatedPages
-							};
+							var reader = new JournalReader(filePager, recoveryPager, 0, null, recoveryPage);
+							reader.MaxPageToRead = lastBackedUpPage = journalFile.JournalWriter.NumberOfAllocatedPages;
 							if (journalNum == lastWrittenLogFile) // set the last part of the log file we'll be reading
 								reader.MaxPageToRead = lastBackedUpPage = lastWrittenLogPage;
 
@@ -116,11 +114,11 @@ namespace Voron.Impl.Backup
 
 				if (pageNumberToPageInScratch.Count == 0)
 				{
-					infoNotify?.Invoke("Voron - no changes since last backup, nothing to do");
+					infoNotify("Voron - no changes since last backup, nothing to do");
 					return;
 				}
 
-				infoNotify?.Invoke("Voron - started writing snapshot file.");
+				infoNotify("Voron - started writing snapshot file.");
 
 				if (lastTransaction.TransactionId == -1)
 					throw new InvalidOperationException("Could not find any transactions in the journals, but found pages to write? That ain't right.");

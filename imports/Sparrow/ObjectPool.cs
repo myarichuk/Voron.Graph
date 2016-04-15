@@ -133,8 +133,8 @@ namespace Sparrow
             // Note that the initial read is optimistically not synchronized. That is intentional. 
             // We will interlock only when we have a candidate. in a worst case we may miss some
             // recently returned objects. Not a big deal.
-            var inst = _firstItem;
-			if (inst == null || inst != Interlocked.CompareExchange(ref _firstItem, null, inst))
+            T inst = _firstItem;
+            if (inst == null || inst != Interlocked.CompareExchange(ref _firstItem, null, inst))
             {
                 inst = AllocateSlow();
             }
@@ -160,8 +160,8 @@ namespace Sparrow
                 // Note that the initial read is optimistically not synchronized. That is intentional. 
                 // We will interlock only when we have a candidate. in a worst case we may miss some
                 // recently returned objects. Not a big deal.
-                var inst = items[i].Value;
-				if (inst != null)
+                T inst = items[i].Value;
+                if (inst != null)
                 {
                     if (inst == Interlocked.CompareExchange(ref items[i].Value, null, inst))
                     {

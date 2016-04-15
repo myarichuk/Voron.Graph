@@ -20,6 +20,7 @@ namespace Voron
 
         internal byte[] Array;
         internal byte* Pointer;
+
         public ushort Size;
         public ushort KeyLength;
         public SliceOptions Options;
@@ -49,14 +50,27 @@ namespace Voron
 
         internal BitVector ToBitVector()
         {
+            BitVector bitVector;
             if (Array != null)
             {
-                return BitVector.Of(true, Array);
+                bitVector = BitVector.Of(true, Array);
             }
             else
             {
-                return BitVector.Of(true, this.Pointer, this.KeyLength);                
-            }            
+                bitVector = BitVector.Of(true, this.Pointer, this.KeyLength);
+            }
+
+            ValidateBitVectorIsPrefixFree(bitVector);
+
+            return bitVector;
+        }
+
+        [Conditional("DEBUG")]
+        private void ValidateBitVectorIsPrefixFree(BitVector vector)
+        {
+            int start = vector.Count - 2 * BitVector.BitsPerByte;
+            for (int i = 0; i < 2 * BitVector.BitsPerByte; i++)
+                Debug.Assert(vector.Get(start + i) == false);
         }
 
         public bool Equals(Slice other)
@@ -197,8 +211,8 @@ namespace Voron
             var result = new uint[256];
             for (int i = 0; i < 256; i++)
             {
-                var s = i.ToString("X2");
-				result[i] = ((uint)s[0]) + ((uint)s[1] << 16);
+                string s = i.ToString("X2");
+                result[i] = ((uint)s[0]) + ((uint)s[1] << 16);
             }
             return result;
         }

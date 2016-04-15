@@ -143,7 +143,7 @@ namespace Voron.Data.BTrees
 				var tempPagePointer = tmp.TempPagePointer;
                 Memory.Copy(tempPagePointer, nestedPagePtr, currentSize);
 				Delete(key); // release our current page
-				var nestedPage = new TreePage(tempPagePointer, "multi tree", (ushort)currentSize);
+				TreePage nestedPage = new TreePage(tempPagePointer, "multi tree", (ushort)currentSize);
 
 				var ptr = DirectAdd(key, newSize);
 
@@ -155,7 +155,7 @@ namespace Voron.Data.BTrees
 					PageNumber = -1L // mark as invalid page number
 				};
 			
-				var nodeKey = nestedPage.CreateNewEmptyKey();
+				Slice nodeKey = nestedPage.CreateNewEmptyKey();
 				for (int i = 0; i < nestedPage.NumberOfEntries; i++)
 				{
 					var nodeHeader = nestedPage.GetNode(i);
@@ -170,7 +170,7 @@ namespace Voron.Data.BTrees
 
 		private void MultiAddOnNewValue(Slice key, Slice value, ushort? version, int maxNodeSize)
 		{
-			var valueToInsert = value;
+			Slice valueToInsert = value;
 
 			var requiredPageSize = Constants.TreePageHeaderSize + TreeSizeOf.LeafEntry(-1, valueToInsert, 0) + Constants.NodeOffsetSize;
 			if (requiredPageSize > maxNodeSize)

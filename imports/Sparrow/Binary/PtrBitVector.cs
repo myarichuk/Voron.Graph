@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace Sparrow.Binary
@@ -81,8 +82,8 @@ namespace Sparrow.Binary
         {
             Debug.Assert(BitConverter.IsLittleEndian);
 
-            var ptr = (ulong*)Bits;
-			int count = this.Count;
+            ulong* ptr = (ulong*)Bits;
+            int count = this.Count;
             int words = count / BitVector.BitsPerWord;
 
             ulong value;
@@ -107,10 +108,12 @@ namespace Sparrow.Binary
             }
 
             value = 0;
-            var bytePtr = Bits + words * BitVector.BytesPerWord;
+            byte* bytePtr = Bits + words * BitVector.BytesPerWord;
 
-			int rotations = (count / BitVector.BitsPerByte);
-            if (count % BitVector.BitsPerByte != 0)
+            // We want to know how many bytes we have left. 
+            int bitsLeft = (count % BitVector.BitsPerWord);
+            int rotations = bitsLeft / BitVector.BitsPerByte;
+            if (bitsLeft % BitVector.BitsPerByte != 0)
                 rotations++;
 
             // TODO: Can we just write it in Little Endian Format (aka in reverse order)?
@@ -127,6 +130,15 @@ namespace Sparrow.Binary
 
             idx = accumulator - Binary.Bits.MostSignificantBit(value) - 1;
             return idx < count ? idx : -1;
+        }
+
+        public string ToDebugString()
+        {
+            var builder = new StringBuilder();
+            for (int i = 0; i < this.Count; i++)
+                builder.Append(this[i] ? "1" : "0");
+
+            return builder.ToString();
         }
     }
 }

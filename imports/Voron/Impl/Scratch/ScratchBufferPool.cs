@@ -233,10 +233,24 @@ namespace Voron.Impl.Scratch
             long sizeAfterAllocation, Stopwatch sp, ScratchBufferItem current)
         {
             var debugInfoBuilder = new StringBuilder();
+            var totalPages = tx.GetTransactionPages().Count;
 
             debugInfoBuilder.AppendFormat("Current transaction id: {0}\r\n", tx.Id);
+            if ((totalPages + numberOfPages)*tx.Environment.Options.PageSize >= _sizeLimit/2)
+            {
+                debugInfoBuilder.Append("- - - - - - - - - - - - -\r\n");
+                debugInfoBuilder.AppendFormat(
+                    "This transaction is VERY big, and requires {0:##,###;;0} kb out of {1:##,###;;0} kb allows!\r\n",
+                    ((totalPages + numberOfPages)*tx.Environment.Options.PageSize)/1024,
+                    _sizeLimit/1024
+                    );
+                debugInfoBuilder.Append("- - - - - - - - - - - - -\r\n");
+            }
+            
             debugInfoBuilder.AppendFormat("Requested number of pages: {0} (adjusted size: {1} == {2:#,#;;0} KB)\r\n", numberOfPages,
                 size, size * tx.Environment.Options.PageSize / 1024);
+            debugInfoBuilder.AppendFormat("Total number of pages in tx: {0} (adjusted size: {1} == {2:#,#;;0} KB)\r\n", totalPages,
+               totalPages, totalPages * tx.Environment.Options.PageSize / 1024);
             debugInfoBuilder.AppendFormat("Oldest active transaction: {0} (snapshot: {1})\r\n", tx.Environment.OldestTransaction,
                 oldestActiveTransaction);
             debugInfoBuilder.AppendFormat("Oldest active transaction when flush was forced: {0}\r\n",
@@ -271,9 +285,9 @@ namespace Voron.Impl.Scratch
             debugInfoBuilder.AppendFormat("Compression buffer size: {0:#,#;;0} KB\r\n",
                 tx.Environment.Journal.CompressionBufferSize / 1024);
 
-            var debugInfo = debugInfoBuilder.ToString();
+            string debugInfo = debugInfoBuilder.ToString();
 
-			string message = string.Format("Cannot allocate more space for the scratch buffer.\r\n" +
+            string message = string.Format("Cannot allocate more space for the scratch buffer.\r\n" +
                                            "Current file size is:\t{0:#,#;;0} KB.\r\n" +
                                            "Requested size for current file:\t{1:#,#;;0} KB.\r\n" +
                                            "Requested total size for all files:\t{2:#,#;;0} KB.\r\n" +
@@ -327,8 +341,8 @@ namespace Voron.Impl.Scratch
         {
             var item = _scratchBuffers[scratchNumber];
 
-            var bufferFile = item.File;
-			return bufferFile.ReadPage(p, pagerState);
+            ScratchBufferFile bufferFile = item.File;
+            return bufferFile.ReadPage(p, pagerState);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -336,8 +350,8 @@ namespace Voron.Impl.Scratch
         {
             var item = _scratchBuffers[scratchNumber];
 
-            var bufferFile = item.File;
-			return bufferFile.AcquirePagePointer(p);
+            ScratchBufferFile bufferFile = item.File;
+            return bufferFile.AcquirePagePointer(p);
         }
 
         public void BreakLargeAllocationToSeparatePages(PageFromScratchBuffer value)

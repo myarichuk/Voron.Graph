@@ -8,6 +8,7 @@ using System.Diagnostics.Contracts;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
+using Voron.Exceptions;
 using Voron.Impl;
 
 namespace Voron.Data.Compact
@@ -36,7 +37,7 @@ namespace Voron.Data.Compact
 
         internal sealed class InternalTable
         {
-            private const int InitialCapacity = 64;
+            private const int InitialCapacity = 150000;
 
             private const uint kDeleted = 0xFFFFFFFE;
             private const uint kUnused = 0xFFFFFFFF;
@@ -45,16 +46,6 @@ namespace Voron.Data.Compact
             private const uint kHashMask = 0xFFFFFFFE;
             private const uint kSignatureMask = 0x7FFFFFFE;
             private const uint kDuplicatedMask = 0x80000000;
-
-            /// <summary>
-            /// By default, if you don't specify a hashtable size at construction-time, we use this size.  Must be a power of two, and at least kMinCapacity.
-            /// </summary>
-            private const int kInitialCapacity = 64;
-
-            /// <summary>
-            /// By default, if you don't specify a hashtable size at construction-time, we use this size.  Must be a power of two, and at least kMinCapacity.
-            /// </summary>
-            private const int kMinCapacity = 4;
 
             /// <summary>
             /// LoadFactor - controls hash map load. 4 means 100% load, ie. hashmap will grow
@@ -67,8 +58,10 @@ namespace Voron.Data.Compact
             private readonly PrefixTree owner;
             private readonly LowLevelTransaction _tx;
             private readonly PrefixTreeRootMutableState _root;
+            private readonly PrefixTreeTableMutableState _state;
+            private readonly PageLocator _pageLocator;
+
             private readonly int _entriesPerPage;
-            private PrefixTreeTablePageMutableState _state;
 
             /// <summary>
             /// The current capacity of the dictionary
@@ -129,10 +122,10 @@ namespace Voron.Data.Compact
 
                 this._tx = tx;
                 this._root = root;
-                this._entriesPerPage = _tx.DataPager.PageMaxSpace / sizeof(Entry);
+                this._state = root.Table;
 
-                var page = tx.GetPage(root.Table);
-                this._state = new PrefixTreeTablePageMutableState(tx, page);                
+                this._entriesPerPage = _tx.DataPager.PageMaxSpace / sizeof(Entry);
+                this._pageLocator = new PageLocator(tx);     
             }      
             
 
@@ -144,10 +137,10 @@ namespace Voron.Data.Compact
             private static int GetPagesToAllocate(int entriesPerPage, int capacity)
             {
                 // This is the amount of pages required to allocate the whole table in contiguous disk space.                               
-                return (capacity / entriesPerPage) + 2;
+                return (capacity / entriesPerPage) + 1;
             }      
 
-            internal static Page Allocate(LowLevelTransaction tx, PrefixTreeRootMutableState root, int newCapacity = InitialCapacity)
+            internal static PrefixTreeTableHeader Allocate(LowLevelTransaction tx, PrefixTreeRootMutableState root, int newCapacity = InitialCapacity)
             {
                 // Calculate the next power of 2.
                 newCapacity = Bits.NextPowerOf2(newCapacity);
@@ -158,77 +151,75 @@ namespace Voron.Data.Compact
                 var page = tx.AllocatePage(pagesCount);
                 tx.BreakLargeAllocationToSeparatePages(page.PageNumber);
 
-                var tableHeader = (PrefixTreeTablePageHeader*)page.Pointer;
-                tableHeader->Flags = tableHeader->Flags | PageFlags.ZFastTreePage;
-                tableHeader->Capacity = newCapacity;
-                tableHeader->NumberOfUsed = 0;
-                tableHeader->NumberOfDeleted = 0;
-                tableHeader->Size = 0;
-                tableHeader->NextGrowthThreshold = newCapacity * 4 / LoadFactor;
+                var table = new PrefixTreeTableHeader();
+                table.PageNumber = page.PageNumber;
+                table.Capacity = newCapacity;
+                table.NumberOfUsed = 0;
+                table.NumberOfDeleted = 0;
+                table.Size = 0;
+                table.NextGrowthThreshold = newCapacity * 4 / LoadFactor;
 
                 // Initialize the whole memory block with the initial values. 
-                var firstEntriesPage = tx.ModifyPage(page.PageNumber + 1);
-                firstEntriesPage.Flags |= PageFlags.ZFastTreePage;
+                var firstEntriesPage = tx.ModifyPage(page.PageNumber);
+                firstEntriesPage.Flags |= PageFlags.PrefixTreePage;
 
-                var srcPtr = firstEntriesPage.DataPointer;
-				BlockCopyMemoryHelper.Memset((Entry*)srcPtr, entriesPerPage, new Entry(kUnused, kUnused, kInvalidNode));
+                byte* srcPtr = firstEntriesPage.DataPointer;
+                BlockCopyMemoryHelper.Memset((Entry*)srcPtr, entriesPerPage, new Entry(kUnused, kUnused, kInvalidNode));
 
                 // Initialize using a copy trick. Because we are using 4K pages,
                 // the source page will usually be L1 cached improving performance.
                 int length = tx.DataPager.PageMaxSpace;
-                for ( int i = 2; i < pagesCount; i++ )
+                for ( int i = 1; i < pagesCount; i++ )
                 {
                     var dataPage = tx.ModifyPage(page.PageNumber + i);
-                    dataPage.Flags |= PageFlags.ZFastTreePage;
-                    var destPtr = dataPage.DataPointer;
+                    dataPage.Flags |= PageFlags.PrefixTreePage;
+                    byte* destPtr = dataPage.DataPointer;
 
-					Memory.Copy(destPtr, srcPtr, length);
+                    Memory.Copy(destPtr, srcPtr, length);
                 }
                 
-                return page;
+                return table;
             }
 
-            public void Add(long nodePtr, uint signature)
+            public void Add(long nodePtr, uint rHash)
             {
                 ResizeIfNeeded();
 
-                // We shrink the signature to the proper size (31 bits)
-                signature = signature & kSignatureMask;
+                // We shrink the signature to the proper size (30 bits)
+                uint signature = rHash & kSignatureMask;
+                uint hash = rHash & kHashMask;
+                int bucket = (int)(hash % Capacity);
 
-                int hash = (int)(signature & kHashMask);
-                int bucket = hash % Capacity;
-
-                uint uhash = (uint)hash;
                 int numProbes = 1;
                 do
                 {
                     var entry = ReadEntry(bucket);
                     if (entry->Signature == signature)
+                    {
                         entry->Signature |= kDuplicatedMask;
+                        WriteEntry(bucket, entry->Hash, entry->Signature, entry->NodePtr);
+                    }                        
 
                     uint nHash = entry->Hash;
                     if (nHash == kUnused)
                     {
-                        NumberOfUsed++;
-                        Count++;
+                        this._state.NumberOfUsed++;
 
                         goto SET;
                     }
                     else if (nHash == kDeleted)
                     {
-                        NumberOfDeleted--;
-                        Count++;
-
+                        this._state.NumberOfDeleted--;
                         goto SET;
                     }
 
                     bucket = (bucket + numProbes) % Capacity;
-                    numProbes++;
                 }
                 while (true);
 
                 SET:
-                WriteEntry(bucket, uhash, signature, nodePtr);
+                this._state.Size++;
+                WriteEntry(bucket, hash, signature, nodePtr);
 
 #if DETAILED_DEBUG_H
                 Console.WriteLine(string.Format("Add: {0}, Bucket: {1}, Signature: {2}", node.ToDebugString(this.owner), bucket, signature));
@@ -241,7 +232,7 @@ namespace Voron.Data.Compact
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             private Entry* ReadEntry(int bucket)
             {
-                return ReadEntry(bucket, this._root.Table);
+                return ReadEntry(bucket, this._state.PageNumber);
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -250,19 +241,14 @@ namespace Voron.Data.Compact
                 int pageNumber = bucket / _entriesPerPage;
                 int entryNumber = bucket % _entriesPerPage;
 
-                // TODO: Cache the last page (it will be probably be a hit).
-
-                var page = _tx.GetPage(tablePage + pageNumber + 1);
-				var entry = (Entry*)page.DataPointer;
-
-                return entry + entryNumber;
+                Page page = _pageLocator.GetReadOnlyPage(tablePage + pageNumber);
+                return ((Entry*)page.DataPointer) + entryNumber;
             }
-
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             private void WriteEntry(int bucket, uint uhash, uint signature, long nodePtr)
             {
-                WriteEntry(bucket, this._root.Table, uhash, signature, nodePtr);
+                WriteEntry(bucket, this._state.PageNumber, uhash, signature, nodePtr);
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -271,24 +257,20 @@ namespace Voron.Data.Compact
                 int pageNumber = bucket / _entriesPerPage;
                 int entryNumber = bucket % _entriesPerPage;
 
-                // TODO: Cache the last page (it will be probably be a hit).
+                Page page = _pageLocator.GetWritablePage(tablePage + pageNumber);
 
-                var page = _tx.ModifyPage(tablePage + pageNumber + 1);
-
-				var entry = (Entry*)page.DataPointer;
-                entry = entry + entryNumber;
+                var entry = ((Entry*)page.DataPointer) + entryNumber;
                 entry->Hash = uhash;
                 entry->Signature = signature;
                 entry->NodePtr = nodePtr;
             }
 
-            public void Remove(long nodePtr, uint signature)
+            public void Remove(long nodePtr, uint rHash)
             {
                 // We shrink the signature to the proper size (30 bits)
-                signature = signature & kSignatureMask;
-
-                int hash = (int)(signature & kHashMask);
-                int bucket = hash % Capacity;
+                uint signature = rHash & kSignatureMask;
+                uint hash = rHash & kHashMask;
+                int bucket = (int)(hash % Capacity);
 
                 int lastDuplicated = -1;
                 uint numProbes = 1; // how many times we've probed
@@ -303,31 +285,33 @@ namespace Voron.Data.Compact
                     {
                         // This is the last element and is not a duplicate, therefore the last one is not a duplicate anymore. 
                         if ((entry->Signature & kDuplicatedMask) == 0 && lastDuplicated != -1)
+                        { 
                             entry->Signature &= kSignatureMask;
-
+                            WriteEntry(bucket, entry->Hash, entry->Signature, entry->NodePtr);
+                        }
+                            
                         if (entry->Hash < kDeleted)
                         {
-
 #if DETAILED_DEBUG_H
                             Console.WriteLine(string.Format("Remove: {0}, Bucket: {1}, Signature: {2}", node.ToDebugString(this.owner), bucket, signature));
 #endif
                             WriteEntry(bucket, kDeleted, kUnused, kInvalidNode);
 
-                            NumberOfDeleted++;
-                            Count--;
+                            this._state.NumberOfDeleted++;
+                            this._state.Size--;
                         }
 
                         if (3 * this.NumberOfDeleted / 2 > this.Capacity - this.NumberOfUsed)
                         {
                             // We will force a rehash with the growth factor based on the current size.
-                            Shrink(Math.Max(InitialCapacity, Count * 2));
+                            Shrink(Math.Max(InitialCapacity, this._state.Size * 2));
                         }
 
                         return;
                     }
 
                     bucket = (int)((bucket + numProbes) % Capacity);
-                    numProbes++;                    
+                    //numProbes++;                    
 
                     Debug.Assert(numProbes < 100);
 
@@ -336,28 +320,27 @@ namespace Voron.Data.Compact
                 while (entry->Hash != kUnused);
             }
 
-            public void Replace(long oldNodePtr, long newNodePtr, uint signature)
+            public void Replace(long oldNodePtr, long newNodePtr, uint rHash)
             {
                 // We shrink the signature to the proper size (30 bits)
-                signature = signature & kSignatureMask;
-
-                int hash = (int)(signature & kHashMask);
-                int pos = hash % Capacity;
+                uint signature = rHash & kSignatureMask;
+                uint hash = rHash & kHashMask;
+                int bucket = (int)(hash % Capacity);
 
                 int numProbes = 1;
 
-                var entry = ReadEntry(pos);
+                var entry = ReadEntry(bucket);
                 while (entry->NodePtr != oldNodePtr)
                 {
-                    pos = (pos + numProbes) % Capacity;
-                    numProbes++;
+                    bucket = (bucket + numProbes) % Capacity;
+                    //numProbes++;
 
-                    entry = ReadEntry(pos);
+                    entry = ReadEntry(bucket);
                 }
 
-                AssertReplace(pos, hash, newNodePtr);
+                AssertReplace(bucket, (int)hash, newNodePtr);
 
-                WriteEntry(pos, entry->Hash, entry->Signature, newNodePtr);
+                WriteEntry(bucket, entry->Hash, entry->Signature, newNodePtr);
 
 #if DETAILED_DEBUG_H
                 Console.WriteLine(string.Format("Old: {0}, Bucket: {1}, Signature: {2}", oldNode.ToDebugString(this.owner), pos, hash, signature));
@@ -378,21 +361,22 @@ namespace Voron.Data.Compact
                 Debug.Assert(entry->NodePtr != kInvalidNode);
                 Debug.Assert(entry->Hash == (uint)hash);
 
-                var node = this.owner.ReadNodeByName(entry->NodePtr);
-                var newNode = this.owner.ReadNodeByName(newNodePtr);
+                var node = this.owner.DirectRead(entry->NodePtr);
+                var newNode = this.owner.DirectRead(newNodePtr);
                 Debug.Assert(this.owner.Handle(node).CompareTo(this.owner.Handle(newNode)) == 0);
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public int GetExactPosition(BitVector key, int prefixLength, uint signature)
+            public int GetExactPosition(BitVector key, int prefixLength, uint rHash)
             {
-                signature = signature & kSignatureMask;
-
-                int pos = (int)(signature & kHashMask) % Capacity;
+                // We shrink the signature to the proper size (30 bits)
+                uint signature = rHash & kSignatureMask;
+                uint hash = rHash & kHashMask;
+                int bucket = (int)(hash % Capacity);
 
                 int numProbes = 1;
 
-                var entry = ReadEntry(pos);
+                var entry = ReadEntry(bucket);
 
                 uint nSignature;
                 do
@@ -401,21 +385,20 @@ namespace Voron.Data.Compact
 
                     if ((nSignature & kSignatureMask) == signature)
                     {
-                        var node = this.owner.ReadNodeByName(entry->NodePtr);
-						if (this.owner.GetHandleLength(node) == prefixLength)
+                        Node* node = this.owner.DirectRead(entry->NodePtr);
+                        if (this.owner.GetHandleLength(node) == prefixLength)
                         {
-                            var referenceNodePtr = this.owner.ReadNodeByName(node->ReferencePtr);
-							if ( key.IsPrefix(this.owner.Name(referenceNodePtr), prefixLength))
-                                return pos;
+                            Node* referenceNodePtr = this.owner.DirectRead(node->ReferencePtr);
+                            if ( key.IsPrefix(this.owner.Name(referenceNodePtr), prefixLength))
+                                return bucket;
                         }                            
                     }
 
-                    pos = (pos + numProbes) % Capacity;
-                    numProbes++;
+                    bucket = (bucket + numProbes) % Capacity;
 
                     Debug.Assert(numProbes < 100);
 
-                    entry = ReadEntry(pos);
+                    entry = ReadEntry(bucket);
                 }
                 while (entry->Hash != kUnused);
 
@@ -423,15 +406,16 @@ namespace Voron.Data.Compact
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public int GetPosition(BitVector key, int prefixLength, uint signature)
+            public int GetPosition(BitVector key, int prefixLength, uint rHash)
             {
-                signature = signature & kSignatureMask;
-
-                int pos = (int)(signature & kHashMask) % Capacity;
+                // We shrink the signature to the proper size (30 bits)
+                uint signature = rHash & kSignatureMask;
+                uint hash = rHash & kHashMask;
+                int bucket = (int)(hash % Capacity);
 
                 int numProbes = 1;
 
-                var entry = ReadEntry(pos);
+                var entry = ReadEntry(bucket);
 
                 uint nSignature;
                 do
@@ -440,25 +424,24 @@ namespace Voron.Data.Compact
 
                     if ((nSignature & kSignatureMask) == signature)
                     {                        
-                        var node = (Node*)this.owner.ReadNodeByName(entry->NodePtr);
                         if ((nSignature & kDuplicatedMask) == 0) 
-                            return pos;
-                        
+                            return bucket;
+
+                        var node = (Node*)this.owner.DirectRead(entry->NodePtr);
                         if (this.owner.GetHandleLength(node) == prefixLength)
                         {
-                            var referenceNodePtr = this.owner.ReadNodeByName(node->ReferencePtr);
-							if (key.IsPrefix(this.owner.Name(referenceNodePtr), prefixLength))
-                                return pos;
+                            Node* referenceNodePtr = this.owner.DirectRead(node->ReferencePtr);
+                            if (key.IsPrefix(this.owner.Name(referenceNodePtr), prefixLength))
+                                return bucket;
                         }
 
                     }
 
-                    pos = (pos + numProbes) % Capacity;
-                    numProbes++;
+                    bucket = (bucket + numProbes) % Capacity;
 
                     Debug.Assert(numProbes < 100);
 
-                    entry = ReadEntry(pos);
+                    entry = ReadEntry(bucket);
                 }
                 while (entry->Hash != kUnused);
 
@@ -484,7 +467,7 @@ namespace Voron.Data.Compact
                     if (!first)
                         builder.Append(", ");
                     
-                    var copyOfNode = this.owner.ReadNodeByName( node );
+                    var copyOfNode = this.owner.DirectRead( node );
 
                     builder.Append(tree.Handle(copyOfNode).ToDebugString())
                            .Append(" => ")
@@ -507,9 +490,9 @@ namespace Voron.Data.Compact
                 for (int i = 0; i < this.Capacity; i++)
                 {
                     var entry = ReadEntry(i);
-                    if (entry->Hash != kUnused)
+                    if (entry->Hash != kUnused && entry->Hash != kDeleted)
                     {
-                        var node = this.owner.ReadNodeByName(entry->NodePtr);
+                        var node = this.owner.DirectRead(entry->NodePtr);
 
                         builder.Append("Signature:")
                                .Append(entry->Signature & kSignatureMask)
@@ -542,7 +525,7 @@ namespace Voron.Data.Compact
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             private void ResizeIfNeeded()
             {
-                if (Count >= NextGrowthThreshold)
+                if (this._state.Size >= NextGrowthThreshold)
                 {
                     Grow(Capacity * 2);
                 }
@@ -558,22 +541,24 @@ namespace Voron.Data.Compact
                 var pages = GetPagesToAllocate(entriesPerPage, this.Capacity);
 
                 // Allocate the new table storage.
-                var newPage = Allocate(_tx, _root, newCapacity);
-                var oldPage = _tx.GetPage(_root.Table);
-                Rehash(oldPage, newPage, newCapacity); // Rehash into the new pages. 
+                var newHeader = Allocate(_tx, _root, newCapacity);
+                var oldPageNumber = _state.PageNumber;
+
+                newHeader = Rehash(oldPageNumber, newHeader.PageNumber, newCapacity); // Rehash into the new pages. 
+
+                ValidateRehashContent(_state, newHeader);
 
                 // Free the old table storage.
                 for (int i = 0; i < pages; i++)
-                    _tx.FreePage(_root.Table + i);
+                    _tx.FreePage(oldPageNumber + i);
 
                 // Change the current table with the new one and use the new table state. 
-                _root.Table = newPage.PageNumber;
-                _state = new PrefixTreeTablePageMutableState(_tx, newPage);
+                _state.Set(newHeader);
             }
 
             private void Shrink(int newCapacity)
             {
-                Contract.Requires(newCapacity > Count);
+                Contract.Requires(newCapacity > this._state.Size);
                 Contract.Ensures(this.NumberOfUsed < this.Capacity);
 
                 // Calculate the amount of pages the old table uses. 
@@ -583,67 +568,97 @@ namespace Voron.Data.Compact
                 // Calculate the next power of 2.
                 newCapacity = Math.Max(Bits.NextPowerOf2(newCapacity), InitialCapacity);
 
-                var newPage = Allocate(_tx, _root, newCapacity);
-                var oldPage = _tx.GetPage(_root.Table);
-                Rehash(oldPage, newPage, newCapacity);
+                var newHeader = Allocate(_tx, _root, newCapacity);
+
+                long oldPageNumber = _state.PageNumber;
+                newHeader = Rehash(oldPageNumber, newHeader.PageNumber, newCapacity);
+
+                ValidateRehashContent(_state, newHeader);
 
                 // Free the old table storage.
                 for (int i = 0; i < pages; i++)
-                    _tx.FreePage(oldPage.PageNumber + i);
+                    _tx.FreePage(oldPageNumber + i);
 
                 // Change the current table with the new one and use the new table state. 
-                _root.Table = newPage.PageNumber;
-                _state = new PrefixTreeTablePageMutableState(_tx, newPage);
+                _state.Set(newHeader);
             }
 
-            private void Rehash(Page oldPage, Page newTable, int newCapacity)
+            private PrefixTreeTableHeader Rehash(long sourceTablePage, long destinationTablePage, int newCapacity)
             {
-                var oldHeader = (PrefixTreeTablePageHeader*)oldPage.Pointer;
-
                 // Rehashing, no allocation happens here. 
-                uint capacity = (uint)newCapacity;
+                uint destCapacity = (uint)newCapacity;
 
                 var size = 0;
-                for (int it = 0; it < oldHeader->Capacity; it++)
+
+                int sourceCapacity = _state.Capacity;
+
+                for (int it = 0; it < sourceCapacity; it++)
                 {
-                    var currentEntry = this.ReadEntry(it, oldPage.PageNumber);
-                    uint hash = currentEntry->Hash;
-                    if (hash >= kDeleted) // No interest for the process of rehashing, we are skipping it.
-                        continue;
-
-                    uint signature = currentEntry->Signature & kSignatureMask;
-
-                    uint numProbes = 1;
-                    uint bucket = hash % capacity;
-
-                    var newEntry = this.ReadEntry((int)bucket, newTable.PageNumber);
-                    while (!(newEntry->Hash == kUnused))
+                    var sourceEntry = this.ReadEntry(it, sourceTablePage);
+                    if (sourceEntry->Hash < kDeleted)
                     {
-                        if (newEntry->Signature == signature)
-                            newEntry->Signature |= kDuplicatedMask;
+                        // Clear the duplicated signal. 
+                        uint signature = sourceEntry->Signature & kSignatureMask;
 
-                        bucket = (bucket + numProbes) % capacity;
-                        newEntry = this.ReadEntry((int)bucket, newTable.PageNumber);
+                        uint numProbes = 1;
+                        uint bucket = sourceEntry->Hash % destCapacity;
 
-                        numProbes++;
-                    }
+                        var newEntry = this.ReadEntry((int)bucket, destinationTablePage);
+                        while (!(newEntry->Hash == kUnused))
+                        {
+                            if (newEntry->Signature == signature)
+                            {
+                                newEntry->Signature |= kDuplicatedMask;
+                                WriteEntry((int)bucket, destinationTablePage, newEntry->Hash, newEntry->Signature, newEntry->NodePtr);
+                            }
 
-                    WriteEntry((int)bucket, newTable.PageNumber, hash, signature, currentEntry->NodePtr);
+                            bucket = (bucket + numProbes) % destCapacity;
+                            newEntry = this.ReadEntry((int)bucket, destinationTablePage);
+                        }
 
-                    size++;
+                        WriteEntry((int)bucket, destinationTablePage, sourceEntry->Hash, signature, sourceEntry->NodePtr);
+
+                        size++;
+                    }                        
                 }
 
-                var newHeader = (PrefixTreeTablePageHeader*)newTable.Pointer;
-                newHeader->Capacity = newCapacity;
-                newHeader->Size = size;                
+                Debug.Assert(_state.Size == size);
 
-                newHeader->NumberOfUsed = size;
-                newHeader->NumberOfDeleted = 0;
-                newHeader->NextGrowthThreshold = newCapacity * 4 / LoadFactor;
+                var newHeader = new PrefixTreeTableHeader();
+                newHeader.Capacity = newCapacity;
+                newHeader.Size = size;
+                newHeader.PageNumber = destinationTablePage;
 
-                Debug.Assert(oldHeader->Size == newHeader->Size);
+                newHeader.NumberOfUsed = size;
+                newHeader.NumberOfDeleted = 0;
+                newHeader.NextGrowthThreshold = newCapacity * 4 / LoadFactor;
+
+                return newHeader;
             }
 
+            [Conditional("DEBUG")]
+            private void ValidateRehashContent(PrefixTreeTableMutableState srcTable, PrefixTreeTableHeader destTable)
+            {
+                int srcNonTombstones = 0;
+                for (int i = 0; i < srcTable.Capacity; i++)
+                {
+                    var srcEntry = ReadEntry(i, srcTable.PageNumber);
+                    if (srcEntry->Hash < kDeleted)
+                        srcNonTombstones++;
+                }
+
+                int destNonTombstones = 0;
+                for (int i = 0; i < destTable.Capacity; i++)
+                {
+                    var destEntry = ReadEntry(i, destTable.PageNumber);
+                    if (destEntry->Hash < kDeleted)
+                        destNonTombstones++;
+                }
+
+                if (srcNonTombstones != destNonTombstones)
+                    throw new VoronUnrecoverableErrorException("After rehash the table has different values");
+
+            }
 
             public sealed class KeyCollection : IEnumerable<BitVector>, IEnumerable
             {
@@ -679,7 +694,7 @@ namespace Voron.Data.Compact
                         var entry = dictionary.ReadEntry(i);
                         if (entry->Hash < kDeleted)
                         {
-                            var node = (Node*)dictionary.owner.ReadNodeByName(entry->NodePtr);
+                            var node = (Node*)dictionary.owner.DirectRead(entry->NodePtr);
                             array[index++] = dictionary.owner.Handle(node);
                         }                            
                     }
@@ -728,7 +743,7 @@ namespace Voron.Data.Compact
                             var entry = dictionary.ReadEntry(index);
                             if (entry->Hash < kDeleted)
                             {
-                                var node = dictionary.owner.ReadNodeByName(entry->NodePtr);
+                                var node = dictionary.owner.DirectRead(entry->NodePtr);
                                 currentKey = dictionary.owner.Handle(node);
                                 index++;
 
@@ -939,7 +954,7 @@ namespace Voron.Data.Compact
                     entry = ReadEntry(i);
                     if (entry->NodePtr != kInvalidNode)
                     {
-                        var node = this.owner.ReadNodeByName(entry->NodePtr);
+                        var node = this.owner.DirectRead(entry->NodePtr);
 
                         var handle = this.owner.Handle(node);
                         var hashState = Hashing.Iterative.XXHash32.Preprocess(handle.Bits);
@@ -952,7 +967,8 @@ namespace Voron.Data.Compact
 
                         Verify(() => position != -1);
                         Verify(() => entry->NodePtr == entryAtPosition->NodePtr);
-                        Verify(() => entry->Hash == (hash & kHashMask & kSignatureMask));
+                        Verify(() => entry->Hash == (hash & kHashMask));
+                        Verify(() => entry->Signature == (hash & kHashMask & kSignatureMask));
                         Verify(() => i == position);
 
                         count++;

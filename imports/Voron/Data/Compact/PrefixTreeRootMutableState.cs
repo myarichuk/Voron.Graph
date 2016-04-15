@@ -15,12 +15,10 @@ namespace Voron.Data.Compact
     {
         private readonly LowLevelTransaction _tx;
         private readonly PrefixTreeRootHeader* _pointer;
+        private readonly PrefixTreeTableMutableState _table;
 
         private IntPtr _innerCopyPtr;
         private PrefixTreeRootHeader* _innerCopy;
-
-        private readonly PrefixTreeTranslationTableMutableState _translationTable;
-
         private bool _isModified;
 
         public PrefixTreeRootMutableState(LowLevelTransaction tx, PrefixTreeRootHeader* header)
@@ -38,13 +36,13 @@ namespace Voron.Data.Compact
 
             this._innerCopy->RootObjectType = RootObjectType.PrefixTree;
 
-            this._translationTable = new PrefixTreeTranslationTableMutableState(tx, this);
+            this._table = new PrefixTreeTableMutableState(tx, this);
         }
 
-        public PrefixTreeTranslationTableMutableState TranslationTable
+        public PrefixTreeTableMutableState Table
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get { return _translationTable; }
+            get { return _table; }
         }
 
         public PrefixTreeRootHeader* Pointer
@@ -64,21 +62,6 @@ namespace Voron.Data.Compact
             set
             {
                 _innerCopy->RootNodeName = value;
-                IsModified = true;
-            }
-        }
-
-        /// <summary>
-        /// The table header page for the tree.
-        /// </summary>
-        public long Table
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get { return _innerCopy->Table; }
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            set
-            {
-                _innerCopy->Table = value;
                 IsModified = true;
             }
         }
@@ -131,7 +114,7 @@ namespace Voron.Data.Compact
         public bool IsModified
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get { return _isModified || _translationTable.IsModified; }
+            get { return _isModified; }
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             set
             {
@@ -144,8 +127,8 @@ namespace Voron.Data.Compact
         public void CopyTo(PrefixTreeRootHeader* header)
         {
             Memory.CopyInline((byte*)header, (byte*)_innerCopy, sizeof(PrefixTreeRootHeader));
-            if (_translationTable.IsModified)
-                _translationTable.CopyTo(header);
+            if (_table.IsModified)
+                _table.CopyTo(header);
         }
 
         #region IDisposable Support

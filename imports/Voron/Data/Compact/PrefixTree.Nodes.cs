@@ -37,6 +37,18 @@ namespace Voron.Data.Compact
             public bool IsInternal => Type == NodeType.Internal;
             public bool IsTombstone => Type == NodeType.Tombstone;
             public bool IsUninitialized => !IsLeaf && !IsInternal && !IsTombstone;
+
+            public static bool IsTombstonePtr(long ptr)
+            {
+                ulong uPtr = (ulong)ptr;
+                return uPtr > unchecked((ulong)Constants.TombstoneNodeName) && uPtr != unchecked((ulong)Constants.InvalidNodeName);
+            }
+
+            public static bool IsValidPtr(long ptr)
+            {
+                ulong uPtr = (ulong)ptr;
+                return uPtr < unchecked((ulong)Constants.TombstoneNodeName);
+            }
         }
 
         /// <summary>
@@ -164,8 +176,14 @@ namespace Voron.Data.Compact
             [FieldOffset(32)]
             public long DataPtr;
 
+            /// <summary>
+            /// The stored key size to avoid having to go getting the data.
+            /// </summary>
             [FieldOffset(40)]
-            public fixed byte Padding[8]; // to 48 bytes
+            public ushort KeySize;
+
+            [FieldOffset(42)]
+            public fixed byte Padding[6]; // to 48 bytes
 
             public Leaf(long previousPtr = Constants.InvalidNodeName, long nextPtr = Constants.InvalidNodeName)
             {
@@ -176,6 +194,7 @@ namespace Voron.Data.Compact
                 this.PreviousPtr = previousPtr;
                 this.ReferencePtr = Constants.InvalidNodeName;
                 this.DataPtr = Constants.InvalidNodeName;
+                this.KeySize = 0;
             }
 
             public void Initialize(short nameLength, long previousPtr = Constants.InvalidNodeName, long nextPtr = Constants.InvalidNodeName)
@@ -187,6 +206,7 @@ namespace Voron.Data.Compact
                 this.PreviousPtr = previousPtr;
                 this.ReferencePtr = Constants.InvalidNodeName;
                 this.DataPtr = Constants.InvalidNodeName;
+                this.KeySize = 0;
             }
 
             public bool IsLeaf => Type == NodeType.Leaf;

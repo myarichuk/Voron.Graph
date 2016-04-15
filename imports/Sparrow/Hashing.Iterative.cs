@@ -53,12 +53,12 @@ namespace Sparrow
                     {
                         uint h32;                        
 
-                        var bEnd = buffer + len;
-						if (len >= 16)
+                        byte* bEnd = buffer + len;
+                        if (len >= 16)
                         {
-                            var limit = bEnd - 16;
+                            byte* limit = bEnd - 16;
 
-							int iterations = Math.Min((int)((bEnd - buffer) / (4 * sizeof(uint))), startFrom / (4 * sizeof(uint)));
+                            int iterations = Math.Min((int)((bEnd - buffer) / (4 * sizeof(uint))), startFrom / (4 * sizeof(uint)));
 
                             int bucketNumber = Math.Min(iterations, context.Values.Length);
 
@@ -131,9 +131,9 @@ namespace Sparrow
 
                     if (len >= 16)
                     {
-                        var bEnd = buffer + len;
+                        byte* bEnd = buffer + len;
 
-						uint v1 = seed + XXHash32Constants.PRIME32_1 + XXHash32Constants.PRIME32_2;
+                        uint v1 = seed + XXHash32Constants.PRIME32_1 + XXHash32Constants.PRIME32_2;
                         uint v2 = seed + XXHash32Constants.PRIME32_2;
                         uint v3 = seed + 0;
                         uint v4 = seed - XXHash32Constants.PRIME32_1;

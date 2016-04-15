@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Threading;
 using Voron.Impl;
@@ -33,6 +34,8 @@ namespace Voron.Platform.Posix
             : base(pageSize)
         {
             _file = file;
+            PosixHelper.EnsurePathExists(file);
+
             _fd = Syscall.open(_file, OpenFlags.O_RDWR | OpenFlags.O_CREAT | OpenFlags.O_EXCL,
                 FilePermissions.S_IWUSR | FilePermissions.S_IRUSR);
                 
@@ -73,7 +76,8 @@ namespace Voron.Platform.Posix
 
         protected override PagerState AllocateMorePages(long newLength)
         {
-            ThrowObjectDisposedIfNeeded();
+            if (Disposed)
+                ThrowAlreadyDisposedException();
 
             var newLengthAfterAdjustment = NearestSizeToPageSize(newLength);
 
@@ -85,8 +89,8 @@ namespace Voron.Platform.Posix
             PosixHelper.AllocateFileSpace(_fd, (ulong)(_totalAllocationSize + allocationSize));
             _totalAllocationSize += allocationSize;
 
-            var newPagerState = CreatePagerState();
-			if (newPagerState == null)
+            PagerState newPagerState = CreatePagerState();
+            if (newPagerState == null)
             {
                 var errorMessage = string.Format(
                     "Unable to allocate more pages - unsuccessfully tried to allocate continuous block of virtual memory with size = {0:##,###;;0} bytes",
@@ -139,7 +143,11 @@ namespace Voron.Platform.Posix
 
         public override byte* AcquirePagePointer(long pageNumber, PagerState pagerState = null)
         {
-            ThrowObjectDisposedIfNeeded();
+            if (Disposed)
+                ThrowAlreadyDisposedException();
+            if (pageNumber > NumberOfAllocatedPages)
+                ThrowOnInvalidPageNumber(pageNumber);
+
             return (pagerState ?? PagerState).MapBase + (pageNumber * PageSize);
         }
 

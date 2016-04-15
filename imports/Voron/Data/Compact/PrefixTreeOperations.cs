@@ -20,8 +20,8 @@ namespace Voron.Data.Compact
         {
             Debug.Assert(@this->IsLeaf);
 
-            var key = tree.ReadKey(@this->DataPtr);
-			return key.ToBitVector();
+            Slice key = tree.ReadKey(@this->DataPtr);
+            return key.ToBitVector();
         }
 
         /// <summary>
@@ -32,7 +32,7 @@ namespace Voron.Data.Compact
         {
             if (@this->IsInternal)
             {
-                var refNode = tree.ReadNodeByName(((Internal*)@this)->ReferencePtr);
+                var refNode = tree.DirectRead(((Internal*)@this)->ReferencePtr);
                 return tree.Name(refNode);
             }
             else
@@ -51,11 +51,11 @@ namespace Voron.Data.Compact
             // This cannot happen. We will never call Handle() in a single item tree where the root is a leaf. 
             Debug.Assert(@this->ReferencePtr != Constants.InvalidNodeName); 
 
-            var refNode = tree.ReadNodeByName(@this->ReferencePtr);
+            var refNode = tree.DirectRead(@this->ReferencePtr);
             if (@this->IsInternal)
             {
                 int handleLength = tree.GetHandleLength(@this);
-                return tree.Handle(refNode).SubVector(0, handleLength);
+                return tree.Name(refNode).SubVector(0, handleLength);
             }
             else
             {
@@ -71,7 +71,7 @@ namespace Voron.Data.Compact
         {          
             if (@this->IsInternal)
             {
-                var refNode = tree.ReadNodeByName(@this->ReferencePtr);
+                var refNode = tree.DirectRead(@this->ReferencePtr);
                 var refName = tree.Name(refNode);
                 return refName.SubVector(0, ((Internal*)@this)->ExtentLength);
             }
@@ -108,8 +108,8 @@ namespace Voron.Data.Compact
                 return ((Internal*)@this)->ExtentLength;
             }
             else
-            {
-                return tree.GetKeySize(((Leaf*)@this)->DataPtr);
+            {                
+                return ((Leaf*)@this)->KeySize;
             }
         }
 
@@ -150,16 +150,16 @@ namespace Voron.Data.Compact
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static long GetRightLeaf(this PrefixTree tree, long @thisName)
         {
-            var @this = tree.ReadNodeByName(@thisName);
+            var @this = tree.DirectRead(@thisName);
             if (@this->IsLeaf)
                 return @thisName;
 
             long nodeName;
-            var node = @this;
-			do
+            Node* node = @this;
+            do
             {
                 nodeName = ((Internal*)node)->JumpRightPtr;
-                node = tree.ReadNodeByName(nodeName);
+                node = tree.DirectRead(nodeName);
             }
             while (node->IsInternal);
 
@@ -169,16 +169,16 @@ namespace Voron.Data.Compact
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static long GetLeftLeaf(this PrefixTree tree, long @thisName)
         {
-            var @this = tree.ReadNodeByName(@thisName);
+            var @this = tree.DirectRead(@thisName);
             if (@this->IsLeaf)
                 return @thisName;
 
             long nodeName;
-            var node = @this;
-			do
+            Node* node = @this;
+            do
             {
                 nodeName = ((Internal*)node)->JumpLeftPtr;
-                node = tree.ReadNodeByName(nodeName);
+                node = tree.DirectRead(nodeName);
             }
             while (node->IsInternal);
 
@@ -186,7 +186,7 @@ namespace Voron.Data.Compact
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool Intersects(Node* @this, int x)
+        public static bool Intersects(this PrefixTree tree, Node* @this, int x)
         {
             if (@this->IsInternal)
                 return x >= @this->NameLength && x <= ((Internal*)@this)->ExtentLength;
@@ -206,7 +206,7 @@ namespace Voron.Data.Compact
             if (@this->IsInternal)
             {
                 var referenceName = @this->ReferencePtr;
-                leaf = (Leaf*)tree.ReadNodeByName(referenceName);
+                leaf = (Leaf*)tree.DirectRead(referenceName);
                 Debug.Assert(leaf->IsLeaf);
             }
             else
@@ -216,16 +216,16 @@ namespace Voron.Data.Compact
 
             var key = tree.ReadKey(leaf->DataPtr);
 
-            var extent = tree.Extent(@this);
-			int extentLength = tree.GetExtentLength(@this);
+            BitVector extent = tree.Extent(@this);
+            int extentLength = tree.GetExtentLength(@this);
 
             string openBracket = @this->IsLeaf ? "[" : "(";
-            var closeBracket = @this->IsLeaf ? "]" : ")";
-			string extentBinary = extentLength > 16 ? extent.SubVector(0, 8).ToBinaryString() + "..." + extent.SubVector(extent.Count - 8, 8).ToBinaryString() : extent.ToBinaryString();
+            string closeBracket = @this->IsLeaf ? "]" : ")";
+            string extentBinary = extentLength > 16 ? extent.SubVector(0, 8).ToBinaryString() + "..." + extent.SubVector(extent.Count - 8, 8).ToBinaryString() : extent.ToBinaryString();
             string lenghtInformation = "[" + @this->NameLength + ".." + extentLength + "]";
-            var jumpInfo = @this->IsInternal ? (tree.GetHandleLength(@this) + "->" + (tree.GetJumpLength((Internal*) @this))) : "";
+            string jumpInfo = @this->IsInternal ? (tree.GetHandleLength(@this) + "->" + (tree.GetJumpLength((Internal*) @this))) : "";
 
-			return string.Format("{0}{2}, {4}, {3}{1}", openBracket, closeBracket, extentBinary, jumpInfo, lenghtInformation);
+            return string.Format("{0}{2}, {4}, {3}{1}", openBracket, closeBracket, extentBinary, jumpInfo, lenghtInformation);
         }
     }
 }

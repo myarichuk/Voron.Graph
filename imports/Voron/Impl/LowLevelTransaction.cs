@@ -24,13 +24,9 @@ namespace Voron.Impl
         private readonly long _id;
         private Tree _root;
 
-        internal Action<LowLevelTransaction> AfterCommit = delegate { };
         public bool FlushedToJournal { get; private set; }
 
-        public Tree RootObjects
-        {
-            get { return _root; }
-        }
+        public Tree RootObjects => _root;
 
         private readonly WriteAheadJournal _journal;
         private readonly HashSet<long> _dirtyPages = new HashSet<long>(NumericEqualityComparer.Instance);
@@ -218,11 +214,11 @@ namespace Voron.Impl
             }
             else
             {
-                newPage = AllocatePage(1, num); // allocate new page in a log file but with the same number
+                newPage = AllocatePage(1, num); // allocate new page in a log file but with the same number			
                 pageSize = Environment.Options.PageSize;
             }
             
-            Memory.CopyInline(newPage.Pointer, currentPage.Pointer, pageSize);            
+            Memory.BulkCopy(newPage.Pointer, currentPage.Pointer, pageSize);            
 
             return newPage;
         }
@@ -232,7 +228,7 @@ namespace Voron.Impl
         private bool _disposed;
 
         public Page GetPage(long pageNumber)
-        {
+        {	        
             if (_disposed)
                 throw new ObjectDisposedException("Transaction");
             Page p;
@@ -256,13 +252,13 @@ namespace Voron.Impl
                 }
 
                 p = _env.ScratchBufferPool.ReadPage(value.ScratchFileNumber, value.PositionInScratchBuffer, state);
+                Debug.Assert(p != null && p.PageNumber == pageNumber, string.Format("Requested ReadOnly page #{0}. Got #{1} from {2}", pageNumber, p.PageNumber, p.Source));
             }
             else
             {
                 p = _journal.ReadPage(this, pageNumber, _scratchPagerStates) ?? _dataPager.ReadPage(pageNumber);
-            }
-
-            Debug.Assert(p != null && p.PageNumber == pageNumber, string.Format("Requested ReadOnly page #{0}. Got #{1} from {2}", pageNumber, p.PageNumber, p.Source));
+                Debug.Assert(p != null && p.PageNumber == pageNumber, string.Format("Requested ReadOnly page #{0}. Got #{1} from {2}", pageNumber, p.PageNumber, p.Source));
+            }            
 
             return p;
         }
@@ -315,7 +311,7 @@ namespace Voron.Impl
         }
 
         private Page AllocatePage(int numberOfPages, long pageNumber)
-        {
+        {	       
             if (_disposed)
                 throw new ObjectDisposedException("Transaction");
 
@@ -516,7 +512,7 @@ namespace Voron.Impl
             _env.ScratchBufferPool.Free(_transactionHeaderPage.ScratchFileNumber, _transactionHeaderPage.PositionInScratchBuffer, -1);
 
             Committed = true;
-			AfterCommit?.Invoke(this);
+            _env.TransactionAfterCommit(this);
         }
 
 

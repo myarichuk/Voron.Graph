@@ -125,7 +125,9 @@ namespace Voron.Graph
 				//this warning is likely a Roslyn bug and should be here,
 				//but it is.. hence the warning disable
 				if (_traversalStopPredicate != null &&
+#pragma warning disable CC0031 // Check for null before calling a delegate
 					_traversalStopPredicate(vertexTableReader))
+#pragma warning restore CC0031 // Check for null before calling a delegate
 					return Enumerable.Empty<long>();
 #pragma warning restore CC0016 // Copy Event To Variable Before Fire
 

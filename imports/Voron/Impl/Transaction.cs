@@ -20,6 +20,7 @@ namespace Voron.Impl
 
         private readonly Dictionary<string, PrefixTree> _prefixTrees = new Dictionary<string, PrefixTree>();
         private readonly Dictionary<string, Tree> _trees = new Dictionary<string, Tree>();
+        private readonly HashSet<ICommittable> _participants = new HashSet<ICommittable>();
 
         public Transaction(LowLevelTransaction lowLevelTransaction)
         {
@@ -55,11 +56,19 @@ namespace Voron.Impl
 
         public void Commit()
         {
-            CommitTrees();
+            if (_lowLevelTransaction.Flags != (TransactionFlags.ReadWrite))
+                return; // nothing to do
+
+            PrepareForCommit();
             _lowLevelTransaction.Commit();
         }
 
-        internal void CommitTrees()
+        public void Register(ICommittable participant)
+        {
+            _participants.Add(participant);
+        }
+
+        internal void PrepareForCommit()
         {
             if (_multiValueTrees != null)
             {
@@ -69,8 +78,7 @@ namespace Voron.Impl
                     var key = multiValueTree.Key.Item2;
                     var childTree = multiValueTree.Value;
 
-                    var trh =
-                        (TreeRootHeader*)parentTree.DirectAdd(key, sizeof(TreeRootHeader), TreeNodeFlags.MultiValuePageRef);
+                    var trh = (TreeRootHeader*)parentTree.DirectAdd(key, sizeof(TreeRootHeader), TreeNodeFlags.MultiValuePageRef);
                     childTree.State.CopyTo(trh);
                 }
             }
@@ -79,6 +87,7 @@ namespace Voron.Impl
             {
                 if (tree == null)
                     continue;
+
                 tree.State.InWriteTransaction = false;
                 var treeState = tree.State;
                 if (treeState.IsModified)
@@ -88,18 +97,10 @@ namespace Voron.Impl
                 }
             }
 
-            foreach (var prefixTree in PrefixTrees)
+            foreach (var participant in _participants)
             {
-                // FEDERICO: This should never happen, why it happens on tree still eludes me. 
-                if (prefixTree == null)
-                    continue;
-
-                var treeState = prefixTree.State;
-                if (treeState.IsModified)
-                {
-                    var treePtr = (PrefixTreeRootHeader*)_lowLevelTransaction.RootObjects.DirectAdd((Slice)prefixTree.Name, sizeof(PrefixTreeRootHeader));
-                    treeState.CopyTo(treePtr);
-                }
+                if (participant.RequiresParticipation)
+                    participant.PrepareForCommit();
             }
         }
 
@@ -147,8 +148,8 @@ namespace Voron.Impl
             if (_lowLevelTransaction.Flags == (TransactionFlags.ReadWrite) == false)
                 throw new ArgumentException("Cannot create a new newRootTree with a read only transaction");
 
-            var tree = ReadTree(name);
-			if (tree == null)
+            Tree tree = ReadTree(name);
+            if (tree == null)
                 return;
 
             foreach (var page in tree.AllPages())
@@ -172,13 +173,13 @@ namespace Voron.Impl
             if (ReadTree(toName) != null)
                 throw new ArgumentException("Cannot rename a tree with the name of an existing tree: " + toName);
 
-            var fromTree = ReadTree(fromName);
-			if (fromTree == null)
+            Tree fromTree = ReadTree(fromName);
+            if (fromTree == null)
                 throw new ArgumentException("Tree " + fromName + " does not exists");
 
-            var key = (Slice)toName;
+            Slice key = (Slice)toName;
 
-			_lowLevelTransaction.RootObjects.Delete((Slice)fromName);
+            _lowLevelTransaction.RootObjects.Delete((Slice)fromName);
             var ptr = _lowLevelTransaction.RootObjects.DirectAdd(key, sizeof(TreeRootHeader));
             fromTree.State.CopyTo((TreeRootHeader*)ptr);
             fromTree.Name = toName;
@@ -192,8 +193,8 @@ namespace Voron.Impl
 
         public Tree CreateTree(string name)
         {
-            var tree = ReadTree(name);
-			if (tree != null)
+            Tree tree = ReadTree(name);
+            if (tree != null)
                 return tree;
 
             if (_lowLevelTransaction.Flags == (TransactionFlags.ReadWrite) == false)
@@ -226,7 +227,7 @@ namespace Voron.Impl
             if (_prefixTrees.TryGetValue(treeName, out tree))
                 return tree;
 
-            if (PrefixTree.TryOpen(_lowLevelTransaction, _lowLevelTransaction.RootObjects, treeName, out tree))
+            if (PrefixTree.TryOpen(this, _lowLevelTransaction.RootObjects, treeName, out tree))
             {
                 _prefixTrees.Add(treeName, tree);
                 return tree;
@@ -235,10 +236,10 @@ namespace Voron.Impl
             return null;
         }
 
-        public PrefixTree CreatePrefixTree(string name, int subtreeDepth = 4)
+        public PrefixTree CreatePrefixTree(string name, int subtreeDepth = -1)
         {
-            var tree = ReadPrefixTree(name);
-			if (tree != null)
+            PrefixTree tree = ReadPrefixTree(name);
+            if (tree != null)
                 return tree;
 
             if (_lowLevelTransaction.Flags == (TransactionFlags.ReadWrite) == false)
@@ -246,12 +247,8 @@ namespace Voron.Impl
 
             Slice key = name;
 
-            tree = PrefixTree.Create(LowLevelTransaction, LowLevelTransaction.RootObjects, name, subtreeDepth);
+            tree = PrefixTree.Create(this, LowLevelTransaction.RootObjects, name, subtreeDepth);
             tree.Name = name;
-
-            var space = _lowLevelTransaction.RootObjects.DirectAdd(key, sizeof(PrefixTreeRootHeader));
-            tree.State.CopyTo((PrefixTreeRootHeader*)space);
-            tree.State.IsModified = true;
 
             AddPrefixTree(name, tree);
 

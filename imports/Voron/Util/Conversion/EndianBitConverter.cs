@@ -330,8 +330,8 @@ namespace Voron.Util.Conversion
             // HACK: This always assumes four parts, each in their own endianness,
             // starting with the first part at the start of the byte array.
             // On the other hand, there's no real format specified...
-            var parts = new int[4];
-			for (int i=0; i < 4; i++)
+            int[] parts = new int[4];
+            for (int i=0; i < 4; i++)
             {
                 parts[i] = ToInt32(value, startIndex+i*4);
             }
@@ -346,8 +346,8 @@ namespace Voron.Util.Conversion
         public byte[] GetBytes(decimal value)
         {
             byte[] bytes = new byte[16];
-            var parts = decimal.GetBits(value);
-			for (int i=0; i < 4; i++)
+            int[] parts = decimal.GetBits(value);
+            for (int i=0; i < 4; i++)
             {
                 CopyBytesImpl(parts[i], 4, bytes, i*4);
             }
@@ -363,8 +363,8 @@ namespace Voron.Util.Conversion
         /// <param name="index">The first index into the array to copy the bytes into</param>
         public void CopyBytes(decimal value, byte[] buffer, int index)
         {
-            var parts = decimal.GetBits(value);
-			for (int i=0; i < 4; i++)
+            int[] parts = decimal.GetBits(value);
+            for (int i=0; i < 4; i++)
             {
                 CopyBytesImpl(parts[i], 4, buffer, i*4+index);
             }
@@ -381,8 +381,8 @@ namespace Voron.Util.Conversion
         /// <param name="bytes">The number of significant bytes to return</param>
         byte[] GetBytes(long value, int bytes)
         {
-            var buffer = new byte[bytes];
-			CopyBytes(value, bytes, buffer, 0);
+            byte[] buffer = new byte[bytes];
+            CopyBytes(value, bytes, buffer, 0);
             return buffer;
         }
 

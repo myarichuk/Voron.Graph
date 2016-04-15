@@ -206,9 +206,9 @@ namespace Voron.Data.BTrees
             var originalFromKeyStart = GetActualKey(from, from.LastSearchPositionOrLastEntry);
 
             var fromNode = from.GetNode(from.LastSearchPosition);
-            var val = @from.Base + @from.KeysOffsets[@from.LastSearchPosition] + Constants.NodeHeaderSize + originalFromKeyStart.Size;
+            byte* val = @from.Base + @from.KeysOffsets[@from.LastSearchPosition] + Constants.NodeHeaderSize + originalFromKeyStart.Size;
 
-			var nodeVersion = fromNode->Version; // every time new node is allocated the version is increased, but in this case we do not want to increase it
+            var nodeVersion = fromNode->Version; // every time new node is allocated the version is increased, but in this case we do not want to increase it
             if (nodeVersion > 0)
                 nodeVersion -= 1;
 

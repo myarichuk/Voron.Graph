@@ -87,7 +87,7 @@ namespace Voron.Graph
 				if (systemTree.State.NumberOfEntries == 0)
 				{
 					//system data section -> for frequently accessed system data
-					var systemDataSection = ActiveRawDataSmallSection.Create(tx.LowLevelTransaction);
+					var systemDataSection = ActiveRawDataSmallSection.Create(tx.LowLevelTransaction,"Graph Storage");
 					_systemDataSectionPage = systemDataSection.PageNumber;
 
 					systemTree.Add(Constants.SystemKeys.GraphSystemDataPage, EndianBitConverter.Big.GetBytes(systemDataSection.PageNumber));

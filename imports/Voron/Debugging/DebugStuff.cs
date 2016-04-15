@@ -178,7 +178,7 @@ namespace Voron.Debugging
             using (var sw = new StreamWriter(file))
             {
                 sw.WriteLine("<html><head><style>{0}</style></head><body>", css);
-				action?.Invoke(sw);
+                action(sw);
                 sw.WriteLine("</body></html>");
                 sw.Flush();
             }
@@ -270,7 +270,7 @@ namespace Voron.Debugging
         private static void WriteHtml(TextWriter sw, Action<TextWriter> action)
         {
             sw.WriteLine("<html><head><style>{0}</style></head><body>", css);
-			action?.Invoke(sw);
+            action(sw);
             sw.WriteLine("</body></html>");
             sw.Flush();
         }

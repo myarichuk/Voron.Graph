@@ -113,7 +113,7 @@ namespace Voron.Impl.Backup
 								using (var stream = part.Open())
 								{
 									copier.ToStream(env, journalFile, startBackupAt, pagesToCopy, stream);
-									infoNotify?.Invoke(string.Format("Voron Incr copy journal number {0}", num));
+									infoNotify(string.Format("Voron Incr copy journal number {0}", num));
 
 								}
 
@@ -162,12 +162,45 @@ namespace Voron.Impl.Backup
 								jrnl.Release();
 							}
 						}
-						infoNotify?.Invoke(string.Format("Voron Incr Backup total {0} pages", numberOfBackedUpPages));
+						infoNotify(string.Format("Voron Incr Backup total {0} pages", numberOfBackedUpPages));
 					}
 				}
 				file.Flush(true); // make sure that this is actually persisted fully to disk
 				return numberOfBackedUpPages;
 			}
+		}
+
+		internal static JournalFile GetJournalFile(StorageEnvironment env, long journalNum, IncrementalBackupInfo backupInfo)
+		{
+			var journalFile = env.Journal.Files.FirstOrDefault(x => x.Number == journalNum); // first check journal files currently being in use
+			if (journalFile != null)
+			{
+				journalFile.AddRef();
+				return journalFile;
+			}
+			try
+			{
+				using (var pager = env.Options.OpenJournalPager(journalNum))
+				{
+					long journalSize = Bits.NextPowerOf2(pager.NumberOfAllocatedPages * env.Options.PageSize);
+					journalFile = new JournalFile(env.Options.CreateJournalWriter(journalNum, journalSize), journalNum);
+					journalFile.AddRef();
+					return journalFile;
+				}
+			}
+			catch (Exception e)
+			{
+				if (backupInfo.LastBackedUpJournal == -1 && journalNum == 0 && e.Message.StartsWith("No such journal", StringComparison.Ordinal))
+				{
+					throw new InvalidOperationException("The first incremental backup creation failed because the first journal file " +
+					                                    StorageEnvironmentOptions.JournalName(journalNum) + " was not found. " +
+					                                    "Did you turn on the incremental backup feature after initializing the storage? " +
+					                                    "In order to create backups incrementally the storage must be created with IncrementalBackupEnabled option set to 'true'.", e);
+				}
+
+				throw;
+			}
+
 		}
 
 		public void Restore(StorageEnvironmentOptions options, IEnumerable<string> backupPaths)
@@ -215,7 +248,7 @@ namespace Voron.Impl.Backup
 							{
 								switch (Path.GetExtension(entry.Name))
 								{
-									case ".merged-journal":
+									case".merged-journal":
 									case ".journal":
 
 										var jounalFileName = Path.Combine(tempDir, entry.Name);
@@ -226,7 +259,7 @@ namespace Voron.Impl.Backup
 											input.CopyTo(output);
 										}
 
-										var pager = env.Options.OpenPager(jounalFileName);
+                                        var pager = env.Options.OpenPager(jounalFileName);
 										toDispose.Add(pager);
 
 										if (long.TryParse(Path.GetFileNameWithoutExtension(entry.Name), out journalNumber) == false)
@@ -234,7 +267,7 @@ namespace Voron.Impl.Backup
 											throw new InvalidOperationException("Cannot parse journal file number");
 										}
 
-										var recoveryPager = env.Options.CreateScratchPager(Path.Combine(tempDir, StorageEnvironmentOptions.JournalRecoveryName(journalNumber)));
+                                        var recoveryPager = env.Options.CreateScratchPager(Path.Combine(tempDir, StorageEnvironmentOptions.JournalRecoveryName(journalNumber)));
 										toDispose.Add(recoveryPager);
 
 										var reader = new JournalReader(pager, recoveryPager, 0, lastTxHeader);
@@ -277,24 +310,24 @@ namespace Voron.Impl.Backup
 							}
 							var last = sortedPages.Last();
 
-							var numberOfPages = last.IsOverflow
-								? env.Options.DataPager.GetNumberOfOverflowPages(
-									last.OverflowSize)
-								: 1;
-							var pagerState = env.Options.DataPager.EnsureContinuous(last.PageNumber, numberOfPages);
-							txw.AddPagerState(pagerState);
+						    var numberOfPages = last.IsOverflow
+						        ? env.Options.DataPager.GetNumberOfOverflowPages(
+						            last.OverflowSize)
+						        : 1;
+						    var pagerState = env.Options.DataPager.EnsureContinuous(last.PageNumber, numberOfPages);
+                            txw.AddPagerState(pagerState);
 
-							foreach (var page in sortedPages)
+                            foreach (var page in sortedPages)
 							{
 								env.Options.DataPager.Write(page);
 							}
 
 							env.Options.DataPager.Sync();
 
-							var root = Tree.Open(txw, null, &lastTxHeader->Root);
-							root.Name = Constants.RootTreeName;
+						    var root = Tree.Open(txw, null, &lastTxHeader->Root);
+                            root.Name = Constants.RootTreeName;
 
-							txw.UpdateRootsIfNeeded(root);
+                            txw.UpdateRootsIfNeeded(root);
 
 							txw.State.NextPageNumber = lastTxHeader->LastPageNumber + 1;
 
@@ -326,46 +359,13 @@ namespace Voron.Impl.Backup
 							}
 							catch
 							{
-								// this is just a temporary directory, the worst case scenario is that we dont reclaim the space from the OS temp directory 
-								// if for some reason we cannot delete it we are safe to ignore it.
+                                // this is just a temporary directory, the worst case scenario is that we dont reclaim the space from the OS temp directory 
+                                // if for some reason we cannot delete it we are safe to ignore it.
 							}
 						}
 					}
 				}
 			}
 		}
- 
-		internal static JournalFile GetJournalFile(StorageEnvironment env, long journalNum, IncrementalBackupInfo backupInfo)
-		{
-			var journalFile = env.Journal.Files.FirstOrDefault(x => x.Number == journalNum); // first check journal files currently being in use
-			if (journalFile != null)
-			{
-				journalFile.AddRef();
-				return journalFile;
-			}
-			try
-			{
-				using (var pager = env.Options.OpenJournalPager(journalNum))
-				{
-					long journalSize = Bits.NextPowerOf2(pager.NumberOfAllocatedPages * env.Options.PageSize);
-					journalFile = new JournalFile(env.Options.CreateJournalWriter(journalNum, journalSize), journalNum);
-					journalFile.AddRef();
-					return journalFile;
-				}
-			}
-			catch (Exception e)
-			{
-				if (backupInfo.LastBackedUpJournal == -1 && journalNum == 0 && e.Message.StartsWith("No such journal", StringComparison.Ordinal))
-				{
-					throw new InvalidOperationException("The first incremental backup creation failed because the first journal file " +
-					                                    StorageEnvironmentOptions.JournalName(journalNum) + " was not found. " +
-					                                    "Did you turn on the incremental backup feature after initializing the storage? " +
-					                                    "In order to create backups incrementally the storage must be created with IncrementalBackupEnabled option set to 'true'.", e);
-				}
-
-				throw;
-			}
-
-		}		
 	}
 }

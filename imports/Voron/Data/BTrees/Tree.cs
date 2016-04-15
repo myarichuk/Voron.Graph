@@ -157,7 +157,7 @@ namespace Voron.Data.BTrees
                 var tempPagePointer = tmp.TempPagePointer;
                 while (true)
                 {
-                    var read = value.Read(tempPageBuffer, 0, tx.DataPager.PageSize);
+                    var read = value.Read(tempPageBuffer, 0, tempPageBuffer.Length);
                     if (read == 0)
                         break;
 
@@ -567,9 +567,9 @@ namespace Voron.Data.BTrees
             return page;
         }
 
-        private static TreePage AllocateNewPage(LowLevelTransaction tx, TreePageFlags flags, int num)
+        private static TreePage AllocateNewPage(LowLevelTransaction tx, TreePageFlags flags, int num, long? pageNumber = null)
         {
-            var page = tx.AllocatePage(num).ToTreePage();
+            var page = tx.AllocatePage(num, pageNumber).ToTreePage();
             page.Flags = PageFlags.VariableSizeTreePage | (num == 1 ? PageFlags.Single : PageFlags.Overflow);
             page.Lower = (ushort)Constants.TreePageHeaderSize;
             page.TreeFlags = flags;
@@ -788,14 +788,22 @@ namespace Voron.Data.BTrees
         private void CheckConcurrency(Slice key, ushort? expectedVersion, ushort nodeVersion, TreeActionType actionType)
         {
             if (expectedVersion.HasValue && nodeVersion != expectedVersion.Value)
-                throw new ConcurrencyException(string.Format("Cannot {0} '{1}' to '{4}' tree. Version mismatch. Expected: {2}. Actual: {3}.", actionType.ToString().ToLowerInvariant(), key, expectedVersion.Value, nodeVersion, Name));
+                throw new ConcurrencyException(string.Format("Cannot {0} '{1}' to '{4}' tree. Version mismatch. Expected: {2}. Actual: {3}.", actionType.ToString().ToLowerInvariant(), key, expectedVersion.Value, nodeVersion, Name))
+                {
+                    ActualETag = nodeVersion,
+                    ExpectedETag = expectedVersion.Value,
+                };
         }
 
 
         private void CheckConcurrency(Slice key, Slice value, ushort? expectedVersion, ushort nodeVersion, TreeActionType actionType)
         {
             if (expectedVersion.HasValue && nodeVersion != expectedVersion.Value)
-                throw new ConcurrencyException(string.Format("Cannot {0} value '{5}' to key '{1}' to '{4}' tree. Version mismatch. Expected: {2}. Actual: {3}.", actionType.ToString().ToLowerInvariant(), key, expectedVersion.Value, nodeVersion, Name, value));
+                throw new ConcurrencyException(string.Format("Cannot {0} value '{5}' to key '{1}' to '{4}' tree. Version mismatch. Expected: {2}. Actual: {3}.", actionType.ToString().ToLowerInvariant(), key, expectedVersion.Value, nodeVersion, Name, value))
+                {
+                    ActualETag = nodeVersion,
+                    ExpectedETag = expectedVersion.Value,
+                };
         }
 
         private enum TreeActionType
@@ -803,16 +811,14 @@ namespace Voron.Data.BTrees
             Add,
             Delete
         }
-
-
+        
         private bool TryOverwriteOverflowPages(TreeNodeHeader* updatedNode, Slice key, int len, ushort? version, out byte* pos)
         {
-            if (updatedNode->Flags == TreeNodeFlags.PageRef &&
-                _llt.Id <= _llt.Environment.OldestTransaction) // ensure MVCC - do not overwrite if there is some older active transaction that might read those overflows
+            if (updatedNode->Flags == TreeNodeFlags.PageRef)
             {
-                var overflowPage = _llt.GetReadOnlyTreePage(updatedNode->PageNumber);
+                var readOnlyOverflowPage = _llt.GetReadOnlyTreePage(updatedNode->PageNumber);
 
-                if (len <= overflowPage.OverflowSize)
+                if (len <= readOnlyOverflowPage.OverflowSize)
                 {
                     CheckConcurrency(key, version, updatedNode->Version, TreeActionType.Add);
 
@@ -820,7 +826,7 @@ namespace Voron.Data.BTrees
                         updatedNode->Version = 0;
                     updatedNode->Version++;
 
-                    var availableOverflows = _llt.DataPager.GetNumberOfOverflowPages(overflowPage.OverflowSize);
+                    var availableOverflows = _llt.DataPager.GetNumberOfOverflowPages(readOnlyOverflowPage.OverflowSize);
 
                     var requestedOverflows = _llt.DataPager.GetNumberOfOverflowPages(len);
 
@@ -828,14 +834,21 @@ namespace Voron.Data.BTrees
 
                     for (int i = 0; i < overflowsToFree; i++)
                     {
-                        _llt.FreePage(overflowPage.PageNumber + requestedOverflows + i);
+                        _llt.FreePage(readOnlyOverflowPage.PageNumber + requestedOverflows + i);
                     }
 
-                    State.RecordFreedPage(overflowPage, overflowsToFree); // we use overflowPage here just to have an instance of Page to properly update stats
+                    State.RecordFreedPage(readOnlyOverflowPage, overflowsToFree);
 
-                    overflowPage.OverflowSize = len;
+                    var writtableOverflowPage = AllocateNewPage(_llt, TreePageFlags.Value, requestedOverflows, updatedNode->PageNumber);
 
-                    pos = overflowPage.Base + Constants.TreePageHeaderSize;
+                    writtableOverflowPage.Flags = PageFlags.Overflow | PageFlags.VariableSizeTreePage;
+                    writtableOverflowPage.OverflowSize = len;
+                    pos = writtableOverflowPage.Base + Constants.TreePageHeaderSize;
+
+                    var onPageModified = PageModified;
+                    if (onPageModified != null)
+                        onPageModified(writtableOverflowPage.PageNumber);
+
                     return true;
                 }
             }

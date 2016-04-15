@@ -108,7 +108,8 @@ namespace Voron.Platform.Win32
 
         protected override PagerState AllocateMorePages(long newLength)
         {
-            ThrowObjectDisposedIfNeeded();
+            if (Disposed)
+                ThrowAlreadyDisposedException();
 
             var newLengthAfterAdjustment = NearestSizeToAllocationGranularity(newLength);
 
@@ -201,11 +202,13 @@ namespace Voron.Platform.Win32
 
             if (startingBaseAddressPtr == (byte*)0) //system didn't succeed in mapping the address where we wanted
             {
+                var innerException = new Win32Exception();
+
                 var errorMessage = string.Format(
                     "Unable to allocate more pages - unsuccessfully tried to allocate continuous block of virtual memory with size = {0:##,###;;0} bytes",
                     (_fileStream.Length));
 
-                throw new OutOfMemoryException(errorMessage, new Win32Exception());
+                throw new OutOfMemoryException(errorMessage, innerException);
             }
 
             var allocationInfo = new PagerState.AllocationInfo
@@ -230,19 +233,24 @@ namespace Voron.Platform.Win32
         {
             if (_fileInfo == null)
                 return "Unknown";
-            return "MemMap: " + _fileInfo.Name;
+            return "MemMap: " + _fileInfo.FullName;
         }
 
         public override byte* AcquirePagePointer(long pageNumber, PagerState pagerState = null)
         {
-            ThrowObjectDisposedIfNeeded();
+            if (Disposed)
+                ThrowAlreadyDisposedException();
+
+            if (pageNumber > NumberOfAllocatedPages)
+                ThrowOnInvalidPageNumber(pageNumber);
 
             return (pagerState ?? PagerState).MapBase + (pageNumber * PageSize);
         }
 
         public override void Sync()
         {
-            ThrowObjectDisposedIfNeeded();
+            if (Disposed)
+                ThrowAlreadyDisposedException();
 
             foreach (var allocationInfo in PagerState.AllocationInfos)
             {
@@ -266,12 +274,10 @@ namespace Voron.Platform.Win32
             if (Disposed)
                 return;
 
-            if (_fileStream != null)
-                _fileStream.Dispose();
-            if (_handle != null)
-                _handle.Dispose();
-            if (DeleteOnClose && _fileInfo != null)
-                _fileInfo.Delete();
+            _fileStream?.Dispose();
+            _handle?.Dispose();
+            if (DeleteOnClose)
+                _fileInfo?.Delete();
 
             base.Dispose();
         }
