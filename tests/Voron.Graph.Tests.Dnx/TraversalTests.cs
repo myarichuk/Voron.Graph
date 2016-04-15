@@ -503,5 +503,104 @@ namespace Voron.Graph.Tests.Dnx
 				}
 			}
 		}
+
+		[Fact]
+		public void Traversal_with_BFS_and_with_vertex_visitor_should_visit_vertices_once()
+		{
+			using (var storage = new GraphStorage())
+			{
+				long id1, id2, id3, id4;
+				using (var tx = storage.WriteTransaction())
+				{
+					id1 = storage.AddVertex(tx, new byte[] { 1, 2, 3 });
+					id2 = storage.AddVertex(tx, new byte[] { 3, 2, 1 });
+					id3 = storage.AddVertex(tx, new byte[] { 1, 1, 1 });
+					id4 = storage.AddVertex(tx, new byte[] { 1, 0, 1 });
+
+					//create well connected graph
+					storage.AddEdge(tx, id1, id2);
+					storage.AddEdge(tx, id2, id3);
+					storage.AddEdge(tx, id3, id1);
+					storage.AddEdge(tx, id2, id4);
+					storage.AddEdge(tx, id1, id4);
+					storage.AddEdge(tx, id3, id4);
+					storage.AddEdge(tx, id4, id3);
+					tx.Commit();
+				}
+
+				using (var tx = storage.ReadTransaction())
+				{
+					var fetchedData = new List<byte[]>();
+					var expectedData = new[] 
+					{
+						new byte[] { 1, 2, 3 },
+						new byte[] { 3, 2, 1 },
+						new byte[] { 1, 1, 1 },
+						new byte[] { 1, 0, 1 }
+					};
+
+					var results = storage.Traverse()
+									     .WithStrategy(Traversal.Strategy.Bfs)
+										 .Execute(id1,
+											vertexVisitor: reader =>
+											{
+												var data = reader.ReadData((int)VertexTableFields.Data);
+												fetchedData.Add(data);
+											});
+
+					Assert.Equal(expectedData, fetchedData);					
+				}
+			}
+		}
+
+		[Fact]
+		public void Traversal_with_DFS_and_with_vertex_visitor_should_visit_vertices_once()
+		{
+			using (var storage = new GraphStorage())
+			{
+				long id1, id2, id3, id4;
+				using (var tx = storage.WriteTransaction())
+				{
+					id1 = storage.AddVertex(tx, new byte[] { 1, 2, 3 });
+					id2 = storage.AddVertex(tx, new byte[] { 3, 2, 1 });
+					id3 = storage.AddVertex(tx, new byte[] { 1, 1, 1 });
+					id4 = storage.AddVertex(tx, new byte[] { 1, 0, 1 });
+
+					//create well connected graph
+					storage.AddEdge(tx, id1, id2);
+					storage.AddEdge(tx, id2, id3);
+					storage.AddEdge(tx, id3, id1);
+					storage.AddEdge(tx, id2, id4);
+					storage.AddEdge(tx, id1, id4);
+					storage.AddEdge(tx, id3, id4);
+					storage.AddEdge(tx, id4, id3);
+					tx.Commit();
+				}
+
+				using (var tx = storage.ReadTransaction())
+				{
+					var fetchedData = new List<byte[]>();
+					var expectedData = new[]
+					{
+						new byte[] { 1, 2, 3 },
+						new byte[] { 3, 2, 1 },
+						new byte[] { 1, 1, 1 },
+						new byte[] { 1, 0, 1 }
+					};
+
+					var results = storage.Traverse()
+										 .WithStrategy(Traversal.Strategy.Dfs)
+										 .Execute(id1,
+											vertexVisitor: reader =>
+											{
+												var data = reader.ReadData((int)VertexTableFields.Data);
+												fetchedData.Add(data);
+											});
+
+					//DFS has reverse traversal order
+					Assert.Equal(expectedData.Reverse(), fetchedData);
+				}
+			}
+		}
 	}
 }
