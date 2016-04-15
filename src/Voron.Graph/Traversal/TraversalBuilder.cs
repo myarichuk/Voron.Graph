@@ -21,6 +21,7 @@ namespace Voron.Graph
 
 		private Func<TableValueReader, bool> _edgePredicate;
 		private Func<TableValueReader, bool> _traversalContinuationPredicate;
+		private Func<TableValueReader, bool> _traversalStopPredicate;
 
 		public IEnumerable<long> Execute(long startingVertexId,
 			Action<TableValueReader> vertexVisitor = null,
@@ -31,7 +32,8 @@ namespace Voron.Graph
 					_maxDepth, 
 					_traversalDepthPredicate, 
 					_edgePredicate, 
-					_traversalContinuationPredicate)
+					_traversalContinuationPredicate,					
+					_traversalStopPredicate)
 					.Traverse(startingVertexId,vertexVisitor,edgeVisitor);
 		}
 
@@ -76,7 +78,7 @@ namespace Voron.Graph
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public TraversalBuilder OnlyTraverseEdges(Func<TableValueReader, bool> edgePredicate)
+		public TraversalBuilder TraverseEdgesThat(Func<TableValueReader, bool> edgePredicate)
 		{
 			_edgePredicate = edgePredicate;
 			return this;
@@ -86,6 +88,20 @@ namespace Voron.Graph
 		public TraversalBuilder TraverseWhile(Func<TableValueReader, bool> traversalContinuationPredicate)
 		{
 			_traversalContinuationPredicate = traversalContinuationPredicate;
+			return this;
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public TraversalBuilder TraverseStopWhen(Func<TableValueReader, bool> traversalStopPredicate)
+		{
+			_traversalStopPredicate = traversalStopPredicate;
+			return this;
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public TraversalBuilder TraverseWhileDepth(Func<int, bool> traversalDepthPredicate)
+		{
+			_traversalDepthPredicate = traversalDepthPredicate;
 			return this;
 		}
 	}

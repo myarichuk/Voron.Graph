@@ -2,13 +2,14 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Voron.Data.Tables;
 
 namespace Voron.Graph
 {
-    public unsafe class Traversal
-    {
+	public class Traversal
+	{
 		public enum Strategy
 		{
 			Bfs,
@@ -28,27 +29,30 @@ namespace Voron.Graph
 		private readonly Func<TableValueReader, bool> _traversalContinuationPredicate;
 
 		private bool _traversed;
-		private long _depth;
+		private int _depth;
 
 		private readonly HashSet<long> _visitedVertices = new HashSet<long>();
+		private Func<TableValueReader, bool> _traversalStopPredicate;
 
-	    public Traversal(Lazy<Transaction> tx, 
+		public Traversal(Lazy<Transaction> tx, 
 						 Strategy traversalStrategy, 
 						 int minDepth, 
 						 int maxDepth, 
 						 Func<int, bool> traversalDepthPredicate, 
 						 Func<TableValueReader, bool> edgePredicate, 
-						 Func<TableValueReader, bool> traversalContinuationPredicate)
-	    {
+						 Func<TableValueReader, bool> traversalContinuationPredicate,
+						 Func<TableValueReader, bool> traversalStopPredicate)
+		{
 
-		    _tx = tx;
-		    _traversalStrategy = traversalStrategy;
-		    _minDepth = minDepth;
-		    _maxDepth = maxDepth;
-		    _traversalDepthPredicate = traversalDepthPredicate;
-		    _edgePredicate = edgePredicate;
-		    _traversalContinuationPredicate = traversalContinuationPredicate;
-	    }
+			_tx = tx;
+			_traversalStrategy = traversalStrategy;
+			_minDepth = minDepth;
+			_maxDepth = maxDepth;
+			_traversalDepthPredicate = traversalDepthPredicate;
+			_edgePredicate = edgePredicate;
+			_traversalContinuationPredicate = traversalContinuationPredicate;
+			_traversalStopPredicate = traversalStopPredicate;
+		}
 
 		public IEnumerable<long> Traverse(long startingVertexId,
 			Action<TableValueReader> vertexVisitor = null,
@@ -63,54 +67,115 @@ namespace Voron.Graph
 			{
 				Debug.Assert(tx.VoronTx.LowLevelTransaction.Flags !=
 					TransactionFlags.ReadWrite);
-				results.AddRange(InnerTraverse(tx,
-					startingVertexId, 
-					vertexVisitor, 
-					edgeVisitor));
+				if (_traversalStrategy == Strategy.Bfs)
+				{
+					results.AddRange(InnerTraverseBFS(tx,
+						startingVertexId,
+						vertexVisitor,
+						edgeVisitor));
+				}
+				else
+				{
+					results.AddRange(InnerTraverseDFS(tx,
+						startingVertexId,
+						vertexVisitor,
+						edgeVisitor));
+				}
 			}
 
 			return results;
 		}
 
-		private IEnumerable<long> InnerTraverse(Transaction tx,
-			long vertexId,
-			Action<TableValueReader> vertexVisitor,
-			Action<TableValueReader> edgeVisitor)
+		private IEnumerable<long> InnerTraverseDFS(Transaction tx,
+					long vertexId,
+					Action<TableValueReader> vertexVisitor,
+					Action<TableValueReader> edgeVisitor)
 		{
-			if (_depth > _maxDepth)
+			if (_depth > _maxDepth ||
+				(_traversalDepthPredicate != null &&
+				 !_traversalDepthPredicate(_depth)))
 				return Enumerable.Empty<long>();
 
-			_visitedVertices.Add(vertexId);
-
-			if (vertexVisitor != null)
-			{
-				int size;
-				var ptr = tx.VertexTable.DirectRead(vertexId, out size);
-				vertexVisitor(new TableValueReader(ptr, size));
-			}
-
-			var result = tx.EdgeTable.SeekForwardFrom(
-				Constants.Indexes.EdgeTable.FromToIndex,
-					new Slice((byte*)&vertexId, sizeof(long)), true);
-
-			var adjacentVertices = result.SelectMany(x =>
-				x.Results.Select(r =>
-				{
-
-					if (edgeVisitor != null)
-						edgeVisitor(r);
-
-					int _;
-					return *(long*)r.Read((int)EdgeTableFields.ToKey, out _);
-				}));
-
+			var adjacentVertices = GetAdjacent(tx, vertexId, edgeVisitor);
 			var intermediateResults = Enumerable.Empty<long>();
 			foreach (var adjacentVertex in adjacentVertices)
 			{
 				if (!_visitedVertices.Contains(adjacentVertex))
 				{
 					_depth++;
-					var currentInnerResults = InnerTraverse(tx,
+					var currentInnerResults = InnerTraverseDFS(tx,
+						adjacentVertex,
+						vertexVisitor,
+						edgeVisitor);
+					_depth--;
+
+					intermediateResults = intermediateResults.Concat(currentInnerResults);
+				}
+			}
+
+			_visitedVertices.Add(vertexId);
+
+			//TODO : finish all the limitation implementations
+			// and write relevant tests
+
+			if (vertexVisitor != null || _traversalStopPredicate != null)
+			{
+				var vertexTableReader = GetReaderForVertex(tx, vertexId);
+#pragma warning disable CC0016 // Copy Event To Variable Before Fire
+				//this warning is likely a Roslyn bug and should be here,
+				//but it is.. hence the warning disable
+				if (_traversalStopPredicate != null &&
+					_traversalStopPredicate(vertexTableReader))
+					return Enumerable.Empty<long>();
+#pragma warning restore CC0016 // Copy Event To Variable Before Fire
+
+				vertexVisitor?.Invoke(vertexTableReader);
+			}			
+
+			if (_depth < _minDepth)
+				return intermediateResults;
+
+			return new[] { vertexId }.Concat(intermediateResults);
+		}
+
+		private IEnumerable<long> InnerTraverseBFS(Transaction tx,
+			long vertexId,
+			Action<TableValueReader> vertexVisitor,
+			Action<TableValueReader> edgeVisitor)
+		{
+			if (_depth > _maxDepth ||
+				(_traversalDepthPredicate != null &&
+				 !_traversalDepthPredicate(_depth)))
+				return Enumerable.Empty<long>();
+
+
+			_visitedVertices.Add(vertexId);
+
+			//TODO : finish all the limitation implementations
+			// and write relevant tests
+
+			if (vertexVisitor != null || _traversalStopPredicate != null)
+			{
+				var vertexTableReader = GetReaderForVertex(tx, vertexId);
+#pragma warning disable CC0016 // Copy Event To Variable Before Fire
+				//this warning is likely a Roslyn bug and should be here,
+				//but it is.. hence the warning disable
+				if (_traversalStopPredicate != null &&
+					_traversalStopPredicate(vertexTableReader))
+					return Enumerable.Empty<long>();
+#pragma warning restore CC0016 // Copy Event To Variable Before Fire
+
+				vertexVisitor?.Invoke(vertexTableReader);
+			}
+
+			var adjacentVertices = GetAdjacent(tx, vertexId, edgeVisitor);
+			var intermediateResults = Enumerable.Empty<long>();
+			foreach (var adjacentVertex in adjacentVertices)
+			{
+				if (!_visitedVertices.Contains(adjacentVertex))
+				{
+					_depth++;
+					var currentInnerResults = InnerTraverseBFS(tx,
 						adjacentVertex,
 						vertexVisitor,
 						edgeVisitor);
@@ -126,5 +191,35 @@ namespace Voron.Graph
 			return new[] { vertexId }.Concat(intermediateResults);
 		}
 
+#pragma warning disable CC0091 // Use static method
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		private unsafe TableValueReader GetReaderForVertex(Transaction tx, long id)
+#pragma warning restore CC0091 // Use static method
+		{
+			int size;
+			var ptr = tx.VertexTable.DirectRead(id, out size);
+			return new TableValueReader(ptr, size);
+		}
+
+		private unsafe IEnumerable<long> GetAdjacent(Transaction tx, long id, Action<TableValueReader> edgeVisitor)
+		{
+			var seekResult = tx.EdgeTable.SeekForwardFrom(
+							Constants.Indexes.EdgeTable.FromToIndex,
+								new Slice((byte*)&id, sizeof(long)), true);
+
+			var adjacentVertices = seekResult.SelectMany(x =>
+				x.Results
+				 .Where(r => _edgePredicate == null ||
+					(_edgePredicate != null && _edgePredicate(r)))
+				 .Select(r =>
+				 {
+					 edgeVisitor?.Invoke(r);
+
+					 int _;
+					 return *(long*)r.Read((int)EdgeTableFields.ToKey, out _);
+				 })).ToList();
+
+			return adjacentVertices;
+		}
 	}
 }

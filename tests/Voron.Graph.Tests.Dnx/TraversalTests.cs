@@ -192,7 +192,64 @@ namespace Voron.Graph.Tests.Dnx
 						.Contain(id5);
 				}
 			}
-		}		
+		}
+
+		[Fact]
+		public void Traversal_with_min_depth_should_return_proper_edges1_with_DFS()
+		{
+			using (var storage = new GraphStorage())
+			{
+				long id1, id2, id3, id4, id5;
+				using (var tx = storage.WriteTransaction())
+				{
+					id1 = storage.AddVertex(tx, new byte[] { 1, 2, 3 });
+					id2 = storage.AddVertex(tx, new byte[] { 3, 2, 1 });
+					id3 = storage.AddVertex(tx, new byte[] { 3, 2, 1 });
+					id4 = storage.AddVertex(tx, new byte[] { 3, 2, 1 });
+					id5 = storage.AddVertex(tx, new byte[] { 3, 2, 1 });
+					storage.AddEdge(tx, id1, id2);
+					storage.AddEdge(tx, id2, id3);
+					storage.AddEdge(tx, id2, id4);
+					storage.AddEdge(tx, id4, id5);
+					tx.Commit();
+				}
+
+				using (var tx = storage.ReadTransaction())
+				{
+					var results = storage.Traverse()
+										 .WithStrategy(Traversal.Strategy.Dfs)
+										 .WithMinDepth(1)
+										 .Execute(id1);
+
+					results.Should()
+						.HaveCount(4)
+						.And
+						.ContainInOrder(id2, id3, id4, id5);
+
+					results = storage.Traverse()
+									 .WithStrategy(Traversal.Strategy.Dfs)
+									 .WithMinDepth(2)
+									 .Execute(id1);
+
+					results.Should()
+						.HaveCount(3)
+						.And
+						.ContainInOrder(id3, id4, id5);
+
+					results = storage.Traverse()
+										 //zero-based depth,
+										 //4 levels in total
+								     .WithStrategy(Traversal.Strategy.Dfs)
+									 .WithMinDepth(3)
+									 .Execute(id1);
+
+					results.Should()
+						.HaveCount(1)
+						.And
+						.Contain(id5);
+				}
+			}
+		}
 
 		[Fact]
 		public void Traversal_would_travel_loops_once()
