@@ -385,7 +385,7 @@ namespace Voron.Graph.Tests.Dnx
 		}
 
 		[Fact]
-		public void Traversal_with_DFS_should_handle_loops_properly()
+		public void Traversal_with_DFS_should_handle_loops_properly1()
 		{
 			using (var storage = new GraphStorage())
 			{
@@ -411,6 +411,55 @@ namespace Voron.Graph.Tests.Dnx
 						.HaveCount(3)
 						.And
 						.Contain(new[] { id1, id2, id3 });
+				}
+			}
+		}
+
+		[Fact]
+		public void Traversal_with_DFS_should_handle_loops_properly2()
+		{
+			using (var storage = new GraphStorage())
+			{
+				long id1, id2, id3, id4;
+				using (var tx = storage.WriteTransaction())
+				{
+					id1 = storage.AddVertex(tx, new byte[] { 1, 2, 3 });
+					id2 = storage.AddVertex(tx, new byte[] { 3, 2, 1 });
+					id3 = storage.AddVertex(tx, new byte[] { 1, 1, 1 });
+					id4 = storage.AddVertex(tx, new byte[] { 1, 0, 1 });
+					storage.AddEdge(tx, id1, id2);
+					storage.AddEdge(tx, id2, id3);
+					storage.AddEdge(tx, id3, id1);
+					storage.AddEdge(tx, id2, id4);
+					storage.AddEdge(tx, id4, id3);
+					tx.Commit();
+				}
+
+				using (var tx = storage.ReadTransaction())
+				{
+					var results = storage.Traverse()
+										 .WithStrategy(Traversal.Strategy.Dfs)
+										 .Execute(id1);
+
+					results.Should()
+						.HaveCount(4)
+						.And
+						.Contain(new[] { id1, id2, id3, id4 });
+
+					results = storage.Traverse()
+										 .WithStrategy(Traversal.Strategy.Dfs)
+										 .Execute(id3);
+					results.Should()
+						.HaveCount(4)
+						.And
+						.Contain(new[] { id1, id2, id3, id4 });
+					results = storage.Traverse()
+										 .WithStrategy(Traversal.Strategy.Dfs)
+										 .Execute(id2);
+					results.Should()
+						.HaveCount(4)
+						.And
+						.Contain(new[] { id1, id2, id3, id4 });
 				}
 			}
 		}
