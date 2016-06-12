@@ -5,7 +5,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace Voron.Graph.Tests.Dnx
+namespace Voron.Graph.Tests
 {
 	public class TraversalTests
 	{

@@ -6,12 +6,7 @@ using Voron.Data.Tables;
 namespace Voron.Graph
 {
 	public static class Constants
-	{
-		public static class Indexes
-		{
-		
-		}
-
+	{		
 		public static class SystemKeys
 		{
 			public const string GraphSystemDataPage = "SystemRawDataCreated";

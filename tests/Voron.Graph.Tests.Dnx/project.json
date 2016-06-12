@@ -1,32 +1,38 @@
 ﻿{
   "version": "1.0.0-*",
-  "description": "Voron.Graph Dnx Tests",
+  "description": "Voron.Graph Tests",
   "authors": [ "Michael Yarichuk" ],
-  "tags": [ "" ],
-  "projectUrl": "",
-  "licenseUrl": "",
-  "compilationOptions": {
+
+  "buildOptions": {
     "allowUnsafe": true,
     "warningsAsErrors": true
   },
+  "runtimes": {
+    "win8-x64": { },
+    "win10-x64": { }
+  },
   "frameworks": {
-    "dnxcore50": {
+    "netcoreapp1.0": {
       "dependencies": {
-        "xunit.runner.dnx": "2.1.0-*",
-        "Microsoft.CSharp": "4.0.1-*",
-        "System.Collections": "4.0.11-*",
-        "System.Linq": "4.0.1-*",
-        "System.Runtime": "4.0.21-*",
-        "System.Threading": "4.0.11-*"
-      }
+        "Microsoft.CSharp": "4.0.1-rc2-*",
+        "System.Collections": "4.0.11-rc2-*",
+        "System.Linq": "4.1.0-rc2-*",
+        "System.Runtime": "4.1.0-rc2-*",
+        "System.Threading": "4.0.11-rc2-*",
+        "xunit": "2.1.0",
+        "dotnet-test-xunit": "1.0.0-rc2-*",
+        "NETStandard.Library": "1.5.0-rc2-*",
+        "FluentAssertions": "4.2.2"
+      },
+      "imports": [
+        "dnxcore50",
+        "portable-net45+win81"
+      ]
     }
   },
   "dependencies": {
-    "FluentAssertions": "4.2.2",
-    "Voron.Graph": "1.0.0-*",
-    "xunit": "2.2.0-*"
+    "Voron.Graph": "1.0.0-*"
   },
-  "commands": {
-    "test": "xunit.runner.dnx"
-  }
+
+  "testRunner": "xunit"
 }
