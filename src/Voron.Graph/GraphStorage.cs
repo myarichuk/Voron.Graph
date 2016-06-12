@@ -55,9 +55,20 @@ namespace Voron.Graph
 		public GraphStorage(StorageEnvironment env,bool ownsStorageEnvironment)
 		{
 			_env = env;
-			CreateSchema();
 			this._ownsStorageEnvironment = ownsStorageEnvironment;
 			_byteStringContext = new ByteStringContext();
+
+			var fromToIndexByteString = _byteStringContext.From(nameof(FromToIndex));
+			FromToIndex = new TableSchema.SchemaIndexDef
+			{
+				Name = nameof(FromToIndex),
+				NameAsSlice = new Slice(fromToIndexByteString),
+				StartIndex = (int)EdgeTableFields.FromKey,
+				Count = 2,
+				IsGlobal = true
+			};
+
+			CreateSchema();
 		}
 
 		public Transaction ReadTransaction()
@@ -105,15 +116,6 @@ namespace Voron.Graph
 				tx.CreateTree(Constants.Schema.EtagToAdjacencyTree);
 				tx.CreateTree(Constants.Schema.EtagToVertexTree);
 
-				var fromToIndexByteString = _byteStringContext.From(nameof(FromToIndex));
-				FromToIndex = new TableSchema.SchemaIndexDef
-				{
-					Name = nameof(FromToIndex),
-					NameAsSlice = new Slice(fromToIndexByteString),
-					StartIndex = (int)EdgeTableFields.FromKey,
-					Count = 2,
-					IsGlobal = true
-				};
 
 				if (systemTree.State.NumberOfEntries == 0)
 				{

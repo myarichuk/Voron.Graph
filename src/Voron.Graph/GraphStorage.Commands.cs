@@ -8,8 +8,6 @@ namespace Voron.Graph
 {
 	public unsafe partial class GraphStorage
 	{
-		private readonly Slice _key = new Slice(SliceOptions.Key,default(ByteString));
-
 		public long AddVertex(Transaction tx, byte[] data)
 		{
 			fixed(byte* dataPtr = data)
