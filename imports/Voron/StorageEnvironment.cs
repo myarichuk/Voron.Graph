@@ -1,4 +1,5 @@
-﻿using Sparrow.Collections;
+﻿using Sparrow;
+using Sparrow.Collections;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -25,6 +26,12 @@ namespace Voron
 {
     public class StorageEnvironment : IDisposable
     {
+        /// <summary>
+        /// This is the shared storage where we are going to store all the static constants for names. 
+        /// WARNING: This context will never be released, so only static constants should be added here.
+        /// </summary>
+        public static readonly ByteStringContext LabelsContext = new ByteStringContext(ByteStringContext.MinBlockSizeInBytes);
+
         private readonly StorageEnvironmentOptions _options;
 
         private readonly ConcurrentSet<LowLevelTransaction> _activeTransactions = new ConcurrentSet<LowLevelTransaction>();
@@ -33,14 +40,15 @@ namespace Voron
 
         private readonly WriteAheadJournal _journal;
         private readonly object _txWriter = new object();
-        private readonly ManualResetEventSlim _flushWriter = new ManualResetEventSlim();
-
+        public readonly ManualResetEventSlim _flushWriter = new ManualResetEventSlim();
+        internal readonly ReaderWriterLockSlim FlushInProgressLock = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
         private readonly ReaderWriterLockSlim _txCommit = new ReaderWriterLockSlim();
 
         private long _transactionsCounter;
         private readonly IFreeSpaceHandling _freeSpaceHandling;
         private Task _flushingTask;
         private readonly HeaderAccessor _headerAccessor;
+        public bool IsFlushingScratchBuffer { get; set; }
 
         private CancellationTokenSource _cancellationTokenSource = new CancellationTokenSource();
         private readonly ScratchBufferPool _scratchBufferPool;
@@ -48,6 +56,7 @@ namespace Voron
         private int _sizeOfUnflushedTransactionsInJournalFile;
 
         private readonly Queue<TemporaryPage> _tempPagesPool = new Queue<TemporaryPage>();
+
         public Guid DbId { get; set; }
 
         public StorageEnvironmentState State { get; private set; }
@@ -288,26 +297,29 @@ namespace Voron
             }
         }
 
-        public Transaction ReadTransaction()
+        public Transaction ReadTransaction(ByteStringContext context = null)
         {
-            return new Transaction(NewLowLevelTransaction(TransactionFlags.Read));
+            return new Transaction(NewLowLevelTransaction(TransactionFlags.Read, context));
         }
 
-        public Transaction WriteTransaction()
+        public Transaction WriteTransaction(ByteStringContext context = null)
         {
-            return new Transaction(NewLowLevelTransaction(TransactionFlags.ReadWrite, null));
+            return new Transaction(NewLowLevelTransaction(TransactionFlags.ReadWrite, context, null));
         }
 
-        internal LowLevelTransaction NewLowLevelTransaction(TransactionFlags flags, TimeSpan? timeout = null)
+        internal LowLevelTransaction NewLowLevelTransaction(TransactionFlags flags, ByteStringContext context = null, TimeSpan? timeout = null)
         {
             bool txLockTaken = false;
+            bool flushInProgressReadLockTaken = false;
             try
             {
                 if (flags == TransactionFlags.ReadWrite)
                 {
                     var wait = timeout ?? (Debugger.IsAttached ? TimeSpan.FromMinutes(30) : TimeSpan.FromSeconds(30));
+                    if (FlushInProgressLock.IsWriteLockHeld == false)
+                        flushInProgressReadLockTaken = FlushInProgressLock.TryEnterReadLock(wait);
                     Monitor.TryEnter(_txWriter, wait, ref txLockTaken);
-                    if (txLockTaken == false)
+                    if (txLockTaken == false || (flushInProgressReadLockTaken == false && FlushInProgressLock.IsWriteLockHeld == false))
                     {
                         _flushWriter.Set();
                         throw new TimeoutException("Waited for " + wait +
@@ -332,7 +344,7 @@ namespace Voron
                 try
                 {
                     long txId = flags == TransactionFlags.ReadWrite ? _transactionsCounter + 1 : _transactionsCounter;
-                    tx = new LowLevelTransaction(this, txId, flags, _freeSpaceHandling);
+                    tx = new LowLevelTransaction(this, txId, flags, _freeSpaceHandling, context);
                 }
                 finally
                 {
@@ -341,7 +353,7 @@ namespace Voron
 
                 _activeTransactions.Add(tx);
                 var state = _dataPager.PagerState;
-                tx.AddPagerState(state);
+                tx.EnsurePagerStateReference(state);
 
                 return tx;
             }
@@ -350,6 +362,10 @@ namespace Voron
                 if (txLockTaken)
                 {
                     Monitor.Exit(_txWriter);
+                }
+                if (flushInProgressReadLockTaken)
+                {
+                    FlushInProgressLock.ExitReadLock();
                 }
                 throw;
             }
@@ -390,7 +406,8 @@ namespace Voron
             }
 
             Interlocked.Add(ref _sizeOfUnflushedTransactionsInJournalFile, totalPages);
-            _flushWriter.Set();
+            if (tx.IsLazyTransaction == false)
+                _flushWriter.Set();
         }
 
         internal void TransactionCompleted(LowLevelTransaction tx)
@@ -402,6 +419,8 @@ namespace Voron
                 return;
 
             Monitor.Exit(_txWriter);
+            if (FlushInProgressLock.IsReadLockHeld)
+                FlushInProgressLock.ExitReadLock();
         }
 
         public StorageReport GenerateReport(Transaction tx, bool computeExactSizes = false)
@@ -413,25 +432,27 @@ namespace Voron
             var fixedSizeTrees = new List<FixedSizeTree>();
             using (var rootIterator = tx.LowLevelTransaction.RootObjects.Iterate())
             {
-                if (rootIterator.Seek(Slice.BeforeAllKeys))
+                if (rootIterator.Seek(Slices.BeforeAllKeys))
                 {
                     do
                     {
-                        switch (tx.GetRootObjectType(rootIterator.CurrentKey))
+                        var curretKey = rootIterator.CurrentKey.Clone(tx.Allocator);
+                        switch (tx.GetRootObjectType(curretKey))
                         {
                             case RootObjectType.VariableSizeTree:
-                                var tree = tx.ReadTree(rootIterator.CurrentKey.ToString());
+                                var tree = tx.ReadTree(curretKey.ToString());
                                 trees.Add(tree);
                                 break;
                             case RootObjectType.EmbeddedFixedSizeTree:
                                 break;
                             case RootObjectType.FixedSizeTree:
-                                fixedSizeTrees.Add(tx.FixedTreeFor(rootIterator.CurrentKey, 0));
+                                fixedSizeTrees.Add(tx.FixedTreeFor(curretKey, 0));
                                 break;
                             default:
                                 throw new ArgumentOutOfRangeException();
                         }
-                    } while (rootIterator.MoveNext());
+                    }
+                    while (rootIterator.MoveNext());
                 }
             }
 
@@ -520,7 +541,7 @@ namespace Voron
             ForceLogFlushToDataFile(tx, allowToFlushOverwrittenPages);
         }
 
-        internal void ForceLogFlushToDataFile(LowLevelTransaction tx, bool allowToFlushOverwrittenPages)
+        public void ForceLogFlushToDataFile(LowLevelTransaction tx, bool allowToFlushOverwrittenPages)
         {
             _journal.Applicator.ApplyLogsToDataFile(OldestTransaction, _cancellationTokenSource.Token, tx, allowToFlushOverwrittenPages);
         }

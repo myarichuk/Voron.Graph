@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Sparrow;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -16,6 +17,8 @@ namespace Voron.Graph
 		private bool _isDisposed;
 		private readonly StorageEnvironment _env;
 
+		private readonly ByteStringContext _byteStringContext;
+
 		private TableSchema _edgesSchema;
 		private TableSchema _verticesSchema;
 
@@ -31,7 +34,11 @@ namespace Voron.Graph
 		private long _nextIdEntry;
 		private long _systemDataSectionPage;
 
+		public TableSchema.SchemaIndexDef FromToIndex { get; private set; }
+
 		internal long SystemDataSectionPage => _systemDataSectionPage;
+
+		internal ByteStringContext ByteStringContext => _byteStringContext;
 
 		public GraphAdmin Admin => (_admin != null) ? _admin : (_admin = new GraphAdmin());
 
@@ -50,6 +57,7 @@ namespace Voron.Graph
 			_env = env;
 			CreateSchema();
 			this._ownsStorageEnvironment = ownsStorageEnvironment;
+			_byteStringContext = new ByteStringContext();
 		}
 
 		public Transaction ReadTransaction()
@@ -63,31 +71,54 @@ namespace Voron.Graph
 		}
 
 		private void CreateSchema()
-		{	
+		{
 			using (var tx = _env.WriteTransaction())
 			{
+				var edgeEtagNameByteString = _byteStringContext.From("EdgeEtag");
 				_edgesSchema = new TableSchema()
-					.DefineKey(Constants.Indexes.EdgeTable.Etag)
-					.DefineIndex(Constants.Indexes.EdgeTable.FromToIndex.Name,
-						Constants.Indexes.EdgeTable.FromToIndex);
-				
-				_edgesSchema.Create(tx, Constants.Schema.Edges);		
+					.DefineKey(new TableSchema.SchemaIndexDef
+					{
+						Name = "EdgeEtag",
+						NameAsSlice = new Slice(edgeEtagNameByteString),
+						StartIndex = (int)EdgeTableFields.Etag,
+						IsGlobal = true
+					})
+					.DefineIndex(FromToIndex.Name,FromToIndex);
+
+				_edgesSchema.Create(tx, Constants.Schema.Edges);
 
 				//for long-term system related storage
 				var systemTree = tx.CreateTree(Constants.Schema.SystemDataTree);
 
+				var vertexEtagByteString = _byteStringContext.From("VertexEtag");
 				_verticesSchema = new TableSchema()
-					.DefineKey(Constants.Indexes.VertexTable.Etag);
+					.DefineKey(new TableSchema.SchemaIndexDef
+					{
+						Name = "VertexEtag",
+						NameAsSlice = new Slice(vertexEtagByteString),
+						StartIndex = (int)VertexTableFields.Etag,
+						IsGlobal = true
+					});
 
-				_verticesSchema.Create(tx,Constants.Schema.Vertices);
+				_verticesSchema.Create(tx, Constants.Schema.Vertices);
 
 				tx.CreateTree(Constants.Schema.EtagToAdjacencyTree);
 				tx.CreateTree(Constants.Schema.EtagToVertexTree);
 
+				var fromToIndexByteString = _byteStringContext.From(nameof(FromToIndex));
+				FromToIndex = new TableSchema.SchemaIndexDef
+				{
+					Name = nameof(FromToIndex),
+					NameAsSlice = new Slice(fromToIndexByteString),
+					StartIndex = (int)EdgeTableFields.FromKey,
+					Count = 2,
+					IsGlobal = true
+				};
+
 				if (systemTree.State.NumberOfEntries == 0)
 				{
 					//system data section -> for frequently accessed system data
-					var systemDataSection = ActiveRawDataSmallSection.Create(tx.LowLevelTransaction,"Graph Storage");
+					var systemDataSection = ActiveRawDataSmallSection.Create(tx.LowLevelTransaction, "Graph Storage");
 					_systemDataSectionPage = systemDataSection.PageNumber;
 
 					systemTree.Add(Constants.SystemKeys.GraphSystemDataPage, EndianBitConverter.Big.GetBytes(systemDataSection.PageNumber));
@@ -127,6 +158,7 @@ namespace Voron.Graph
 			}
 		}
 
+		//TODO: refactor this to use a tree, since RawDataSection can be filled-out and refuse any writes
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		internal long NextValue(Transaction tx, IncrementingValue type)
 		{
@@ -156,6 +188,9 @@ namespace Voron.Graph
 				if(_ownsStorageEnvironment)
 					_env.Dispose();
 				_isDisposed = true;
+				_byteStringContext.Dispose();
+				_edgesSchema.Dispose();
+				_verticesSchema.Dispose();
 			}
 			GC.SuppressFinalize(this);
 		}

@@ -1,9 +1,9 @@
-﻿using System;
+﻿using Sparrow;
+using System;
 using System.Collections.Generic;
 
 using Voron.Data;
 using Voron.Data.BTrees;
-using Voron.Data.Compact;
 using Voron.Data.Fixed;
 
 namespace Voron.Impl
@@ -18,7 +18,6 @@ namespace Voron.Impl
             get { return _lowLevelTransaction; }
         }
 
-        private readonly Dictionary<string, PrefixTree> _prefixTrees = new Dictionary<string, PrefixTree>();
         private readonly Dictionary<string, Tree> _trees = new Dictionary<string, Tree>();
         private readonly HashSet<ICommittable> _participants = new HashSet<ICommittable>();
 
@@ -27,13 +26,20 @@ namespace Voron.Impl
             _lowLevelTransaction = lowLevelTransaction;
         }
 
+        public ByteStringContext Allocator
+        {
+            get { return _lowLevelTransaction.Allocator; }
+        }
+
         public Tree ReadTree(string treeName)
         {
             Tree tree;
             if (_trees.TryGetValue(treeName, out tree))
                 return tree;
 
-            var header = (TreeRootHeader*)_lowLevelTransaction.RootObjects.DirectRead((Slice)treeName);
+            Slice treeNameSlice = Slice.From(this.Allocator, treeName, ByteStringType.Immutable);
+
+            var header = (TreeRootHeader*)_lowLevelTransaction.RootObjects.DirectRead(treeNameSlice);
             if (header != null)
             {
                 if (header->RootObjectType != RootObjectType.VariableSizeTree)
@@ -92,7 +98,7 @@ namespace Voron.Impl
                 var treeState = tree.State;
                 if (treeState.IsModified)
                 {
-                    var treePtr = (TreeRootHeader*)_lowLevelTransaction.RootObjects.DirectAdd((Slice)tree.Name, sizeof(TreeRootHeader));
+                    var treePtr = (TreeRootHeader*)_lowLevelTransaction.RootObjects.DirectAdd(tree.Name, sizeof(TreeRootHeader));
                     treeState.CopyTo(treePtr);
                 }
             }
@@ -104,13 +110,12 @@ namespace Voron.Impl
             }
         }
 
-
         internal void AddMultiValueTree(Tree tree, Slice key, Tree mvTree)
         {
             if (_multiValueTrees == null)
                 _multiValueTrees = new Dictionary<Tuple<Tree, Slice>, Tree>(new TreeAndSliceComparer());
             mvTree.IsMultiValueTree = true;
-            _multiValueTrees.Add(Tuple.Create(tree, key), mvTree);
+            _multiValueTrees.Add(Tuple.Create(tree, key.Clone(_lowLevelTransaction.Allocator, ByteStringType.Immutable)), mvTree);
         }
 
         internal bool TryGetMultiValueTree(Tree tree, Slice key, out Tree mvTree)
@@ -157,7 +162,7 @@ namespace Voron.Impl
                 _lowLevelTransaction.FreePage(page);
             }
 
-            _lowLevelTransaction.RootObjects.Delete((Slice)name);
+            _lowLevelTransaction.RootObjects.Delete(name);
 
             _trees.Remove(name);
         }
@@ -177,9 +182,9 @@ namespace Voron.Impl
             if (fromTree == null)
                 throw new ArgumentException("Tree " + fromName + " does not exists");
 
-            Slice key = (Slice)toName;
+            Slice key = Slice.From(this.Allocator, toName, ByteStringType.Immutable);
 
-            _lowLevelTransaction.RootObjects.Delete((Slice)fromName);
+            _lowLevelTransaction.RootObjects.Delete(fromName);
             var ptr = _lowLevelTransaction.RootObjects.DirectAdd(key, sizeof(TreeRootHeader));
             fromTree.State.CopyTo((TreeRootHeader*)ptr);
             fromTree.Name = toName;
@@ -200,7 +205,7 @@ namespace Voron.Impl
             if (_lowLevelTransaction.Flags == (TransactionFlags.ReadWrite) == false)
                 throw new InvalidOperationException("No such tree: '" + name + "' and cannot create trees in read transactions");
 
-            Slice key = name;
+            Slice key = Slice.From(this.Allocator, name, ByteStringType.Immutable);
 
             tree = Tree.Create(_lowLevelTransaction, this);
             tree.Name = name;
@@ -219,70 +224,16 @@ namespace Voron.Impl
             _lowLevelTransaction?.Dispose();
         }
 
-
-
-        public PrefixTree ReadPrefixTree(string treeName)
-        {
-            PrefixTree tree;
-            if (_prefixTrees.TryGetValue(treeName, out tree))
-                return tree;
-
-            if (PrefixTree.TryOpen(this, _lowLevelTransaction.RootObjects, treeName, out tree))
-            {
-                _prefixTrees.Add(treeName, tree);
-                return tree;
-            }
-
-            return null;
-        }
-
-        public PrefixTree CreatePrefixTree(string name, int subtreeDepth = -1)
-        {
-            PrefixTree tree = ReadPrefixTree(name);
-            if (tree != null)
-                return tree;
-
-            if (_lowLevelTransaction.Flags == (TransactionFlags.ReadWrite) == false)
-                throw new InvalidOperationException("No such tree: '" + name + "' and cannot create trees in read transactions");
-
-            Slice key = name;
-
-            tree = PrefixTree.Create(this, LowLevelTransaction.RootObjects, name, subtreeDepth);
-            tree.Name = name;
-
-            AddPrefixTree(name, tree);
-
-            return tree;
-        }
-
-        internal void AddPrefixTree(string name, PrefixTree tree)
-        {
-            PrefixTree value;
-            if (_prefixTrees.TryGetValue(name, out value))
-                throw new InvalidOperationException("Prefix Tree already exists: " + name);
-
-            _prefixTrees[name] = tree;
-        }
-
-        public IEnumerable<PrefixTree> PrefixTrees
-        {
-            get { return _prefixTrees.Values; }
-        }
-
-
         public FixedSizeTree FixedTreeFor(Slice treeName)
         {
-            var valueSize = FixedSizeTree.GetValueSize(LowLevelTransaction, LowLevelTransaction.RootObjects,
-                treeName);
+            var valueSize = FixedSizeTree.GetValueSize(LowLevelTransaction, LowLevelTransaction.RootObjects, treeName);
             return FixedTreeFor(treeName, valueSize);
         }
-
 
         public FixedSizeTree FixedTreeFor(Slice treeName, ushort valSize)
         {
             return new FixedSizeTree(LowLevelTransaction, LowLevelTransaction.RootObjects, treeName, valSize);
         }
-
 
         public RootObjectType GetRootObjectType(Slice name)
         {

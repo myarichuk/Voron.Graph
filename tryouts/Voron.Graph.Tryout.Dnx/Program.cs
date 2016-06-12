@@ -9,9 +9,9 @@ namespace Voron.Graph.Tryout.Dnx
     {
         public static void Main(string[] args)
         {
-            using (var env = new GraphStorage())
-            {
-            }
+			string x = "AA";
+			var d = new Dictionary<string, int>();
+			d[x] = 123;
         }
     }
 }

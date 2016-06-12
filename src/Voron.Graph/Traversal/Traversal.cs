@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Sparrow;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -209,23 +210,31 @@ namespace Voron.Graph
 
 		private unsafe IEnumerable<long> GetAdjacent(Transaction tx, long id, Action<TableValueReader> edgeVisitor)
 		{
-			var seekResult = tx.EdgeTable.SeekForwardFrom(
-							Constants.Indexes.EdgeTable.FromToIndex,
-								new Slice((byte*)&id, sizeof(long)), true);
+			ByteString seekKey;
+			try
+			{
+				seekKey = tx.Storage.ByteStringContext.FromPtr((byte*)&id, sizeof(long));
+				var seekResult = tx.EdgeTable.SeekForwardFrom(tx.Storage.FromToIndex,
+									new Slice(seekKey), true);
 
-			var adjacentVertices = seekResult.SelectMany(x =>
-				x.Results
-				 .Where(r => _edgePredicate == null ||
-					(_edgePredicate != null && _edgePredicate(r)))
-				 .Select(r =>
-				 {
-					 edgeVisitor?.Invoke(r);
+				var adjacentVertices = seekResult.SelectMany(x =>
+					x.Results
+					 .Where(r => _edgePredicate == null ||
+						(_edgePredicate != null && _edgePredicate(r)))
+					 .Select(r =>
+					 {
+						 edgeVisitor?.Invoke(r);
 
-					 int _;
-					 return *(long*)r.Read((int)EdgeTableFields.ToKey, out _);
-				 })).ToList();
+						 int _;
+						 return *(long*)r.Read((int)EdgeTableFields.ToKey, out _);
+					 })).ToList();
 
-			return adjacentVertices;
+				return adjacentVertices;
+			}
+			finally
+			{
+				tx.Storage.ByteStringContext.Release(ref seekKey);
+			}
 		}
 	}
 }

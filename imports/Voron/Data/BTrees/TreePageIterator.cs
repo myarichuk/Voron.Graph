@@ -5,37 +5,42 @@ namespace Voron.Data.BTrees
 {
     public unsafe class TreePageIterator : IIterator
     {
+        private readonly Slice _treeKey;
+        private readonly Tree _parent;
         private readonly TreePage _page;
-        private Slice _currentKey = new Slice(SliceOptions.Key);
-        private Slice _currentInternalKey;
+        private readonly LowLevelTransaction _tx;
+
+        private Slice _currentKey = default(Slice);
+        private Slice _currentInternalKey = default(Slice);
         private bool _disposed;
 
-        public TreePageIterator(TreePage page)
+        public TreePageIterator(LowLevelTransaction tx, Slice treeKey, Tree parent, TreePage page)
         {
+            _tx = tx;
+            _treeKey = treeKey;
+            _parent = parent;
             _page = page;
-            _currentInternalKey = page.CreateNewEmptyKey();
         }
 
         public void Dispose()
         {
             _disposed = true;
-            var action = OnDispoal;
-            if (action != null)
-                action(this);
+
+            OnDisposal?.Invoke(this);
         }
 
         public bool Seek(Slice key)
         {
             if(_disposed)
                 throw new ObjectDisposedException("PageIterator");
-            var current = _page.Search(key);
+            var current = _page.Search(_tx, key);
             if (current == null)
                 return false;
 
-            _page.SetNodeKey(current, ref _currentInternalKey);
-            _currentKey = _currentInternalKey.ToSlice();
+            _currentInternalKey = TreeNodeHeader.ToSlicePtr(_tx.Allocator, current);
+            _currentKey = _currentInternalKey;
 
-            return this.ValidateCurrentKey(current, _page);
+            return this.ValidateCurrentKey(_tx, current);
         }
 
         public TreeNodeHeader* Current
@@ -105,12 +110,13 @@ namespace Voron.Data.BTrees
                 return false;
 
             var current = _page.GetNode(_page.LastSearchPosition);
-            if (this.ValidateCurrentKey(current, _page) == false)
+            if (this.ValidateCurrentKey(_tx, current) == false)
             {
                 return false;
             }
-            _page.SetNodeKey(current, ref _currentInternalKey);
-            _currentKey = _currentInternalKey.ToSlice();
+
+            _currentInternalKey = TreeNodeHeader.ToSlicePtr(_tx.Allocator, current);
+            _currentKey = _currentInternalKey;
             return true;
         }
 
@@ -120,6 +126,6 @@ namespace Voron.Data.BTrees
             return new ValueReader((byte*)node + node->KeySize + Constants.NodeHeaderSize, node->DataSize);
         }
 
-        public event Action<IIterator> OnDispoal;
+        public event Action<IIterator> OnDisposal;
     }
 }

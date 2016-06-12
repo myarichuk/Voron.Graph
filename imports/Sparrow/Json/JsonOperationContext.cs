@@ -124,13 +124,12 @@ namespace Sparrow.Json
         /// <summary>
         /// Generates new unmanaged stream. Should be disposed at the end of the usage.
         /// </summary>
-        /// <param name="documentId"></param>
-        public UnmanagedWriteBuffer GetStream(string documentId)
+        public UnmanagedWriteBuffer GetStream()
         {
             return new UnmanagedWriteBuffer(this, GetMemory(_lastStreamSize));
         }
 
-        public void Dispose()
+        public virtual void Dispose()
         {
             if (_disposed)
                 return;
@@ -285,6 +284,10 @@ namespace Sparrow.Json
             return ParseToMemoryAsync(stream, documentId, BlittableJsonDocumentBuilder.UsageMode.ToDisk);
         }
 
+        public Task<BlittableJsonReaderObject> ReadForMemoryAsync(Stream stream, string documentId)
+        {
+            return ParseToMemoryAsync(stream, documentId, BlittableJsonDocumentBuilder.UsageMode.None);
+        }
 
         public BlittableJsonReaderObject ReadForMemory(Stream stream, string documentId)
         {
@@ -327,7 +330,10 @@ namespace Sparrow.Json
             }
         }
 
-        public async Task<BlittableJsonReaderObject> ReadFromWebSocket(WebSocket webSocket, string debugTag, CancellationToken cancellationToken)
+        public async Task<BlittableJsonReaderObject> ReadFromWebSocket(
+            WebSocket webSocket, 
+            string debugTag, 
+            CancellationToken cancellationToken)
         {
             var jsonParserState = new JsonParserState();
             using (var parser = new UnmanagedJsonParser(this, jsonParserState, debugTag))
@@ -341,9 +347,7 @@ namespace Sparrow.Json
                 var result = await webSocket.ReceiveAsync(buffer, cancellationToken);
 
                 if (result.MessageType == WebSocketMessageType.Close)
-                {
                     return null;
-                }
 
                 parser.SetBuffer(buffer.Array, result.Count);
                 while (writer.Read() == false)
@@ -355,6 +359,7 @@ namespace Sparrow.Json
                 return writer.CreateReader();
             }
         }
+
 
         public BlittableJsonReaderObject Read(Stream stream, string documentId)
         {
@@ -522,17 +527,10 @@ namespace Sparrow.Json
         {
             using (var writer = new BlittableJsonTextWriter(this, stream))
             {
-                writer.WriteToOrdered(json);
+                writer.WriteObjectOrdered(json);
             }
         }
 
-        public void WriteOrdered(Stream stream, BlittableJsonReaderObject json)
-        {
-            using (var writer = new BlittableJsonTextWriter(this, stream))
-            {
-                writer.WriteToOrdered(json);
-            }
-        }
         public void Write(BlittableJsonTextWriter writer, BlittableJsonReaderObject json)
         {
             WriteInternal(writer, json);

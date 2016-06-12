@@ -20,18 +20,23 @@ namespace Voron.Impl
     {
         private const int PagesTakenByHeader = 1;
         private readonly IVirtualPager _dataPager;
+        private readonly long _pageSize;
         private readonly StorageEnvironment _env;
         private readonly long _id;
+        private readonly ByteStringContext _allocator;
         private Tree _root;
 
         public bool FlushedToJournal { get; private set; }
-
         public Tree RootObjects => _root;
 
         private readonly WriteAheadJournal _journal;
+
         private readonly HashSet<long> _dirtyPages = new HashSet<long>(NumericEqualityComparer.Instance);
         private readonly Dictionary<long, long> _dirtyOverflowPages = new Dictionary<long, long>(NumericEqualityComparer.Instance);
         private readonly HashSet<PagerState> _pagerStates = new HashSet<PagerState>();
+
+        readonly Stack<long> _pagesToFreeOnCommit = new Stack<long>();
+
         private readonly IFreeSpaceHandling _freeSpaceHandling;
 
         private int _allocatedPagesInTransaction;
@@ -49,7 +54,9 @@ namespace Voron.Impl
         private readonly StorageEnvironmentState _state;
         private readonly Dictionary<int, PagerState> _scratchPagerStates;
 
-        public TransactionFlags Flags { get; private set; }
+        public TransactionFlags Flags { get; }
+        public bool IsLazyTransaction { get; set; }
+
 
         internal bool CreatedByJournalApplicator;
 
@@ -68,6 +75,8 @@ namespace Voron.Impl
             get { return _id; }
         }
 
+        public readonly int PageSize;
+
         public bool Committed { get; private set; }
 
         public bool RolledBack { get; private set; }
@@ -77,21 +86,30 @@ namespace Voron.Impl
             get { return _state; }
         }
 
-        public uint Crc
+        public ByteStringContext Allocator
         {
-            get { return _txHeader->Crc; }
+            get { return _allocator; }
         }
 
-        public LowLevelTransaction(StorageEnvironment env, long id, TransactionFlags flags, IFreeSpaceHandling freeSpaceHandling)
+        public ulong Hash
         {
-            _dataPager = env.Options.DataPager;
+            get { return _txHeader->Hash; }
+        }
+
+        public LowLevelTransaction(StorageEnvironment env, long id, TransactionFlags flags, IFreeSpaceHandling freeSpaceHandling, ByteStringContext context = null )
+        {
+            _dataPager = env.Options.DataPager;            
+            _pageSize = this.DataPager.PageSize;
             _env = env;
             _journal = env.Journal;
             _id = id;
             _freeSpaceHandling = freeSpaceHandling;
-            Flags = flags;
-            var scratchPagerStates = env.ScratchBufferPool.GetPagerStatesOfAllScratches();
+            _allocator = context ?? new ByteStringContext();
 
+            Flags = flags;
+            PageSize = _dataPager.PageSize;
+
+            var scratchPagerStates = env.ScratchBufferPool.GetPagerStatesOfAllScratches();
             foreach (var scratchPagerState in scratchPagerStates.Values)
             {
                 scratchPagerState.AddRef();
@@ -141,7 +159,7 @@ namespace Voron.Impl
         private void InitTransactionHeader()
         {
             var allocation = _env.ScratchBufferPool.Allocate(this, 1);
-            var page = _env.ScratchBufferPool.ReadPage(allocation.ScratchFileNumber, allocation.PositionInScratchBuffer);
+            var page = _env.ScratchBufferPool.ReadPage(this, allocation.ScratchFileNumber, allocation.PositionInScratchBuffer);
 
             _transactionHeaderPage = allocation;
 
@@ -153,7 +171,7 @@ namespace Voron.Impl
             _txHeader->NextPageNumber = _state.NextPageNumber;
             _txHeader->LastPageNumber = -1;
             _txHeader->PageCount = -1;
-            _txHeader->Crc = 0;
+            _txHeader->Hash = 0;
             _txHeader->TxMarker = TransactionMarker.None;
             _txHeader->Compressed = false;
             _txHeader->CompressedSize = 0;
@@ -218,7 +236,9 @@ namespace Voron.Impl
                 pageSize = Environment.Options.PageSize;
             }
             
-            Memory.BulkCopy(newPage.Pointer, currentPage.Pointer, pageSize);            
+            Memory.BulkCopy(newPage.Pointer, currentPage.Pointer, pageSize);
+
+            TrackWritablePage(newPage);
 
             return newPage;
         }
@@ -231,8 +251,8 @@ namespace Voron.Impl
         {	        
             if (_disposed)
                 throw new ObjectDisposedException("Transaction");
-            Page p;
 
+            Page p;
             PageFromScratchBuffer value;
             if (_scratchPagesTable.TryGetValue(pageNumber, out value))
             {
@@ -251,14 +271,16 @@ namespace Voron.Impl
                     }
                 }
 
-                p = _env.ScratchBufferPool.ReadPage(value.ScratchFileNumber, value.PositionInScratchBuffer, state);
+                p = _env.ScratchBufferPool.ReadPage(this, value.ScratchFileNumber, value.PositionInScratchBuffer, state);
                 Debug.Assert(p != null && p.PageNumber == pageNumber, string.Format("Requested ReadOnly page #{0}. Got #{1} from {2}", pageNumber, p.PageNumber, p.Source));
             }
             else
             {
-                p = _journal.ReadPage(this, pageNumber, _scratchPagerStates) ?? _dataPager.ReadPage(pageNumber);
+                p = _journal.ReadPage(this, pageNumber, _scratchPagerStates) ?? _dataPager.ReadPage(this, pageNumber);
                 Debug.Assert(p != null && p.PageNumber == pageNumber, string.Format("Requested ReadOnly page #{0}. Got #{1} from {2}", pageNumber, p.PageNumber, p.Source));
-            }            
+            }
+
+            TrackReadOnlyPage(p);
 
             return p;
         }
@@ -279,14 +301,13 @@ namespace Voron.Impl
 
         private Page AllocateOverflowPage(long headerSize, long dataSize, long? pageNumber = null)
         {
-            long pageSize = this.DataPager.PageSize;
             long overflowSize = headerSize + dataSize;
             if (overflowSize > int.MaxValue - 1)
                 throw new InvalidOperationException($"Cannot allocate chunks bigger than { int.MaxValue / 1024 * 1024 } Mb.");
 
             Debug.Assert(overflowSize >= 0);
 
-            long numberOfPages = (overflowSize / pageSize) + (overflowSize % pageSize == 0 ? 0 : 1);
+            long numberOfPages = (overflowSize / _pageSize) + (overflowSize % _pageSize == 0 ? 0 : 1);
 
             var overflowPage = AllocatePage((int)numberOfPages, pageNumber);
             overflowPage.Flags = PageFlags.Overflow;
@@ -344,16 +365,18 @@ namespace Voron.Impl
             }
 
             _scratchPagesTable[pageNumber] = pageFromScratchBuffer;
-           
+            
             _dirtyPages.Add(pageNumber);
 
             if (numberOfPages > 1)
                 _dirtyOverflowPages.Add(pageNumber + 1, numberOfPages - 1);
 
-            var newPage = _env.ScratchBufferPool.ReadPage(pageFromScratchBuffer.ScratchFileNumber,
+            var newPage = _env.ScratchBufferPool.ReadPage(this, pageFromScratchBuffer.ScratchFileNumber,
                 pageFromScratchBuffer.PositionInScratchBuffer);
             newPage.PageNumber = pageNumber;
             newPage.Flags = PageFlags.Single;
+
+            TrackWritablePage(newPage);
 
 #if VALIDATE
             VerifyNoDuplicateScratchPages();
@@ -387,7 +410,7 @@ namespace Voron.Impl
                 _dirtyOverflowPages.Remove(pageNumber + i);
                 _dirtyPages.Add(pageNumber + i);
 
-                var newPage = _env.ScratchBufferPool.ReadPage(value.ScratchFileNumber, value.PositionInScratchBuffer + i);
+                var newPage = _env.ScratchBufferPool.ReadPage(this, value.ScratchFileNumber, value.PositionInScratchBuffer + i);
                 newPage.PageNumber = pageNumber + i;
                 newPage.Flags = PageFlags.Single;
             }
@@ -400,7 +423,7 @@ namespace Voron.Impl
             var pageNums = new HashSet<long>();
             foreach (var txPage in _transactionPages)
             {
-                var scratchPage = Environment.ScratchBufferPool.ReadPage(txPage.ScratchFileNumber,
+                var scratchPage = Environment.ScratchBufferPool.ReadPage(this, txPage.ScratchFileNumber,
                     txPage.PositionInScratchBuffer);
                 if (pageNums.Add(scratchPage.PageNumber) == false)
                     throw new InvalidDataException("Duplicate page in transaction: " + scratchPage.PageNumber);
@@ -430,12 +453,19 @@ namespace Voron.Impl
             }
         }
 
+        internal void FreePageOnCommit(long pageNumber)
+        {
+            _pagesToFreeOnCommit.Push(pageNumber);
+        }
+
         internal void FreePage(long pageNumber)
         {
             if (_disposed)
                 throw new ObjectDisposedException("Transaction");
 
+            UntrackPage(pageNumber);
             Debug.Assert(pageNumber >= 0);
+
             _freeSpaceHandling.FreePage(this, pageNumber);
 
             _freedPages.Add(pageNumber);
@@ -494,6 +524,10 @@ namespace Voron.Impl
             if (RolledBack)
                 throw new InvalidOperationException("Cannot commit rolled-back transaction.");
 
+            while (_pagesToFreeOnCommit.Count > 0)
+            {
+                FreePage(_pagesToFreeOnCommit.Pop());
+            }
 
             _txHeader->LastPageNumber = _state.NextPageNumber - 1;
             _txHeader->PageCount = _allocatedPagesInTransaction;
@@ -502,11 +536,17 @@ namespace Voron.Impl
 
             _txHeader->TxMarker |= TransactionMarker.Commit;
 
-            if (_allocatedPagesInTransaction + _overflowPagesInTransaction > 0) // nothing changed in this transaction
+            if (IsLazyTransaction && Environment.IsFlushingScratchBuffer)
+                IsLazyTransaction = false;
+
+            if (_allocatedPagesInTransaction + _overflowPagesInTransaction > 0 || // nothing changed in this transaction
+                (IsLazyTransaction == false && _journal != null && _journal.HasDataInLazyTxBuffer()))  // allow call to writeToJournal for flushing lazy tx
             {
                 _journal.WriteToJournal(this, _allocatedPagesInTransaction + _overflowPagesInTransaction + PagesTakenByHeader);
                 FlushedToJournal = true;
             }
+
+            ValidateAllPages();
 
             // release scratch file page allocated for the transaction header
             _env.ScratchBufferPool.Free(_transactionHeaderPage.ScratchFileNumber, _transactionHeaderPage.PositionInScratchBuffer, -1);
@@ -524,6 +564,8 @@ namespace Voron.Impl
 
             if (Committed || RolledBack || Flags != (TransactionFlags.ReadWrite))
                 return;
+
+            ValidateReadOnlyPages();
 
             foreach (var pageFromScratch in _transactionPages)
             {
@@ -548,14 +590,112 @@ namespace Voron.Impl
             return this;
         }
 
+        private PagerState _lastState;
 
-        internal void AddPagerState(PagerState state)
+        internal void EnsurePagerStateReference(PagerState state)
         {
-            if (state == null)
+            if (state == _lastState || state == null)
                 return;
 
-            state.AddRef();
-            _pagerStates.Add(state);
+            if (_pagerStates.Add(state))
+            {
+                state.AddRef();
+                _lastState = state;
+            }
         }
+
+
+#if VALIDATE_PAGES
+
+        private Dictionary<long, ulong> readOnlyPages = new Dictionary<long, ulong>();
+        private Dictionary<long, ulong> writablePages = new Dictionary<long, ulong>();
+
+        private void ValidateAllPages()
+        {
+            ValidateWritablePages();
+            ValidateReadOnlyPages();
+        }
+
+        private void ValidateReadOnlyPages()
+        {
+            foreach(var readOnlyKey in readOnlyPages )
+            {
+                long pageNumber = readOnlyKey.Key;
+                if (_dirtyPages.Contains(pageNumber))
+                    throw new VoronUnrecoverableErrorException("Read only page is dirty (which means you are modifying a page directly in the data -- non transactionally -- ).");
+
+                var page = this.GetPage(pageNumber);
+
+                ulong pageHash = Hashing.XXHash64.Calculate(page.Pointer, Environment.Options.PageSize);
+                if (pageHash != readOnlyKey.Value)
+                    throw new VoronUnrecoverableErrorException("Read only page content is different (which means you are modifying a page directly in the data -- non transactionally -- ).");
+            }
+        }
+
+        private void ValidateWritablePages()
+        {
+            foreach(var writableKey in writablePages)
+            {
+                long pageNumber = writableKey.Key;
+                if (!_dirtyPages.Contains(pageNumber))
+                    throw new VoronUnrecoverableErrorException("Writable key is not dirty (which means you are asking for a page modification for no reason).");
+            }
+        }
+
+        private void UntrackPage(long pageNumber)
+        {
+            readOnlyPages.Remove(pageNumber);
+            writablePages.Remove(pageNumber);                
+        }
+
+        private void TrackWritablePage(Page page)
+        {
+            if (readOnlyPages.ContainsKey(page.PageNumber))
+                readOnlyPages.Remove(page.PageNumber);            
+
+            if (!writablePages.ContainsKey(page.PageNumber))
+            {
+                ulong pageHash = Hashing.XXHash64.Calculate(page.Pointer, Environment.Options.PageSize);
+                writablePages[page.PageNumber] = pageHash;
+            }
+        }
+
+        private void TrackReadOnlyPage(Page page)
+        {
+            if (writablePages.ContainsKey(page.PageNumber))
+                return;
+
+            ulong pageHash = Hashing.XXHash64.Calculate(page.Pointer, Environment.Options.PageSize);
+
+            ulong storedHash;
+            if ( readOnlyPages.TryGetValue(page.PageNumber, out storedHash) )
+            {
+                if (pageHash != storedHash)
+                    throw new VoronUnrecoverableErrorException("Read Only Page has change between tracking requests. Page #" + page.PageNumber);
+            }
+            else
+            {
+                readOnlyPages[page.PageNumber] = pageHash;
+            }
+        }
+
+#else
+        // This will only be used as placeholder for compilation when not running with validation started.
+
+        [Conditional("VALIDATE_PAGES")]
+        private void ValidateAllPages() { }
+
+        [Conditional("VALIDATE_PAGES")]
+        private void ValidateReadOnlyPages() { }
+
+        [Conditional("VALIDATE_PAGES")]
+        private void TrackWritablePage(Page page) { }
+
+        [Conditional("VALIDATE_PAGES")]
+        private void TrackReadOnlyPage(Page page) { }
+
+        [Conditional("VALIDATE_PAGES")]
+        private void UntrackPage(long pageNumber) { }
+#endif
     }
 }

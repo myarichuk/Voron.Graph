@@ -5,4 +5,5 @@
 // a specific target and scoped to a namespace, type, member, etc.
 
 [assembly: System.Diagnostics.CodeAnalysis.SuppressMessage("Naming", "CC0029:Disposables Should Call Suppress Finalize", Justification = "<Pending>", Scope = "member", Target = "~M:Voron.Graph.Traversal.TraversalBuilder.Dispose")]
+[assembly: System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "CC0022:Should dispose object", Justification = "<Pending>", Scope = "member", Target = "~M:Voron.Graph.GraphStorage.CreateSchema")]
 

@@ -20,12 +20,14 @@ namespace Voron.Impl
             public const int Megabyte = 1024 * Kilobyte;
             public const int Gigabyte = 1024 * Megabyte;
             public const long Terabyte = 1024 * (long)Gigabyte;
+
+            public const int Sector = 512;
         }
 
 
         /// <summary>
         /// If there are less than 2 keys in a page, we no longer have a tree
-        /// This impacts the MakKeySize available
+        /// This impacts the MaxKeySize available
         /// </summary>
         public const int MinKeysInPage = 2;
 
@@ -35,11 +37,11 @@ namespace Voron.Impl
 
         public static readonly int NodeHeaderSize = sizeof(TreeNodeHeader);
 
-        public static int PageNumberSize = sizeof(long);
+        public const int PageNumberSize = sizeof(long);
 
-        public static int NodeOffsetSize = sizeof(ushort);
+        public const int NodeOffsetSize = sizeof(ushort);
 
-        public static ushort SizeOfUInt = sizeof(uint);
+        public const ushort SizeOfUInt = sizeof(uint);
 
         public const int CurrentVersion = 5;
 

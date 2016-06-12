@@ -32,7 +32,7 @@ namespace Voron.Data
         }
 
 
-        public event Action<IIterator> OnDispoal;
+        public event Action<IIterator> OnDisposal;
 
         public IEnumerable<string> DumpValues()
         {
@@ -67,7 +67,7 @@ namespace Voron.Data
 
         public void Dispose()
         {
-            var action = OnDispoal;
+            var action = OnDisposal;
             if (action != null)
                 action(this);
         }

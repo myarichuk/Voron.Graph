@@ -11,11 +11,15 @@ namespace Voron.Data.RawData
     public unsafe class RawDataSection
     {
         protected const ushort ReservedHeaderSpace = 96;
+
         private readonly HashSet<long> _dirtyPages = new HashSet<long>();
-        protected readonly int _pageSize;
+
         protected readonly LowLevelTransaction _tx;
+        protected readonly int _pageSize;
+
         public readonly int MaxItemSize;
-        protected RawDataSmallSectionPageHeader* _sectionHeader;
+                
+        protected RawDataSmallSectionPageHeader* _sectionHeader;        
 
         [StructLayout(LayoutKind.Sequential)]
         public struct RawDataEntrySizes
@@ -27,7 +31,7 @@ namespace Voron.Data.RawData
         public RawDataSection(LowLevelTransaction tx, long pageNumber)
         {
             PageNumber = pageNumber;
-            _tx = tx;
+            _tx = tx;         
             _pageSize = _tx.DataPager.PageSize;
 
             MaxItemSize = (_pageSize - sizeof(RawDataSmallPageHeader)) / 2;
@@ -176,10 +180,10 @@ namespace Voron.Data.RawData
             return DirectRead(_tx, id, out size);
         }
 
-        public static byte* DirectRead(LowLevelTransaction tx, long id, out int size, bool throwOnAlreadyFreed = true)
+        public static byte* DirectRead(LowLevelTransaction tx, long id, out int size)
         {
-            var posInPage = (int)(id % tx.DataPager.PageSize);
-            var pageNumberInSection = (id - posInPage) / tx.DataPager.PageSize;
+            var posInPage = (int)(id % tx.PageSize);
+            var pageNumberInSection = (id - posInPage) / tx.PageSize;
             var pageHeader = PageHeaderFor(tx, pageNumberInSection);
 
             if (posInPage >= pageHeader->NextAllocation)
@@ -187,17 +191,9 @@ namespace Voron.Data.RawData
                     $"Asked to load a past the allocated values: {id} from page {pageHeader->PageNumber}");
 
             var sizes = (RawDataEntrySizes*)((byte*)pageHeader + posInPage);
-			if (sizes->UsedSize < 0)
-			{
-				if (!throwOnAlreadyFreed)
-				{
-					size = -1;
-					return null;
-				}
-
-				throw new InvalidDataException(
-					$"Asked to load a value that was already freed: {id} from page {pageHeader->PageNumber}");
-			}
+            if (sizes->UsedSize < 0)
+                throw new InvalidDataException(
+                    $"Asked to load a value that was already freed: {id} from page {pageHeader->PageNumber}");
 
             if (sizes->AllocatedSize < sizes->UsedSize)
                 throw new InvalidDataException(

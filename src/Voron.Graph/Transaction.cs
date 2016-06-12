@@ -24,6 +24,10 @@ namespace Voron.Graph
 			_storage = env;
 		}
 
+		internal GraphStorage Storage => _storage;
+
+		//TODO: refactor this to use a table, since ActiveRawDataSmallSection can be filled,
+		//and stop accepting writes
 		internal ActiveRawDataSmallSection SystemDataSection =>
 			(_systemDataSection != null) ?
 				_systemDataSection :

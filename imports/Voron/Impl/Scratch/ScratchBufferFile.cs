@@ -24,13 +24,14 @@ namespace Voron.Impl.Scratch
         }
 
         private readonly IVirtualPager _scratchPager;
+        private readonly int _pageSize;
         private readonly int _scratchNumber;
 
         private readonly SortedList<long, long> _freePagesByTransaction = new SortedList<long, long>(NumericDescendingComparer.Instance);
-        private readonly Dictionary<long, LinkedList<PendingPage>> _freePagesBySize = new Dictionary<long, LinkedList<PendingPage>>();
-        private readonly Dictionary<long, LinkedList<long>> _freePagesBySizeAvailableImmediately = new Dictionary<long, LinkedList<long>>();
-        private readonly Dictionary<long, PageFromScratchBuffer> _allocatedPages = new Dictionary<long, PageFromScratchBuffer>();
-        
+        private readonly Dictionary<long, LinkedList<PendingPage>> _freePagesBySize = new Dictionary<long, LinkedList<PendingPage>>(NumericEqualityComparer.Instance);
+        private readonly Dictionary<long, LinkedList<long>> _freePagesBySizeAvailableImmediately = new Dictionary<long, LinkedList<long>>(NumericEqualityComparer.Instance);
+        private readonly Dictionary<long, PageFromScratchBuffer> _allocatedPages = new Dictionary<long, PageFromScratchBuffer>(NumericEqualityComparer.Instance);
+
 
         private long _allocatedPagesUsedSize;
         private long _lastUsedPage;
@@ -40,6 +41,7 @@ namespace Voron.Impl.Scratch
             _scratchPager = scratchPager;
             _scratchNumber = scratchNumber;
             _allocatedPagesUsedSize = 0;
+            _pageSize = scratchPager.PageSize;
         }
 
         public PagerState PagerState => _scratchPager.PagerState;
@@ -48,17 +50,21 @@ namespace Voron.Impl.Scratch
 
         public int NumberOfAllocations => _allocatedPages.Count;
 
-        public long Size => _scratchPager.NumberOfAllocatedPages * _scratchPager.PageSize;
+        public long Size => _scratchPager.NumberOfAllocatedPages * _pageSize;
+
+        public long NumberOfAllocatedPages => _scratchPager.NumberOfAllocatedPages;
+
+        public long AllocatedPagesUsedSize => _allocatedPagesUsedSize;
 
         public long SizeAfterAllocation(long sizeToAllocate)
         {
-            return (_lastUsedPage + sizeToAllocate) * _scratchPager.PageSize;
+            return (_lastUsedPage + sizeToAllocate) * _pageSize;
         }
 
         public PageFromScratchBuffer Allocate(LowLevelTransaction tx, int numberOfPages, int sizeToAllocate)
         {
             var pagerState = _scratchPager.EnsureContinuous(_lastUsedPage, sizeToAllocate);
-            tx.AddPagerState(pagerState);
+            tx.EnsurePagerStateReference(pagerState);
 
             var result = new PageFromScratchBuffer(_scratchNumber, _lastUsedPage, sizeToAllocate, numberOfPages);
 
@@ -126,7 +132,7 @@ namespace Voron.Impl.Scratch
                 listOfAvailableImmediately.RemoveLast();
 
                 result = new PageFromScratchBuffer ( _scratchNumber, freeAndAvailablePageNumber, size, numberOfPages );
-                
+
                 _allocatedPagesUsedSize += numberOfPages;
                 _allocatedPages.Add(freeAndAvailablePageNumber, result);
                 return true;
@@ -200,30 +206,33 @@ namespace Voron.Impl.Scratch
             }
         }
 
-        public Page ReadPage(long p, PagerState pagerState = null)
+        public Page ReadPage(LowLevelTransaction tx, long p, PagerState pagerState = null)
         {
-            return new Page(_scratchPager.AcquirePagePointer(p, pagerState), _scratchPager);
+            return new Page(_scratchPager.AcquirePagePointer(tx, p, pagerState), _scratchPager);
         }
 
-        public byte* AcquirePagePointer(long p)
+        public byte* AcquirePagePointer(LowLevelTransaction tx, long p)
         {
-            return _scratchPager.AcquirePagePointer(p);
+            return _scratchPager.AcquirePagePointer(tx, p);
         }
 
         public long ActivelyUsedBytes(long oldestActiveTransaction)
         {
             long result = _allocatedPagesUsedSize;
 
-            var keys = _freePagesByTransaction.Keys;
-            var values = _freePagesByTransaction.Values;
-            for (int i = 0; i < keys.Count; i++ )
+            if (oldestActiveTransaction != 0)
             {
-                if (keys[i] < oldestActiveTransaction)
-                    break;
-                result += values[i];
+                var keys = _freePagesByTransaction.Keys;
+                var values = _freePagesByTransaction.Values;
+                for (int i = 0; i < keys.Count; i++)
+                {
+                    if (keys[i] < oldestActiveTransaction)
+                        break;
+                    result += values[i];
+                }
             }
 
-            return result * _scratchPager.PageSize;
+            return result * _pageSize;
         }
 
         internal Dictionary<long, long> GetMostAvailableFreePagesBySize()

@@ -91,7 +91,7 @@ namespace Voron.Platform.Win32
                 _totalAllocationSize = fileLength;
             }
 
-            NumberOfAllocatedPages = _totalAllocationSize / PageSize;
+            NumberOfAllocatedPages = _totalAllocationSize / _pageSize;
             PagerState.Release();
             PagerState = CreatePagerState();
         }
@@ -131,7 +131,7 @@ namespace Voron.Platform.Win32
             }
 
             _totalAllocationSize += allocationSize;
-            NumberOfAllocatedPages = _totalAllocationSize / PageSize;
+            NumberOfAllocatedPages = _totalAllocationSize / _pageSize;
 
             return newPagerState;
         }
@@ -236,30 +236,22 @@ namespace Voron.Platform.Win32
             return "MemMap: " + _fileInfo.FullName;
         }
 
-        public override byte* AcquirePagePointer(long pageNumber, PagerState pagerState = null)
-        {
-            if (Disposed)
-                ThrowAlreadyDisposedException();
-
-            if (pageNumber > NumberOfAllocatedPages)
-                ThrowOnInvalidPageNumber(pageNumber);
-
-            return (pagerState ?? PagerState).MapBase + (pageNumber * PageSize);
-        }
-
         public override void Sync()
         {
             if (Disposed)
                 ThrowAlreadyDisposedException();
 
+            long sizeToWrite = 0;
             foreach (var allocationInfo in PagerState.AllocationInfos)
             {
+                sizeToWrite += allocationInfo.Size;
                 if (Win32MemoryMapNativeMethods.FlushViewOfFile(allocationInfo.BaseAddress, new IntPtr(allocationInfo.Size)) == false)
                     throw new Win32Exception();
             }
 
             if (Win32MemoryMapNativeMethods.FlushFileBuffers(_handle) == false)
                 throw new Win32Exception();
+            // TODO : Measure IO times (RavenDB-4659) - Flushed & sync {sizeToWrite/1024:#,#} kb in {sp.ElapsedMilliseconds:#,#} ms
         }
 
 

@@ -32,6 +32,7 @@ namespace Sparrow.Json
           //  _types = parent._mem + pos + arraySizeOffset + _count * _currentOffsetSize;
         }
 
+        public byte* DataStart => _dataStart;
         public int Length => _count;
 
         public object this[int index] => GetValueTokenTupleByIndex(index).Item1;
@@ -72,7 +73,6 @@ namespace Sparrow.Json
 
             if (index >= _count || index < 0)
                 throw new IndexOutOfRangeException($"Cannot access index {index} when our size is {_count}");
-
 
             var itemMetadataStartPtr = _metadataPtr + index * (_currentOffsetSize+1);
             var offset = ReadNumber(itemMetadataStartPtr, _currentOffsetSize);

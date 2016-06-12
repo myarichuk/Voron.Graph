@@ -8,7 +8,7 @@ namespace Voron.Graph
 {
 	public unsafe partial class GraphStorage
 	{
-		private readonly Slice _key = new Slice(SliceOptions.Key);
+		private readonly Slice _key = new Slice(SliceOptions.Key,default(ByteString));
 
 		public long AddVertex(Transaction tx, byte[] data)
 		{
@@ -38,7 +38,7 @@ namespace Voron.Graph
 
 			int readerSize;
 			//if already deleted, do not throw -> return null pointer
-			var ptr = tx.VertexTable.DirectRead(id, out readerSize, false);
+			var ptr = tx.VertexTable.DirectRead(id, out readerSize);
 			if (ptr == null) 
 			{
 				size = -1;
@@ -129,7 +129,7 @@ namespace Voron.Graph
 		{
 			ThrowIfDisposed();
 			int readerSize;
-			var ptr = tx.EdgeTable.DirectRead(id, out readerSize,false);
+			var ptr = tx.EdgeTable.DirectRead(id, out readerSize);
 			if (ptr == null)
 			{
 				size = -1;
@@ -143,18 +143,29 @@ namespace Voron.Graph
 		public IReadOnlyList<long> GetAdjacent(Transaction tx, long fromId)
 		{
 			ThrowIfDisposed();
-			var result = tx.EdgeTable.SeekForwardFrom(
-				Constants.Indexes.EdgeTable.FromToIndex,
-				new Slice((byte*)&fromId,sizeof(long)),true);
+
+			ByteString seekKey;
+			seekKey = _byteStringContext.FromPtr((byte*)&fromId, sizeof(long));
+
+			try
+			{
+				var result = tx.EdgeTable.SeekForwardFrom(
+					FromToIndex,
+					new Slice(seekKey), true);
 
 
-			return result.SelectMany(x => 
-				x.Results.Select(r =>
-				{
-					int _;
-					return *(long*)r.Read((int)EdgeTableFields.ToKey, out _);
-				}))
-				.ToList();
+				return result.SelectMany(x =>
+					x.Results.Select(r =>
+					{
+						int _;
+						return *(long*)r.Read((int)EdgeTableFields.ToKey, out _);
+					}))
+					.ToList();
+			}
+			finally
+			{
+				_byteStringContext.Release(ref seekKey);
+			}			
 		}	
 	}
 }
