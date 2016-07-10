@@ -1,3 +1,5 @@
-#:E:\projects\Voron.Graph\imports\Voron\Voron.xproj
+#:E:\projects\Voron.Graph\tests\Voron.Graph.Tests\Voron.Graph.Tests.xproj
+E:\projects\Voron.Graph\tests\Voron.Graph.Tests\Voron.Graph.Tests.xproj|E:\projects\Voron.Graph\src\Voron.Graph\Voron.Graph.xproj
+E:\projects\Voron.Graph\src\Voron.Graph\Voron.Graph.xproj|E:\projects\Voron.Graph\imports\Sparrow\Sparrow.xproj
+E:\projects\Voron.Graph\src\Voron.Graph\Voron.Graph.xproj|E:\projects\Voron.Graph\imports\Voron\Voron.xproj
 E:\projects\Voron.Graph\imports\Voron\Voron.xproj|E:\projects\Voron.Graph\imports\Sparrow\Sparrow.xproj
-#:E:\projects\Voron.Graph\imports\Sparrow\Sparrow.xproj

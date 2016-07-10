@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
-VisualStudioVersion = 14.0.25123.0
+VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Voron.Graph", "src\Voron.Graph\Voron.Graph.xproj", "{22A930CA-9392-4857-AC41-34D479117756}"
 EndProject
@@ -14,15 +14,11 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{671507CC-CB8F-4A2B-B544-A9A8EDF1B3F8}"
 EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Voron.Graph.Tests.Dnx", "tests\Voron.Graph.Tests.Dnx\Voron.Graph.Tests.Dnx.xproj", "{442A48B6-9DAC-40FC-B4F7-E5B2BBC75C2B}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tryouts", "Tryouts", "{729A6A74-0D9F-4343-BF0C-8759870EE0EB}"
-EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Voron.Graph.Tryout.Dnx", "tryouts\Voron.Graph.Tryout.Dnx\Voron.Graph.Tryout.Dnx.xproj", "{5C812486-ED14-49F0-B45E-5B4A0E5981DC}"
-EndProject
 Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Sparrow", "imports\Sparrow\Sparrow.xproj", "{6D5528D1-B2DD-484B-8606-91D68E065659}"
 EndProject
 Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Voron", "imports\Voron\Voron.xproj", "{DC9C8F92-92F6-4C44-BBEA-39CF5D68FB13}"
+EndProject
+Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Voron.Graph.Tests", "tests\Voron.Graph.Tests\Voron.Graph.Tests.xproj", "{DBA72B19-62E6-4728-8B72-BCE844398BE4}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -34,14 +30,6 @@ Global
 		{22A930CA-9392-4857-AC41-34D479117756}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{22A930CA-9392-4857-AC41-34D479117756}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{22A930CA-9392-4857-AC41-34D479117756}.Release|Any CPU.Build.0 = Release|Any CPU
-		{442A48B6-9DAC-40FC-B4F7-E5B2BBC75C2B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{442A48B6-9DAC-40FC-B4F7-E5B2BBC75C2B}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{442A48B6-9DAC-40FC-B4F7-E5B2BBC75C2B}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{442A48B6-9DAC-40FC-B4F7-E5B2BBC75C2B}.Release|Any CPU.Build.0 = Release|Any CPU
-		{5C812486-ED14-49F0-B45E-5B4A0E5981DC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{5C812486-ED14-49F0-B45E-5B4A0E5981DC}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{5C812486-ED14-49F0-B45E-5B4A0E5981DC}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{5C812486-ED14-49F0-B45E-5B4A0E5981DC}.Release|Any CPU.Build.0 = Release|Any CPU
 		{6D5528D1-B2DD-484B-8606-91D68E065659}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{6D5528D1-B2DD-484B-8606-91D68E065659}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6D5528D1-B2DD-484B-8606-91D68E065659}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -50,14 +38,17 @@ Global
 		{DC9C8F92-92F6-4C44-BBEA-39CF5D68FB13}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DC9C8F92-92F6-4C44-BBEA-39CF5D68FB13}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{DC9C8F92-92F6-4C44-BBEA-39CF5D68FB13}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DBA72B19-62E6-4728-8B72-BCE844398BE4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DBA72B19-62E6-4728-8B72-BCE844398BE4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DBA72B19-62E6-4728-8B72-BCE844398BE4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DBA72B19-62E6-4728-8B72-BCE844398BE4}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
-		{442A48B6-9DAC-40FC-B4F7-E5B2BBC75C2B} = {671507CC-CB8F-4A2B-B544-A9A8EDF1B3F8}
-		{5C812486-ED14-49F0-B45E-5B4A0E5981DC} = {729A6A74-0D9F-4343-BF0C-8759870EE0EB}
 		{6D5528D1-B2DD-484B-8606-91D68E065659} = {C3AE7FBF-D83E-4254-A182-18F29E248CE2}
 		{DC9C8F92-92F6-4C44-BBEA-39CF5D68FB13} = {C3AE7FBF-D83E-4254-A182-18F29E248CE2}
+		{DBA72B19-62E6-4728-8B72-BCE844398BE4} = {671507CC-CB8F-4A2B-B544-A9A8EDF1B3F8}
 	EndGlobalSection
 EndGlobal

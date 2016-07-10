@@ -1,4 +1,5 @@
 ﻿using Sparrow;
+using Sparrow.Logging;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -12,7 +13,7 @@ using Voron.Util.Conversion;
 namespace Voron.Graph
 {
 	public unsafe partial class GraphStorage : IDisposable
-	{
+	{		
 		private readonly bool _ownsStorageEnvironment;
 		private bool _isDisposed;
 		private readonly StorageEnvironment _env;
@@ -43,12 +44,13 @@ namespace Voron.Graph
 		public GraphAdmin Admin => (_admin != null) ? _admin : (_admin = new GraphAdmin());
 
 		public GraphStorage()
-			: this(new StorageEnvironment(StorageEnvironmentOptions.CreateMemoryOnly()), true)
+			: this(new StorageEnvironment(StorageEnvironmentOptions.CreateMemoryOnly(), new LoggerSetup(String.Empty,LogMode.None)), true)
 		{
 		}
 
+		//TODO: consider adding logging support
 		public GraphStorage(string path, string tempPath = null, string journalPath = null)
-			: this(new StorageEnvironment(StorageEnvironmentOptions.ForPath(path, tempPath, journalPath)), true)
+			: this(new StorageEnvironment(StorageEnvironmentOptions.ForPath(path, tempPath, journalPath),new LoggerSetup(String.Empty,LogMode.None)), true)
 		{
 		}
 
