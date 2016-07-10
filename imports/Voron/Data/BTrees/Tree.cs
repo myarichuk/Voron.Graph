@@ -6,6 +6,7 @@ using Sparrow;
 using Voron.Data.Fixed;
 using Voron.Debugging;
 using Voron.Exceptions;
+using Voron.Global;
 using Voron.Impl;
 using Voron.Impl.Paging;
 
@@ -767,9 +768,9 @@ namespace Voron.Data.BTrees
             page.DebugValidate(_llt, State.RootPageNumber);
         }
 
-        public TreeIterator Iterate()
+        public TreeIterator Iterate(bool prefetch)
         {
-            return new TreeIterator(this, _llt);
+            return new TreeIterator(this, _llt, prefetch);
         }
 
         public ReadResult Read(Slice key)       
@@ -985,7 +986,7 @@ namespace Voron.Data.BTrees
 
         public Slice LastKeyOrDefault()
         {
-            using (var it = Iterate())
+            using (var it = Iterate(false))
             {
                 if (it.Seek(Slices.AfterAllKeys) == false)
                     return new Slice();
@@ -996,7 +997,7 @@ namespace Voron.Data.BTrees
 
         public Slice FirstKeyOrDefault()
         {
-            using (var it = Iterate())
+            using (var it = Iterate(false))
             {
                 if (it.Seek(Slices.BeforeAllKeys) == false)
                     return new Slice();

@@ -1,4 +1,4 @@
-#region LZ4 original
+﻿#region LZ4 original
 
 /*
    LZ4 - Fast LZ compression algorithm
@@ -64,7 +64,6 @@ IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 using System;
 using System.Runtime.InteropServices;
-using Sparrow.Platform;
 
 // ReSharper disable InconsistentNaming
 // ReSharper disable TooWideLocalVariableScope
@@ -79,7 +78,7 @@ namespace Sparrow.Compression
 
         public LZ4()
         {
-            _hashtable64K = (ushort*)Marshal.AllocHGlobal(HASH64K_TABLESIZE*sizeof (ushort)).ToPointer();
+            _hashtable64K = (ushort*)Marshal.AllocHGlobal(HASH64K_TABLESIZE * sizeof(ushort)).ToPointer();
             _hashtable = (uint*)Marshal.AllocHGlobal(HASH_TABLESIZE * sizeof(uint)).ToPointer();
         }
 
@@ -91,7 +90,7 @@ namespace Sparrow.Compression
         {
             if (inputLength < LZ4_64KLIMIT)
             {
-                UnmanagedMemory.Set((byte*) _hashtable64K, 0, HASH64K_TABLESIZE*sizeof (ushort));
+                UnmanagedMemory.Set((byte*)_hashtable64K, 0, HASH64K_TABLESIZE * sizeof(ushort));
                 return LZ4_compress64kCtx_64(_hashtable64K, input, output, inputLength, outputLength);
             }
 
@@ -182,13 +181,13 @@ namespace Sparrow.Compression
         private static readonly int[] DECODER_TABLE_32 = { 0, 3, 2, 3, 0, 0, 0, 0 };
         private static readonly int[] DECODER_TABLE_64 = { 0, 0, 0, -1, 0, 1, 2, 3 };
 
-        private static readonly int[] DEBRUIJN_TABLE_32 = 
+        private static readonly int[] DEBRUIJN_TABLE_32 =
         {
             0, 0, 3, 0, 3, 1, 3, 0, 3, 2, 2, 1, 3, 2, 0, 1,
             3, 3, 1, 2, 2, 2, 2, 0, 3, 1, 2, 0, 1, 0, 1, 1
         };
 
-        private static readonly int[] DEBRUIJN_TABLE_64 = 
+        private static readonly int[] DEBRUIJN_TABLE_64 =
         {
             0, 0, 0, 0, 0, 1, 1, 2, 0, 3, 1, 3, 1, 4, 2, 7,
             0, 2, 3, 6, 1, 5, 3, 5, 1, 3, 4, 4, 2, 5, 6, 7,
@@ -326,7 +325,7 @@ namespace Sparrow.Compression
                     }
                     dst_p = _p;
 
-                _next_match:
+                    _next_match:
 
                     // Encode Offset
                     *(ushort*)dst_p = (ushort)(src_p - src_ref);
@@ -362,7 +361,7 @@ namespace Sparrow.Compression
                     }
                     if ((src_p < src_LASTLITERALS) && (*src_ref == *src_p)) src_p++;
 
-                _endCount:
+                    _endCount:
 
                     // Encode MatchLength
                     length = (int)(src_p - src_anchor);
@@ -418,7 +417,7 @@ namespace Sparrow.Compression
                     h_fwd = ((((*(uint*)(src_p))) * 2654435761u) >> HASH_ADJUST);
                 }
 
-            _last_literals:
+                _last_literals:
 
                 // Encode Last Literals
                 var lastRun = (int)(src_end - src_anchor);
@@ -557,7 +556,7 @@ namespace Sparrow.Compression
                         dst_p = _p;
                     }
 
-                _next_match:
+                    _next_match:
 
                     // Encode Offset
                     *(ushort*)dst_p = (ushort)(src_p - src_ref);
@@ -593,7 +592,7 @@ namespace Sparrow.Compression
                     }
                     if ((src_p < src_LASTLITERALS) && (*src_ref == *src_p)) src_p++;
 
-                _endCount:
+                    _endCount:
 
                     // Encode MatchLength
                     len = (int)(src_p - src_anchor);
@@ -649,7 +648,7 @@ namespace Sparrow.Compression
                     h_fwd = ((((*(uint*)(src_p))) * 2654435761u) >> HASH64K_ADJUST);
                 }
 
-            _last_literals:
+                _last_literals:
 
                 // Encode Last Literals
                 var lastRun = (int)(src_end - src_anchor);
@@ -803,7 +802,7 @@ namespace Sparrow.Compression
                 return (int)((src_p) - src);
 
                 // write overflow error detected
-            _output_error:
+                _output_error:
                 return (int)(-((src_p) - src));
             }
         }
@@ -946,7 +945,7 @@ namespace Sparrow.Compression
                 // end of decoding
                 return (int)(dst_p - dst);
 
-            _output_error:
+                _output_error:
 
                 // write overflow error detected
                 return (int)-(src_p - src);

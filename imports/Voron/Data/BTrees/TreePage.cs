@@ -5,8 +5,8 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using Sparrow;
 using Voron.Debugging;
+using Voron.Global;
 using Voron.Impl;
-using Voron.Impl.FileHeaders;
 using Voron.Impl.Paging;
 
 namespace Voron.Data.BTrees
@@ -527,7 +527,7 @@ namespace Voron.Data.BTrees
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public Slice GetNodeKey(LowLevelTransaction tx, int nodeNumber, ByteStringType type = ByteStringType.Immutable | ByteStringType.External)
+        public Slice GetNodeKey(LowLevelTransaction tx, int nodeNumber, ByteStringType type = ByteStringType.Mutable | ByteStringType.External)
         {            
             var node = GetNode(nodeNumber);
 
@@ -632,6 +632,21 @@ namespace Voron.Data.BTrees
         {
             if (HasSpaceFor(tx, key, len) == false)
                 throw new InvalidOperationException("Could not ensure that we have enough space, this is probably a bug");
+        }
+
+        public List<long> GetAllOverflowPages()
+        {
+            var results = new List<long>(NumberOfEntries);
+            for (int i = 0; i < NumberOfEntries; i++)
+            {
+                var nodeOffset = KeysOffsets[i];
+                var nodeHeader = (TreeNodeHeader*)(Base + nodeOffset);
+
+                if (nodeHeader->Flags == TreeNodeFlags.PageRef)
+                    results.Add(nodeHeader->PageNumber);
+            }
+
+            return results;
         }
     }
 }

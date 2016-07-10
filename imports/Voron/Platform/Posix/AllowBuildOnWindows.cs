@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Runtime.InteropServices;
-using System.IO;
-using System.Collections.Generic;
 
 namespace Voron.Platform.Posix
 {
@@ -142,6 +140,22 @@ namespace Voron.Platform.Posix
         [DllImport(LIBC_6, EntryPoint = "__fxstat", SetLastError = true)]
         public static extern int fstat(int version, int filedes, out Stat buf);
 
+        [DllImport(LIBC_6, SetLastError = true)]
+        public static extern int madvise(IntPtr addr, int length, MAdvFlags madvFlags);
+    }
+
+    [Flags]
+    public enum MAdvFlags
+    {
+        MADV_NORMAL = 0x0,  /* No further special treatment */
+        MADV_RANDOM = 0x1, /* Expect random page references */
+        MADV_SEQUENTIAL = 0x2,  /* Expect sequential page references */
+        MADV_WILLNEED = 0x3, /* Will need these pages */
+        MADV_DONTNEED = 0x4, /* Don't need these pages */
+        MADV_FREE = 0x5, /* Contents can be freed */
+        MADV_ACCESS_DEFAULT = 0x6, /* default access */
+        MADV_ACCESS_LWP = 0x7, /* next LWP to access heavily */
+        MADV_ACCESS_MANY = 0x8, /* many processes to access heavily */
     }
 
     [Flags]
@@ -480,7 +494,9 @@ namespace Voron.Platform.Posix
         O_TRUNC = 0x00000200,
         O_APPEND = 0x00000400,
         O_NONBLOCK = 0x00000800,
-        O_SYNC = 0x00001000,
+        O_SYNC = 1052672, // 0x00101000, // value directly from printf("%d", O_SYNC)
+        O_DSYNC = 4096, // 0x00001000, // value directly from printf("%d", O_DSYNC)
+        O_DIRECT = 16384, // 0x00004000, // value directly from printf("%d", O_DSYNC)
 
         //
         // These are non-Posix.  Using them will result in errors/exceptions on
@@ -494,7 +510,6 @@ namespace Voron.Platform.Posix
 
         O_NOFOLLOW = 0x00020000,
         O_DIRECTORY = 0x00010000,
-        O_DIRECT = 0x00004000,
         O_ASYNC = 0x00002000,
         O_LARGEFILE = 0x00008000,
         O_CLOEXEC = 0x00080000,

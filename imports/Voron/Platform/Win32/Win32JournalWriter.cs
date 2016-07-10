@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using Microsoft.Win32.SafeHandles;
 using Voron.Exceptions;
-using Voron.Impl;
+using Voron.Global;
 using Voron.Impl.Journal;
 using Voron.Impl.Paging;
 using Voron.Util;
@@ -147,7 +147,7 @@ namespace Voron.Platform.Win32
         public int NumberOfAllocatedPages { get; }
         public bool DeleteOnClose { get; set; }
 
-        public IVirtualPager CreatePager()
+        public AbstractPager CreatePager()
         {
             return new Win32MemoryMapPager(_options.PageSize,_filename);
         }

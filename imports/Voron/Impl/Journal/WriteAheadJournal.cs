@@ -6,11 +6,9 @@
 
 using Sparrow;
 using Sparrow.Binary;
-using Sparrow.Platform;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using System.Threading;
 using Sparrow.Compression;
@@ -18,23 +16,22 @@ using Voron.Data.BTrees;
 using Voron.Exceptions;
 using Voron.Impl.FileHeaders;
 using Voron.Impl.Paging;
-using Voron.Platform.Posix;
-using Voron.Platform.Win32;
 using Voron.Util;
+using Voron.Global;
 
 namespace Voron.Impl.Journal
 {
     public unsafe class WriteAheadJournal : IDisposable
     {
         private readonly StorageEnvironment _env;
-        private readonly IVirtualPager _dataPager;
+        private readonly AbstractPager _dataPager;
 
         private long _currentJournalFileSize;
         private DateTime _lastFile;
 
         private long _journalIndex = -1;
 
-        private bool disposed;
+        private bool _disposed;
 
         private readonly LZ4 _lz4 = new LZ4();
         private readonly JournalApplicator _journalApplicator;
@@ -44,7 +41,7 @@ namespace Voron.Impl.Journal
         internal JournalFile CurrentFile;
 
         private readonly HeaderAccessor _headerAccessor;
-        private readonly IVirtualPager _compressionPager;
+        private readonly AbstractPager _compressionPager;
 
         private LazyTransactionBuffer _lazyTransactionBuffer;
 
@@ -262,7 +259,7 @@ namespace Voron.Impl.Journal
             }
         }
 
-        private void RecoverCurrentJournalSize(IVirtualPager pager)
+        private void RecoverCurrentJournalSize(AbstractPager pager)
         {
             var journalSize = Bits.NextPowerOf2(pager.NumberOfAllocatedPages * pager.PageSize);
             if (journalSize >= _env.Options.MaxLogFileSize) // can't set for more than the max log file size
@@ -316,9 +313,9 @@ namespace Voron.Impl.Journal
 
         public void Dispose()
         {
-            if (disposed)
+            if (_disposed)
                 return;
-            disposed = true;
+            _disposed = true;
 
             // we cannot dispose the journal until we are done with all of the pending writes
             if (_lazyTransactionBuffer != null)
@@ -424,7 +421,7 @@ namespace Voron.Impl.Journal
                 });
             }
 
-            public void ApplyLogsToDataFile(long oldestActiveTransaction, CancellationToken token, LowLevelTransaction transaction = null, bool allowToFlushOverwrittenPages = false)
+            public void ApplyLogsToDataFile(long oldestActiveTransaction, CancellationToken token, TimeSpan timeToWait, LowLevelTransaction transaction = null, bool allowToFlushOverwrittenPages = false)
             {
                 if (token.IsCancellationRequested)
                     return;
@@ -436,8 +433,11 @@ namespace Voron.Impl.Journal
                 try
                 {
                     _waj._env.IsFlushingScratchBuffer = true;
-                    Monitor.TryEnter(_flushingLock, Debugger.IsAttached ? TimeSpan.FromMinutes(30) : TimeSpan.FromSeconds(30), ref lockTaken);
+                    Monitor.TryEnter(_flushingLock, timeToWait, ref lockTaken);
 
+                    if (_waj._env.Disposed)
+                        return;
+                    
                     if (lockTaken == false)
                         throw new TimeoutException("Could not acquire the write lock in 30 seconds");
 
@@ -534,7 +534,7 @@ namespace Voron.Impl.Journal
 
                             using (ForceFlushingPagesOlderThan(oldestActiveTransaction))
                             {
-                                ApplyLogsToDataFile(oldestActiveTransaction, token, transaction, false);
+                                ApplyLogsToDataFile(oldestActiveTransaction, token, timeToWait, transaction, false);
                             }
                         }
 
@@ -894,7 +894,7 @@ namespace Voron.Impl.Journal
             }
         }
 
-        private IntPtr[] CompressPages(LowLevelTransaction tx, int numberOfPages, IVirtualPager compressionPager)
+        private IntPtr[] CompressPages(LowLevelTransaction tx, int numberOfPages, AbstractPager compressionPager)
         {
             // numberOfPages include the tx header page, which we don't compress
             var dataPagesCount = numberOfPages - 1;
