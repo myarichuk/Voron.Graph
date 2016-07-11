@@ -5,28 +5,32 @@
     "allowUnsafe": true,
     "warningsAsErrors": true
   },
-  "runtimes": {
-    "win8-x64": { },
-    "win10-x64": { }
-  },
-
   "dependencies": {
     "NETStandard.Library": "1.6.0-*",
-    "Voron.Graph": "1.0.0-*",
     "Microsoft.CSharp": "4.0.1-rc2-*",
     "System.Collections": "4.0.11-rc2-*",
     "System.Linq": "4.1.0-rc2-*",
     "System.Runtime": "4.1.0-rc2-*",
     "System.Threading": "4.0.11-rc2-*",
-    "xunit": "2.2.0-beta2-build3300",
-    "FluentAssertions": "4.2.2"
+    "dotnet-test-xunit": "1.0.0-rc2-*",
+    "xunit": "2.1.0",
+    "FluentAssertions": "4.2.2",
+    "Voron.Graph": "1.0.0-*"
   },
 
+  "testRunner": "xunit",
+
   "frameworks": {
-    "netstandard1.6": {
+    "netcoreapp1.0": {
+      "dependencies": {
+        "Microsoft.NETCore.App": {
+          "type": "platform",
+          "version": "1.0.0-rc2-3002702"
+        }
+      },
       "imports": [
-        "dnxcore50",
-        "portable-net45+win81"
+        "dotnet5.4",
+        "portable-net451+win8"
       ]
     }
   }

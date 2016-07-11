@@ -12,20 +12,21 @@
     "allowUnsafe": true,
     "warningsAsErrors": true
   },
-  "frameworks": {
-    "netstandard1.6": {
-      "dependencies": {
-        "Microsoft.CSharp": "4.0.1-rc2-*",
-        "System.Collections": "4.0.11-rc2-*",
-        "System.Linq": "4.1.0-rc2-*",
-        "System.Runtime": "4.1.0-rc2-*",
-        "System.Threading": "4.0.11-rc2-*"
-      },
-      "imports": "dnxcore50"
-    }
-  },
   "dependencies": {
+    "Microsoft.CSharp": "4.0.1-rc2-*",
+    "System.Collections": "4.0.11-rc2-*",
+    "System.Linq": "4.1.0-rc2-*",
+    "System.Runtime": "4.1.0-rc2-*",
+    "System.Threading": "4.0.11-rc2-*",
     "Sparrow": "4.0.0-*",
     "Voron": "4.0.0-*"
+  },
+
+  "frameworks": {
+    "netcoreapp1.0": {
+    },
+    "netstandard1.6": {
+      "imports": "dnxcore50"
+    }
   }
 }
