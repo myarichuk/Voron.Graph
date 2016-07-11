@@ -2,7 +2,7 @@
 {
 	public enum VertexTableFields
     {
-		Etag = 0,
+		Key = 0,
 		Data = 1
     }
 }

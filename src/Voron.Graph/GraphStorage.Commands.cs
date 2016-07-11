@@ -3,6 +3,7 @@ using System.Runtime.CompilerServices;
 using Voron.Data.Tables;
 using System.Linq;
 using System.Collections.Generic;
+using System.Net;
 
 namespace Voron.Graph
 {
@@ -18,32 +19,31 @@ namespace Voron.Graph
 		{
 			ThrowIfDisposed();
 
-			var etag = NextValue(tx, IncrementingValue.VertexEtag);
+			var id = ++tx.NextId;
+			var bigEndianId = IPAddress.NetworkToHostOrder(id);
 			//since we are single threaded, this should be ok
 			var valueBuilder = new TableValueBuilder
 			{
-				{ (byte*)&etag, sizeof(long) },
+				{ (byte*)&bigEndianId, sizeof(long) },
 				{ data, dataSize }
 			};
 
-			return tx.VertexTable.Set(valueBuilder);
+			tx.VertexTable.Set(valueBuilder);
+			return id;
 		}
 
 		//pointer is valid only if the transaction is valid
 		public byte* ReadVertexData(Transaction tx, long id, out int size)
 		{
 			ThrowIfDisposed();			
-
-			int readerSize;
-			//if already deleted, do not throw -> return null pointer
-			var ptr = tx.VertexTable.DirectRead(id, out readerSize);
-			if (ptr == null) 
+			
+			var valueReader = tx.VertexTable.ReadByKey(id.ToSlice(_byteStringContext));
+			if (valueReader == null)
 			{
 				size = -1;
 				return null;
 			}
 
-			var valueReader = new TableValueReader(ptr, readerSize);
 			return valueReader.Read((int)VertexTableFields.Data, out size);
 		}
 
@@ -66,7 +66,7 @@ namespace Voron.Graph
 		public void RemoveVertex(Transaction tx, long id)
 		{
 			ThrowIfDisposed();
-			tx.VertexTable.Delete(id);
+			tx.VertexTable.DeleteByKey(id.ToSlice(_byteStringContext));
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -89,23 +89,26 @@ namespace Voron.Graph
 			int size)
 		{
 			ThrowIfDisposed();
-			var etag = NextValue(tx, IncrementingValue.EdgeEtag);
+			var id = ++tx.NextId; 
+			var bigEndianId = IPAddress.NetworkToHostOrder(id); //convert to big endian
 
 			var val = new TableValueBuilder
 			{
-				{ (byte*)&etag,sizeof(long) },
+				{ (byte*)&bigEndianId,sizeof(long) },
 				{ (byte*)&fromId,sizeof(long) },
 				{ (byte*)&toId, sizeof(long) },
 				{ data, size }
 			};		
 
-			return tx.EdgeTable.Set(val);
+			tx.EdgeTable.Set(val);
+
+			return id;
 		}
 
 		public void RemoveEdge(Transaction tx, long id)
 		{
 			ThrowIfDisposed();
-			tx.EdgeTable.Delete(id);
+			tx.EdgeTable.DeleteByKey(id.ToSlice(_byteStringContext));
 		}
 
 		public IReadOnlyList<byte> ReadEdgeData(Transaction tx, long id)
@@ -126,15 +129,13 @@ namespace Voron.Graph
 		public byte* ReadEdgeData(Transaction tx, long id, out int size)
 		{
 			ThrowIfDisposed();
-			int readerSize;
-			var ptr = tx.EdgeTable.DirectRead(id, out readerSize);
-			if (ptr == null)
+
+			var valueReader = tx.EdgeTable.ReadByKey(id.ToSlice(_byteStringContext));
+			if (valueReader == null)
 			{
 				size = -1;
 				return null;
 			}
-
-			var valueReader = new TableValueReader(ptr, readerSize);
 			return valueReader.Read((int)EdgeTableFields.Data, out size);
 		}
 

@@ -1,17 +1,16 @@
-﻿using Sparrow;
-using System.Diagnostics;
-using System.Reflection;
-using Voron.Data.Tables;
-
-namespace Voron.Graph
+﻿namespace Voron.Graph
 {
 	public static class Constants
-	{		
+	{
+		public const string MetadataTree = "AdminTree";
+
+		public const string NextIdKey = "NextIdKey";
+
 		public static class SystemKeys
 		{
 			public const string GraphSystemDataPage = "SystemRawDataCreated";
 
-			public const string NextVertexEtagEntry = "NextVertexEtagEntry";
+			public const string NextVertexIdEntry = "NextVertexIdEntry";
 			public const string NextIdEntry = "NextIdEntry";
 
 			public const string NextEdgeEtagEntry = "NextEdgeEtagEntry";

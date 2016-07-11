@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Text;
 using Voron.Data.BTrees;
 using Voron.Data.RawData;
 using Voron.Data.Tables;
@@ -9,30 +10,44 @@ namespace Voron.Graph
 	{
 		private readonly Impl.Transaction _tx;
 		private bool _isDisposed;
-		private GraphStorage _storage;
+		internal GraphStorage _storage;
 
 		private Table _edgesTable;
 		private Table _vertexTable;
 		private Tree _etagToVertexTree;
 		private Tree _etagToAdjacencyTree;
+		private Tree _metadataTree;
+		private long _nextId;
 
-		private ActiveRawDataSmallSection _systemDataSection;
+		internal long NextId
+		{
+			get
+			{
+				return _nextId;
+			}
+
+			set
+			{
+				_nextId = value;
+				_hasIdChanged = true;
+			}
+		}
+
+		private bool _hasIdChanged;
+		private readonly Slice _nextIdKey;
 
 		internal Transaction(GraphStorage env, Impl.Transaction tx)
 		{
 			_tx = tx;
 			_storage = env;
+
+			_nextIdKey = Slice.From(env.ByteStringContext, Constants.NextIdKey);
+			var readResult = MetadataTree.Read(_nextIdKey);
+			NextId = (readResult == null) ? 0 : readResult.Reader.ReadBigEndianInt64();
 		}
 
 		internal GraphStorage Storage => _storage;
-
-		//TODO: refactor this to use a table, since ActiveRawDataSmallSection can be filled,
-		//and stop accepting writes
-		internal ActiveRawDataSmallSection SystemDataSection =>
-			(_systemDataSection != null) ?
-				_systemDataSection :
-			(_systemDataSection = new ActiveRawDataSmallSection(_tx.LowLevelTransaction, _storage.SystemDataSectionPage));
-
+	
 		internal Table EdgeTable => 
 			(_edgesTable != null) ? 
 				_edgesTable : 
@@ -44,6 +59,11 @@ namespace Voron.Graph
 			(_vertexTable = new Table(_storage.VerticesSchema, 
 				Constants.Schema.Vertices, _tx));
 
+
+		internal Tree MetadataTree => (_metadataTree != null) ?
+			_metadataTree :
+			(_metadataTree = _tx.CreateTree(Constants.MetadataTree));
+
 		internal Tree EtagToVertexTree => (_etagToVertexTree != null) ?
 			_etagToVertexTree :
 			(_etagToVertexTree = _tx.ReadTree(Constants.Schema.EtagToVertexTree));
@@ -54,9 +74,19 @@ namespace Voron.Graph
 
 		internal Impl.Transaction VoronTx => _tx;
 
+		
+
 		public void Commit()
 		{
 			ThrowIfDisposed();
+
+			if (_hasIdChanged)
+			{
+				var valueWriter = new SliceWriter(sizeof(long));
+				valueWriter.WriteBigEndian(_nextId);
+				MetadataTree.Add(_nextIdKey, valueWriter.CreateSlice(_storage.ByteStringContext));
+			}
+
 			_tx.Commit();
 		}
 

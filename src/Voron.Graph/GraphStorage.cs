@@ -1,14 +1,9 @@
 ﻿using Sparrow;
 using Sparrow.Logging;
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Threading.Tasks;
-using Voron.Data.RawData;
+using Voron.Data.BTrees;
 using Voron.Data.Tables;
-using Voron.Util.Conversion;
 
 namespace Voron.Graph
 {
@@ -30,14 +25,8 @@ namespace Voron.Graph
 		public GraphAdvanced Advanced => (_advanced != null) ? _advanced : (_advanced = new GraphAdvanced(this));
 
 		private GraphAdmin _admin;
-		private long _nextEdgeEtagEntry;
-		private long _nextVertexEtagEntry;
-		private long _nextIdEntry;
-		private long _systemDataSectionPage;
 
 		public TableSchema.SchemaIndexDef FromToIndex { get; private set; }
-
-		internal long SystemDataSectionPage => _systemDataSectionPage;
 
 		internal ByteStringContext ByteStringContext => _byteStringContext;
 
@@ -75,25 +64,25 @@ namespace Voron.Graph
 
 		public Transaction ReadTransaction()
 		{
-			return new Transaction(this,_env.ReadTransaction());
+			return new Transaction(this,_env.ReadTransaction(_byteStringContext));
 		}
 
 		public Transaction WriteTransaction()
 		{
-			return new Transaction(this,_env.WriteTransaction());
+			return new Transaction(this,_env.WriteTransaction(_byteStringContext));
 		}
 
 		private void CreateSchema()
 		{
 			using (var tx = _env.WriteTransaction())
 			{
-				var edgeEtagNameByteString = _byteStringContext.From("EdgeEtag");
+				var edgeEtagNameByteString = _byteStringContext.From("EdgeKey");
 				_edgesSchema = new TableSchema()
 					.DefineKey(new TableSchema.SchemaIndexDef
 					{
-						Name = "EdgeEtag",
+						Name = "EdgeKey",
 						NameAsSlice = new Slice(edgeEtagNameByteString),
-						StartIndex = (int)EdgeTableFields.Etag,
+						StartIndex = (int)EdgeTableFields.Key,
 						IsGlobal = true
 					})
 					.DefineIndex(FromToIndex.Name,FromToIndex);
@@ -103,13 +92,13 @@ namespace Voron.Graph
 				//for long-term system related storage
 				var systemTree = tx.CreateTree(Constants.Schema.SystemDataTree);
 
-				var vertexEtagByteString = _byteStringContext.From("VertexEtag");
+				var VertexIdByteString = _byteStringContext.From("VertexKey");
 				_verticesSchema = new TableSchema()
 					.DefineKey(new TableSchema.SchemaIndexDef
 					{
-						Name = "VertexEtag",
-						NameAsSlice = new Slice(vertexEtagByteString),
-						StartIndex = (int)VertexTableFields.Etag,
+						Name = "VertexKey",
+						NameAsSlice = new Slice(VertexIdByteString),
+						StartIndex = (int)VertexTableFields.Key,
 						IsGlobal = true
 					});
 
@@ -118,65 +107,12 @@ namespace Voron.Graph
 				tx.CreateTree(Constants.Schema.EtagToAdjacencyTree);
 				tx.CreateTree(Constants.Schema.EtagToVertexTree);
 
-
-				if (systemTree.State.NumberOfEntries == 0)
-				{
-					//system data section -> for frequently accessed system data
-					var systemDataSection = ActiveRawDataSmallSection.Create(tx.LowLevelTransaction, "Graph Storage");
-					_systemDataSectionPage = systemDataSection.PageNumber;
-
-					systemTree.Add(Constants.SystemKeys.GraphSystemDataPage, EndianBitConverter.Big.GetBytes(systemDataSection.PageNumber));
-
-					//if fails to allocate several very small entries, we have a problem
-					Debug.Assert(systemDataSection.TryAllocate(sizeof(long), out _nextVertexEtagEntry));
-					Debug.Assert(systemDataSection.TryAllocate(sizeof(long), out _nextIdEntry));
-
-					Debug.Assert(systemDataSection.TryAllocate(sizeof(long), out _nextEdgeEtagEntry));
-
-					systemDataSection.TryWriteInt64(_nextVertexEtagEntry, 1L);
-					systemDataSection.TryWriteInt64(_nextIdEntry, 1L);
-
-					systemDataSection.TryWriteInt64(_nextEdgeEtagEntry, 1L);
-
-					systemTree.Add(Constants.SystemKeys.NextVertexEtagEntry, EndianBitConverter.Big.GetBytes(_nextVertexEtagEntry));
-					systemTree.Add(Constants.SystemKeys.NextIdEntry, EndianBitConverter.Big.GetBytes(_nextIdEntry));
-					systemTree.Add(Constants.SystemKeys.NextEdgeEtagEntry, EndianBitConverter.Big.GetBytes(_nextEdgeEtagEntry));
-				}
-				else
-				{
-					var res = systemTree.Read(Constants.SystemKeys.GraphSystemDataPage);
-					_systemDataSectionPage = res.Reader.ReadBigEndianInt64();
-					Debug.Assert(_systemDataSectionPage >= 0); //sanity check
-
-					res = systemTree.Read(Constants.SystemKeys.NextVertexEtagEntry);
-					_nextVertexEtagEntry = res.Reader.ReadBigEndianInt64();
-
-					res = systemTree.Read(Constants.SystemKeys.NextIdEntry);
-					_nextIdEntry = res.Reader.ReadBigEndianInt64();
-
-					res = systemTree.Read(Constants.SystemKeys.NextEdgeEtagEntry);
-					_nextEdgeEtagEntry = res.Reader.ReadBigEndianInt64();
-
-				}
+				tx.CreateTree(Constants.MetadataTree); 
+				
 				tx.Commit();
 			}
 		}
 
-		//TODO: refactor this to use a tree, since RawDataSection can be filled-out and refuse any writes
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		internal long NextValue(Transaction tx, IncrementingValue type)
-		{
-			if (tx.VoronTx.LowLevelTransaction.Flags != TransactionFlags.ReadWrite)
-				throw new InvalidOperationException("Read/Write transaction expected");
-
-			var entryId = TypeToEntryId(type);
-
-			var val = tx.SystemDataSection.ReadInt64(entryId);
-			Debug.Assert(tx.SystemDataSection.TryWriteInt64(entryId, val + 1));
-			return val;
-		}
-
-		
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private void ThrowIfDisposed()
@@ -203,27 +139,6 @@ namespace Voron.Graph
 		{
 			if (!_isDisposed)
 				Dispose();
-		}
-
-		private long TypeToEntryId(IncrementingValue type)
-		{
-			long entryId;
-			switch (type)
-			{
-				case IncrementingValue.Id:
-					entryId = _nextIdEntry;
-					break;
-				case IncrementingValue.VertexEtag:
-					entryId = _nextVertexEtagEntry;
-					break;
-				case IncrementingValue.EdgeEtag:
-					entryId = _nextEdgeEtagEntry;
-					break;
-				default:
-					throw new InvalidOperationException("Invalid incrementing value type, don't know what to do...");
-			}
-
-			return entryId;
-		}
+		}		
 	}
 }

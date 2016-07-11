@@ -200,13 +200,10 @@ namespace Voron.Graph
 
 #pragma warning disable CC0091 // Use static method
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		private unsafe TableValueReader GetReaderForVertex(Transaction tx, long id)
+		private unsafe TableValueReader GetReaderForVertex(Transaction tx, long id) =>
+			tx.VertexTable.ReadByKey(id.ToSlice(tx._storage.ByteStringContext));
 #pragma warning restore CC0091 // Use static method
-		{
-			int size;
-			var ptr = tx.VertexTable.DirectRead(id, out size);
-			return new TableValueReader(ptr, size);
-		}
+
 
 		private unsafe IEnumerable<long> GetAdjacent(Transaction tx, long id, Action<TableValueReader> edgeVisitor)
 		{
