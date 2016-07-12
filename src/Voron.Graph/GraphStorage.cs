@@ -80,7 +80,7 @@ namespace Voron.Graph
 				_edgesSchema = new TableSchema()
 					.DefineKey(new TableSchema.SchemaIndexDef
 					{
-						Name = "EdgeKey",
+						Name = edgeEtagNameByteString.ToString(),
 						NameAsSlice = new Slice(edgeEtagNameByteString),
 						StartIndex = (int)EdgeTableFields.Key,
 						IsGlobal = true
@@ -96,7 +96,7 @@ namespace Voron.Graph
 				_verticesSchema = new TableSchema()
 					.DefineKey(new TableSchema.SchemaIndexDef
 					{
-						Name = "VertexKey",
+						Name = VertexIdByteString.ToString(),
 						NameAsSlice = new Slice(VertexIdByteString),
 						StartIndex = (int)VertexTableFields.Key,
 						IsGlobal = true

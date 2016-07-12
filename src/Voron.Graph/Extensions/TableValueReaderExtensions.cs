@@ -1,14 +1,10 @@
 ﻿using Sparrow;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Voron.Data.Tables;
 
 namespace Voron.Graph
 {
-    public unsafe static class TableValueReaderExtensions
-    {
+	public unsafe static class TableValueReaderExtensions
+	{
 		public static byte[] ReadData(this TableValueReader reader, int index)
 		{
 			int size;
