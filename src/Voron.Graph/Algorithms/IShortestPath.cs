@@ -4,6 +4,6 @@ namespace Voron.Graph.Algorithms
 {
 	public interface IShortestPath
 	{
-		IEnumerable<long> Execute(long startVertex, long endVertex); 
+		IEnumerable<long> FindPath(long startVertex, long endVertex); 
 	}
 }

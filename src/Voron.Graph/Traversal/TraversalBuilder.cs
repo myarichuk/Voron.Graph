@@ -93,7 +93,7 @@ namespace Voron.Graph
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public TraversalBuilder TraverseStopWhen(Func<TableValueReader, bool> traversalStopPredicate)
+		public TraversalBuilder StopWhen(Func<TableValueReader, bool> traversalStopPredicate)
 		{
 			_traversalStopPredicate = traversalStopPredicate;
 			return this;

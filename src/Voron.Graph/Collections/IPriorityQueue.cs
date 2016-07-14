@@ -2,7 +2,7 @@
 
 namespace Voron.Graph.Collections
 {
-	public interface IMinHeap<T>
+	public interface IPriorityQueue<T>
 		where T : IComparable<T>
 	{
 		void Insert(T data);

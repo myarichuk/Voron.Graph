@@ -4,7 +4,7 @@ using System.Runtime.CompilerServices;
 
 namespace Voron.Graph.Collections
 {
-	public class BinaryMinHeap<T> : IMinHeap<T>
+	public class BinaryHeap<T> : IPriorityQueue<T>
 		where T : IComparable<T>
 	{
 		private readonly List<T> _items = new List<T>();

@@ -1,17 +1,17 @@
 ﻿using FluentAssertions;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Voron.Graph.Collections;
 using Xunit;
 
 namespace Voron.Graph.Tests
 {
-	public class HeapTests
+	public abstract class BaseHeapTests
 	{
+		public abstract Func<IPriorityQueue<int>> CreateHeap { get; }
+
 		[Theory]
-		[InlineData(new int[0])]
+		[InlineData(new int[0])] //kind of obvious, but still...
 		[InlineData(new[] { 1 })]
 		[InlineData(new[] { 1, 2 })]
 		[InlineData(new[] { 3, 2, 1 })]
@@ -22,7 +22,8 @@ namespace Voron.Graph.Tests
 		[InlineData(new[] { 33, 11, 22, 33, 44, 22, 11, 33 })]
 		public void Adding_random_values_to_priority_queue_and_getting_min_should_return_sorted_data(int[] data)
 		{
-			IMinHeap<int> heap = new BinaryMinHeap<int>();
+			var heap = CreateHeap?.Invoke();
+			Assert.NotNull(heap); //precaution
 
 			foreach (var x in data)
 				heap.Insert(x);
