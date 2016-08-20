@@ -16,14 +16,14 @@
   },
 
   "dependencies": {
-    "DotNetCross.Memory.Unsafe": "0.2.3.2",
     "NETStandard.Library": "1.6.0",
-    "NLog": "4.4.0-*",
     "Microsoft.AspNetCore.WebSockets.Server": "0.1.0",
     "Microsoft.CSharp": "4.0.1",
     "System.Diagnostics.Contracts": "4.0.1",
     "System.Numerics.Vectors": "4.1.1",
-    "System.Reflection": "4.1.0"
+    "System.Reflection": "4.1.0",
+    "DotNetCross.Memory.Unsafe": "0.2.3.4",
+    "NLog": "4.4.0-betaV15"
   },
 
   "frameworks": {
