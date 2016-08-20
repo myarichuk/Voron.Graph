@@ -175,5 +175,8 @@ FakesAssemblies/
 /imports/Sparrow/project.lock.json
 /.vs/config/applicationhost.config
 /imports/Voron/project.lock.json
-/tryouts/Voron.Graph.Tryout.Dnx/project.lock.json
+/src/Voron.Graph/project.lock.json
+/tryouts/Voron.Graph.Tryout/project.lock.json
+/tests/Voron.Graph.Tests/project.lock.json
 /tests/Voron.Graph.Tests.Dnx/project.lock.json
+/tryouts/Voron.Graph.Tryout.Dnx/project.lock.json
