@@ -3,15 +3,18 @@ using System.Collections.Generic;
 
 namespace Voron.Graph.Collections
 {
-	public class FibonacciHeap<T> : IPriorityQueue<T>
-		where T : IComparable<T>
+	public class FibonacciHeap<TKey, TValue> : IPriorityQueue<TKey, TValue>
+		where TKey : IComparable<TKey>
 	{
-		private readonly LinkedList<T> _roots = new LinkedList<T>();
-		private int _count;
+		public bool IsEmpty
+		{
+			get
+			{
+				throw new NotImplementedException();
+			}
+		}
 
-		public bool IsEmpty => _count == 0;
-
-		public void Insert(T data)
+		public void ChangePriority(TKey key, TKey amount)
 		{
 			throw new NotImplementedException();
 		}
@@ -21,16 +24,19 @@ namespace Voron.Graph.Collections
 			throw new NotImplementedException();
 		}
 
-		public T GetMin()
+		public TValue GetMin()
 		{
 			throw new NotImplementedException();
 		}
 
-		public T GetMinAndDelete()
+		public TValue GetMinAndDelete()
 		{
 			throw new NotImplementedException();
 		}
 
-	
+		public void Insert(TKey key, TValue data)
+		{
+			throw new NotImplementedException();
+		}
 	}
 }

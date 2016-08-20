@@ -6,7 +6,7 @@ namespace Voron.Graph
 {
 	public unsafe static class UtilExtensions
 	{
-		private static readonly SliceWriter _longWriter = new SliceWriter(sizeof(long)); 
+		private static readonly SliceWriter _int64Writer = new SliceWriter(sizeof(long)); 
 		private static readonly object _writerSync = new object();
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]				
@@ -14,9 +14,9 @@ namespace Voron.Graph
 		{
 			lock (_writerSync) //precaution, should be uncontested
 			{
-				_longWriter.Reset();
-				_longWriter.WriteBigEndian(val);
-				return _longWriter.CreateSlice(context);
+				_int64Writer.Reset();
+				_int64Writer.WriteBigEndian(val);
+				return _int64Writer.CreateSlice(context);
 			}
 		}
 

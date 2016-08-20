@@ -2,15 +2,16 @@
 
 namespace Voron.Graph.Collections
 {
-	public interface IPriorityQueue<T>
-		where T : IComparable<T>
+	public interface IPriorityQueue<TKey,TValue>
+		where TKey : IComparable<TKey>
 	{
-		void Insert(T data);
+		void Insert(TKey key,TValue data);
 		void DeleteMin();
+		void ChangePriority(TKey priority, TKey newPriority);
 
 		bool IsEmpty { get; }
 
-		T GetMin();
-		T GetMinAndDelete();
+		TValue GetMin();
+		TValue GetMinAndDelete();
 	}
 }

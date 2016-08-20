@@ -4,33 +4,57 @@ using System.Runtime.CompilerServices;
 
 namespace Voron.Graph.Collections
 {
-	public class BinaryHeap<T> : IPriorityQueue<T>
-		where T : IComparable<T>
+	public class BinaryHeap<TKey,TValue> : IPriorityQueue<TKey, TValue>
+		where TKey : IComparable<TKey>
 	{
-		private readonly List<T> _items = new List<T>();
+		//not a dictionary -> allows to have duplicate priorities (keys)
+		private readonly List<HeapItem<TKey,TValue>> _items = new List<HeapItem<TKey, TValue>>();
 
-		public bool IsEmpty => _items.Count == 0;		
+		public bool IsEmpty => _items.Count == 0;
 
-		public void Insert(T data)
+		public void ChangePriority(TKey priority, TKey newPriority)
 		{
-			_items.Add(data);
+			if (_items.Count == 0)
+				return;
+			var index = _items.FindIndex(o => o.Priority.Equals(priority));
+			if (index == -1)
+				return;
+
+			_items[index].Priority = newPriority;
+
+			if (priority.CompareTo(newPriority) > 0)
+				BubbleUp(index); //less priority -> need to bubble up, since lower priority should be first
+			else
+				BubbleDown(index);
+		}
+
+		public void Insert(TKey key,TValue data)
+		{
+			_items.Add(new HeapItem<TKey, TValue>(key,data));
 			BubbleUp(_items.Count - 1);
 		}
 
 		public void DeleteMin()
 		{
+			if (_items.Count == 0)
+				return;
+
 			_items[0] = _items[_items.Count - 1];
 			_items.RemoveAt(_items.Count - 1);
 			if (_items.Count == 0)
 				return;
+
 			BubbleDown(0);
 		}
 
-		public T GetMin() => _items[0];
+		public TValue GetMin() => _items.Count == 0 ? default(TValue) : _items[0].Value;
 
-		public T GetMinAndDelete()
+		public TValue GetMinAndDelete()
 		{
-			var result = _items[0];
+			if (_items.Count == 0)
+				return default(TValue);
+
+			var result = _items[0].Value;
 			DeleteMin();
 			return result;
 		}	
@@ -54,10 +78,10 @@ namespace Voron.Graph.Collections
 
 			var smallest = index;
 
-			if (left < _items.Count && _items[left].CompareTo(_items[smallest]) < 0)
+			if (left < _items.Count && _items[left].Priority.CompareTo(_items[smallest].Priority) < 0)
 				smallest = left;
-			else if (right < _items.Count && _items[right].CompareTo(_items[smallest]) < 0)
-				smallest = right;
+			else if (right < _items.Count && _items[right].Priority.CompareTo(_items[smallest].Priority) < 0)
+				smallest = right;				
 
 			if (smallest != index)
 			{
@@ -65,8 +89,8 @@ namespace Voron.Graph.Collections
 				_items[index] = _items[smallest];
 				_items[smallest] = temp;
 
-				if ((IsInRange(left) && (_items[left].CompareTo(_items[smallest])) < 0 ||
-					(IsInRange(right) && _items[right].CompareTo(_items[smallest]) < 0)))
+				if ((IsInRange(left) && (_items[left].Priority.CompareTo(_items[smallest].Priority)) < 0 ||
+					(IsInRange(right) && _items[right].Priority.CompareTo(_items[smallest].Priority) < 0)))
 					BubbleDown(index);
 
 				BubbleDown(smallest);
@@ -79,7 +103,7 @@ namespace Voron.Graph.Collections
 			if (!IsInRange(parentIndex))
 				return;
 
-			if (_items[parentIndex].CompareTo(_items[index]) > 0)
+			if (_items[parentIndex].Priority.CompareTo(_items[index].Priority) > 0)
 			{
 				var temp = _items[index];
 				_items[index] = _items[parentIndex];
@@ -88,5 +112,7 @@ namespace Voron.Graph.Collections
 				BubbleUp(parentIndex);
 			}
 		}
+
+		
 	}
 }
