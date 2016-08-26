@@ -93,8 +93,9 @@ namespace Voron.Graph.Tests
 			foreach (var x in data)
 				heap.Insert(x.Priority, x.Value);
 
-			data[4].Priority = 9;
-			var tmp = data[4];
+			var fourthItem = data[4];
+			fourthItem.Priority = 9;
+			var tmp = fourthItem;
 
 			data.RemoveAt(4);
 			data.Insert(2, tmp);

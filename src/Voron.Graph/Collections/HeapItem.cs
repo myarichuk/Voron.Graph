@@ -5,11 +5,11 @@ using System.Threading.Tasks;
 
 namespace Voron.Graph.Collections
 {
-	public class HeapItem<TKey, TValue> where TKey : IComparable<TKey>
+	public struct HeapItem<TKey, TValue> where TKey : IComparable<TKey>
 	{
-		public TKey Priority { get; set; }
+		public TKey Priority;
 
-		public TValue Value { get; set; }
+		public TValue Value;
 
 		public HeapItem(TKey priority, TValue value)
 		{

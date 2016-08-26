@@ -20,7 +20,9 @@ namespace Voron.Graph.Collections
 			if (index == -1)
 				return;
 
-			_items[index].Priority = newPriority;
+			var current = _items[index];
+			current.Priority = newPriority;
+			_items[index] = current;
 
 			if (priority.CompareTo(newPriority) > 0)
 				BubbleUp(index); //less priority -> need to bubble up, since lower priority should be first
