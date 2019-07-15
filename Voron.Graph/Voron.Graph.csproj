@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Libs\RavenDB\src\Sparrow.Server\Sparrow.Server.csproj" />
+    <ProjectReference Include="..\Libs\RavenDB\src\Sparrow\Sparrow.csproj" />
+    <ProjectReference Include="..\Libs\RavenDB\src\Voron\Voron.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="librvnpal\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="..\Libs\RavenDB\libs\librvnpal\librvnpal.arm.32.so" Link="librvnpal\librvnpal.arm.32.so" />
+    <EmbeddedResource Include="..\Libs\RavenDB\libs\librvnpal\librvnpal.arm.64.so" Link="librvnpal\librvnpal.arm.64.so" />
+    <EmbeddedResource Include="..\Libs\RavenDB\libs\librvnpal\librvnpal.linux.x64.so" Link="librvnpal\librvnpal.linux.x64.so" />
+    <EmbeddedResource Include="..\Libs\RavenDB\libs\librvnpal\librvnpal.mac.x64.dylib" Link="librvnpal\librvnpal.mac.x64.dylib" />
+    <EmbeddedResource Include="..\Libs\RavenDB\libs\librvnpal\librvnpal.win.x64.dll" Link="librvnpal\librvnpal.win.x64.dll" />
+    <EmbeddedResource Include="..\Libs\RavenDB\libs\librvnpal\librvnpal.win.x86.dll" Link="librvnpal\librvnpal.win.x86.dll" />
+    <EmbeddedResource Include="..\Libs\RavenDB\libs\librvnpal\librvnpal.win7.x64.dll" Link="librvnpal\librvnpal.win7.x64.dll" />
+    <EmbeddedResource Include="..\Libs\RavenDB\libs\librvnpal\librvnpal.win7.x86.dll" Link="librvnpal\librvnpal.win7.x86.dll" />
+    <EmbeddedResource Include="..\Libs\RavenDB\libs\libsodium\libsodium.arm.32.so" Link="librvnpal\libsodium.arm.32.so" />
+    <EmbeddedResource Include="..\Libs\RavenDB\libs\libsodium\libsodium.arm.64.so" Link="librvnpal\libsodium.arm.64.so" />
+    <EmbeddedResource Include="..\Libs\RavenDB\libs\libsodium\libsodium.linux.x64.so" Link="librvnpal\libsodium.linux.x64.so" />
+    <EmbeddedResource Include="..\Libs\RavenDB\libs\libsodium\libsodium.mac.x64.dylib" Link="librvnpal\libsodium.mac.x64.dylib" />
+    <EmbeddedResource Include="..\Libs\RavenDB\libs\libsodium\libsodium.win.x64.dll" Link="librvnpal\libsodium.win.x64.dll" />
+    <EmbeddedResource Include="..\Libs\RavenDB\libs\libsodium\libsodium.win.x86.dll" Link="librvnpal\libsodium.win.x86.dll" />
+  </ItemGroup>
+
+</Project>

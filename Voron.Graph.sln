@@ -1,0 +1,67 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29102.190
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Voron.Graph", "Voron.Graph\Voron.Graph.csproj", "{EE57911D-A1E8-4653-A46A-F3B5803532B7}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Voron.Graph.Playground", "Voron.Graph.Playground\Voron.Graph.Playground.csproj", "{A9803893-4817-4A1C-9638-9807C1D7D10D}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Libs", "Libs", "{BBB679D9-CE30-4D55-9E15-01EDBDBCA82D}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Sparrow", "Libs\RavenDB\src\Sparrow\Sparrow.csproj", "{F610194C-709B-49D1-B5D2-9BF7AA8F82C3}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Sparrow.Server", "Libs\RavenDB\src\Sparrow.Server\Sparrow.Server.csproj", "{F9158C4B-63AA-4E8E-B0E2-BF3C66E46452}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Voron", "Libs\RavenDB\src\Voron\Voron.csproj", "{386B3D2B-5142-4EAD-919A-63EC4C2DAE6D}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+		Validate|Any CPU = Validate|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{EE57911D-A1E8-4653-A46A-F3B5803532B7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EE57911D-A1E8-4653-A46A-F3B5803532B7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EE57911D-A1E8-4653-A46A-F3B5803532B7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EE57911D-A1E8-4653-A46A-F3B5803532B7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EE57911D-A1E8-4653-A46A-F3B5803532B7}.Validate|Any CPU.ActiveCfg = Release|Any CPU
+		{EE57911D-A1E8-4653-A46A-F3B5803532B7}.Validate|Any CPU.Build.0 = Release|Any CPU
+		{A9803893-4817-4A1C-9638-9807C1D7D10D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A9803893-4817-4A1C-9638-9807C1D7D10D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A9803893-4817-4A1C-9638-9807C1D7D10D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A9803893-4817-4A1C-9638-9807C1D7D10D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A9803893-4817-4A1C-9638-9807C1D7D10D}.Validate|Any CPU.ActiveCfg = Debug|Any CPU
+		{A9803893-4817-4A1C-9638-9807C1D7D10D}.Validate|Any CPU.Build.0 = Debug|Any CPU
+		{F610194C-709B-49D1-B5D2-9BF7AA8F82C3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F610194C-709B-49D1-B5D2-9BF7AA8F82C3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F610194C-709B-49D1-B5D2-9BF7AA8F82C3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F610194C-709B-49D1-B5D2-9BF7AA8F82C3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F610194C-709B-49D1-B5D2-9BF7AA8F82C3}.Validate|Any CPU.ActiveCfg = Validate|Any CPU
+		{F610194C-709B-49D1-B5D2-9BF7AA8F82C3}.Validate|Any CPU.Build.0 = Validate|Any CPU
+		{F9158C4B-63AA-4E8E-B0E2-BF3C66E46452}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F9158C4B-63AA-4E8E-B0E2-BF3C66E46452}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F9158C4B-63AA-4E8E-B0E2-BF3C66E46452}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F9158C4B-63AA-4E8E-B0E2-BF3C66E46452}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F9158C4B-63AA-4E8E-B0E2-BF3C66E46452}.Validate|Any CPU.ActiveCfg = Validate|Any CPU
+		{F9158C4B-63AA-4E8E-B0E2-BF3C66E46452}.Validate|Any CPU.Build.0 = Validate|Any CPU
+		{386B3D2B-5142-4EAD-919A-63EC4C2DAE6D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{386B3D2B-5142-4EAD-919A-63EC4C2DAE6D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{386B3D2B-5142-4EAD-919A-63EC4C2DAE6D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{386B3D2B-5142-4EAD-919A-63EC4C2DAE6D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{386B3D2B-5142-4EAD-919A-63EC4C2DAE6D}.Validate|Any CPU.ActiveCfg = Validate|Any CPU
+		{386B3D2B-5142-4EAD-919A-63EC4C2DAE6D}.Validate|Any CPU.Build.0 = Validate|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{F610194C-709B-49D1-B5D2-9BF7AA8F82C3} = {BBB679D9-CE30-4D55-9E15-01EDBDBCA82D}
+		{F9158C4B-63AA-4E8E-B0E2-BF3C66E46452} = {BBB679D9-CE30-4D55-9E15-01EDBDBCA82D}
+		{386B3D2B-5142-4EAD-919A-63EC4C2DAE6D} = {BBB679D9-CE30-4D55-9E15-01EDBDBCA82D}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {C3E28F8A-7240-4938-A922-2121E0705C7C}
+	EndGlobalSection
+EndGlobal

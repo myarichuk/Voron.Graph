@@ -1,0 +1,3 @@
+[submodule "Libs/RavenDB"]
+	path = Libs/RavenDB
+	url = https://github.com/ravendb/ravendb.git
